@@ -1,0 +1,55 @@
+# Route parameters
+
+Volga supports a rich routing configuration that can be configured by a pattern when mapping a request handler:
+```rust
+use volga::{App, AsyncEndpointsMapping, Results, Params};
+
+#[tokio::main]
+async fn main() -> tokio::io::Result<()> {
+    let mut app = App::build("localhost:7878").await?;
+
+    app.map_get("/hello/{name}", |req| async move {
+        let params = req.params().unwrap();
+        let name = params.get("name").unwrap();
+
+        Results::text(&format!("Hello {name}!"))
+    }).await;
+
+    app.run().await
+}
+```
+In the code above, in the curly brackets, we described the GET route with a `name` parameter, so if we run commands like below over the Web API it will call the same handler and pass an appropriate `name` as a route parameter.
+```bash
+> curl http://localhost:7878/hello/world
+Hello world!
+
+> curl http://localhost:7878/hello/earth
+Hello earth!
+
+> curl http://localhost:7878/hello/sun
+Hello sun!
+```
+You can also configure multiple parameters:
+```rust
+use volga::{App, AsyncEndpointsMapping, Results, Params};
+
+#[tokio::main]
+async fn main() -> tokio::io::Result<()> {
+    let mut app = App::build("localhost:7878").await?;
+
+    app.map_get("/hello/{descr}/{name}", |req| async move {
+        let params = req.params().unwrap();
+        let name = params.get("name").unwrap();
+        let descr = params.get("descr").unwrap();
+
+        Results::text(&format!("Hello {descr} {name}!"))
+    }).await;
+
+    app.run().await
+}
+```
+And the if you run this command, it will return this result:
+```bash
+> curl -v "http://localhost:7878/hello/beautiful/world"
+Hello beautiful world!
+```
