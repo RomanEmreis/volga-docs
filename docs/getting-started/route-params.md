@@ -1,6 +1,6 @@
 # Route parameters
 
-Volga supports a rich routing configuration that can be configured by a pattern when mapping a request handler:
+Volga supports a rich routing configuration that can be configured by a pattern when mapping a request handler. Calling the `params()` method allows to access all the request parameters `HashMap` collection:
 ```rust
 use volga::{App, AsyncEndpointsMapping, Results, Params};
 
@@ -8,8 +8,8 @@ use volga::{App, AsyncEndpointsMapping, Results, Params};
 async fn main() -> tokio::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
-    app.map_get("/hello/{name}", |req| async move {
-        let params = req.params().unwrap();
+    app.map_get("/hello/{name}", |request| async move {
+        let params = request.params().unwrap();
         let name = params.get("name").unwrap();
 
         Results::text(&format!("Hello {name}!"))
@@ -18,7 +18,7 @@ async fn main() -> tokio::io::Result<()> {
     app.run().await
 }
 ```
-In the code above, in the curly brackets, we described the GET route with a `name` parameter, so if we run commands like below over the Web API it will call the same handler and pass an appropriate `name` as a route parameter.
+In the code above, in the curly brackets, we described the GET route with a `name` parameter, so if we run requests like below over the Web API it will call the same handler and pass an appropriate `name` as a route parameter.
 ```bash
 > curl http://localhost:7878/hello/world
 Hello world!
@@ -37,8 +37,8 @@ use volga::{App, AsyncEndpointsMapping, Results, Params};
 async fn main() -> tokio::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
-    app.map_get("/hello/{descr}/{name}", |req| async move {
-        let params = req.params().unwrap();
+    app.map_get("/hello/{descr}/{name}", |request| async move {
+        let params = request.params().unwrap();
         let name = params.get("name").unwrap();
         let descr = params.get("descr").unwrap();
 
@@ -50,6 +50,6 @@ async fn main() -> tokio::io::Result<()> {
 ```
 And the if you run this command, it will return this result:
 ```bash
-> curl -v "http://localhost:7878/hello/beautiful/world"
+> curl "http://localhost:7878/hello/beautiful/world"
 Hello beautiful world!
 ```
