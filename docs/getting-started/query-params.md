@@ -55,7 +55,7 @@ And the if you run this command, it will return this result:
 > curl "http://localhost:7878/hello?descr=beautiful&name=world"
 Hello beautiful world!
 ```
-For convenience, similarly to getting the route parameters, we can use the same approach to get the query ones:
+For convenience, similar to getting the route parameters, we can use the same approach to get the query ones:
 ```rust
 use volga::{App, AsyncEndpointsMapping, Results, Params};
 
