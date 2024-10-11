@@ -5,7 +5,7 @@ A basic minimal Web API with Volga.
 First of all, let's add all necessary crates in `Cargo.toml`:
 ```toml
 [dependencies]
-volga = "0.1.8"
+volga = "0.1.9"
 tokio = "1.40.0"
 ```
 Then, in `main.rs`:
@@ -14,7 +14,7 @@ Then, in `main.rs`:
 use volga::{App, Results, AsyncEndpointsMapping};
 
 #[tokio::main]
-async fn main() -> tokio::io::Result<()> {
+async fn main() -> std::io::Result<()> {
     // Start the server
     let mut server = App::build("localhost:7878").await?;
 
@@ -31,7 +31,7 @@ The more general and recommended way to use asynchronous versions all the way bu
 use volga::{App, Results, SyncEndpointsMapping};
 
 #[tokio::main]
-async fn main() -> tokio::io::Result<()> {
+async fn main() -> std::io::Result<()> {
     // Start the server
     let mut app = App::build("localhost:7878").await?;
     

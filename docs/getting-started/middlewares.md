@@ -9,7 +9,7 @@ Below is an example illustrating how to configure middleware:
 use volga::{App, Results, AsyncEndpointsMapping, AsyncMiddlewareMapping};
 
 #[tokio::main]
-async fn main() -> tokio::io::Result<()> {
+async fn main() -> std::io::Result<()> {
     // Start the server
     let mut app = App::build("localhost:7878").await?;
 
@@ -48,7 +48,7 @@ And by doing thies the middleware pipeline will be shortcutted at middleware 2 a
 use volga::{App, Results, AsyncEndpointsMapping, AsyncMiddlewareMapping};
 
 #[tokio::main]
-async fn main() -> tokio::io::Result<()> {
+async fn main() -> std::io::Result<()> {
     // Start the server
     let mut app = App::build("localhost:7878").await?;
 

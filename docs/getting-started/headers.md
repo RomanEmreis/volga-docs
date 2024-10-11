@@ -7,7 +7,7 @@ If you need to read a request header you can call a `headers()` method that retu
 use volga::{App, AsyncEndpointsMapping, Results, Params};
 
 #[tokio::main]
-async fn main() -> tokio::io::Result<()> {
+async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
     app.map_get("/hello", |request| async move {
@@ -30,7 +30,7 @@ use volga::{App, AsyncEndpointsMapping, Results, ResponseContext};
 use std::collections::HashMap;
 
 #[tokio::main]
-async fn main() -> tokio::io::Result<()> {
+async fn main() -> std::io::Result<()> {
    let mut app = App::build("localhost:7878").await?;
 
    app.map_get("/hello", |request| async move {

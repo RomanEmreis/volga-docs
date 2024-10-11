@@ -7,7 +7,7 @@ This is how we can access them:
 use volga::{App, AsyncEndpointsMapping, Results, Params};
 
 #[tokio::main]
-async fn main() -> tokio::io::Result<()> {
+async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
     app.map_get("/hello", |request| async move {
@@ -36,7 +36,7 @@ Similar idea if it is required to apply multiple query parameters:
 use volga::{App, AsyncEndpointsMapping, Results, Params};
 
 #[tokio::main]
-async fn main() -> tokio::io::Result<()> {
+async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
     app.map_get("/hello", |request| async move {
@@ -54,4 +54,22 @@ And the if you run this command, it will return this result:
 ```bash
 > curl "http://localhost:7878/hello?descr=beautiful&name=world"
 Hello beautiful world!
+```
+For convenience, similarly to getting the route parameters, we can use the same approach to get the query ones:
+```rust
+use volga::{App, AsyncEndpointsMapping, Results, Params};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::build("localhost:7878").await?;
+
+    app.map_get("/hello", |request| async move {
+        let name = request.param("name")?;
+        let descr = request.param("descr")?;
+
+        Results::text(&format!("Hello {descr} {name}!"))
+    }).await;
+
+    app.run().await
+}
 ```

@@ -12,13 +12,13 @@ struct User {
 }
 
 #[tokio::main]
-async fn main() -> tokio::io::Result<()> {
+async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
     // POST /hello
     // { name: "John", age: 35 }
     app.map_post("/hello", |req| async move {
-        let params: User = req.payload().unwrap();
+        let params: User = req.payload()?;
 
         Results::text(&format!("Hello {}!", user.name))
     }).await;
@@ -46,7 +46,7 @@ struct User {
 }
 
 #[tokio::main]
-async fn main() -> tokio::io::Result<()> {
+async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
     app.map_get("/hello", |req| async move {
