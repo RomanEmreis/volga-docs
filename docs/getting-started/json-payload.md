@@ -33,7 +33,7 @@ Hello John!
 ```
 !> To use the JSON deserialization/serialization it is required to install also [serde](https://crates.io/crates/serde_json/).
 
-To respond with JSON body the `Resultes::from()` method can be used which has been described earlier and the struct instance passed will be automatically serialized to JSON. 
+To respond with JSON body the `Results::from()` method can be used which has been described earlier and the struct instance passed will be automatically serialized to JSON. 
 However, if we don't need custom headers or any specific Content-Type, the more convenient way could be using a dedicated method `Results::json()`:
 ```rust
 use volga::{App, AsyncEndpointsMapping, Results, Payload};
