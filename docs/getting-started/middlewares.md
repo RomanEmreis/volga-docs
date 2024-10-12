@@ -43,7 +43,7 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-And by doing thies the middleware pipeline will be shortcutted at middleware 2 and the request handler will be never executed:
+And by doing this the middleware pipeline will be shortcutted at middleware 2 and the request handler will be never executed:
 ```rust
 use volga::{App, Results, AsyncEndpointsMapping, AsyncMiddlewareMapping};
 
