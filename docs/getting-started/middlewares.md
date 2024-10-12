@@ -70,6 +70,7 @@ async fn main() -> std::io::Result<()> {
     
     // Example of asynchronous request handler
     app.map_get("/hello", |request| async {
+        // This will never executed
         Results::text("Hello World!")
     }).await;
     
