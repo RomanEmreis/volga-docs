@@ -1,6 +1,6 @@
 # JSON payload
 
-To configure a `POST` request that takes a JSON body and then deserializes it to strongly typed struct, we can use the `patload<T>()` method:
+To configure a `POST` request that takes a JSON body and then deserializes it to strongly typed struct, we can use the `payload<T>()` method:
 ```rust
 use volga::{App, AsyncEndpointsMapping, Results, Payload};
 use serde::Deserialize;
