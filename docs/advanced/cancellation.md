@@ -11,10 +11,10 @@ use volga::{App, Results, AsyncEndpointsMapping, Cancel};
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     // Start the server
-    let mut server = App::build("localhost:7878").await?;
+    let mut app = App::build("localhost:7878").await?;
 
     // Example of long-running task
-    server.map_get("/long-task", |request| async move {
+    app.map_get("/long-task", |request| async move {
         // Getting request cancellation token
         let cancellation_token = req.cancellation_token(); 
         
@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
         Results::text("done")
     }).await;
     
-    server.run().await
+    app.run().await
 }
 ```
 More robust version with using `tokio::select!`:
@@ -39,10 +39,10 @@ use volga::{App, Results, AsyncEndpointsMapping, Cancel};
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     // Start the server
-    let mut server = App::build("localhost:7878").await?;
+    let mut app = App::build("localhost:7878").await?;
 
     // Example of long-running task
-    server.map_get("/long-task", |request| async move {
+    app.map_get("/long-task", |request| async move {
         // Getting request cancellation token
         let cancellation_token = req.cancellation_token();
         
@@ -55,7 +55,7 @@ async fn main() -> std::io::Result<()> {
         Results::text("done")
     }).await;
     
-    server.run().await
+    app.run().await
 }
 
 async fn long_running_task() {
