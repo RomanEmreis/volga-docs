@@ -5,6 +5,7 @@ If a long-running task needs to be canceled upon a remote client closing the con
 This is how it can be used:
 
 ```rust
+use std::time::Duration;
 use volga::{App, Results, AsyncEndpointsMapping, Cancel};
 
 #[tokio::main]
@@ -32,6 +33,7 @@ async fn main() -> std::io::Result<()> {
 ```
 More robust version with using `tokio::select!`:
 ```rust
+use std::time::Duration;
 use volga::{App, Results, AsyncEndpointsMapping, Cancel};
 
 #[tokio::main]
