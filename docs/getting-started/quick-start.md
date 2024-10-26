@@ -5,7 +5,7 @@ A basic minimal Web API with Volga.
 First of all, let's add all necessary crates in `Cargo.toml`:
 ```toml
 [dependencies]
-volga = "0.1.10"
+volga = "0.1.11"
 tokio = "1.40.0"
 ```
 Then, in `main.rs`:

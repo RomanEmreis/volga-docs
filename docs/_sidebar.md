@@ -5,3 +5,6 @@
     * [Headers](/getting-started/headers.md)
     * [JSON Payload](/getting-started/json-payload.md)
     * [Custom Middlewares](/getting-started/middlewares.md)
+
+* **Advanced**
+    * [Request cancellation](/advanced/cancellation.md)
