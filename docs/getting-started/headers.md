@@ -14,7 +14,7 @@ async fn main() -> std::io::Result<()> {
         let api_key = request.headers().get("x-api-key").unwrap();
 
         Results::text(&format!("The api-key is: {:?}", api_key))
-    }).await;
+    });
 
     app.run().await
 }
@@ -44,7 +44,7 @@ async fn main() -> std::io::Result<()> {
            headers: Some(headers),
            content_type: None
        })
-   }).await;
+   });
 
    app.run().await
 }

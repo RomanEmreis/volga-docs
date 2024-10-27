@@ -15,7 +15,7 @@ async fn main() -> std::io::Result<()> {
         let id = params.get("name").unwrap();
 
         Results::text(&format!("Hello {name}!"))
-    }).await;
+    });
 
     app.run().await
 }
@@ -45,7 +45,7 @@ async fn main() -> std::io::Result<()> {
         let descr = params.get("descr").unwrap();
 
         Results::text(&format!("Hello {descr} {name}!"))
-    }).await;
+    });
 
     app.run().await
 }
@@ -68,7 +68,7 @@ async fn main() -> std::io::Result<()> {
         let descr = request.param("descr")?;
 
         Results::text(&format!("Hello {descr} {name}!"))
-    }).await;
+    });
 
     app.run().await
 }

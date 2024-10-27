@@ -21,7 +21,7 @@ async fn main() -> std::io::Result<()> {
         let params: User = req.payload()?;
 
         Results::text(&format!("Hello {}!", user.name))
-    }).await;
+    });
 
     app.run().await
 }
@@ -56,7 +56,7 @@ async fn main() -> std::io::Result<()> {
         };
 
         Results::json(&user)
-    }).await;
+    });
 
     app.run().await
 }

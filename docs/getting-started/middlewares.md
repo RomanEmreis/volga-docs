@@ -22,7 +22,7 @@ async fn main() -> std::io::Result<()> {
         // Something can be done after the middleware 2 is completed
 
         response
-    }).await;
+    });
 
     // Middleware 2
     app.use_middleware(|context, next| async move {
@@ -33,12 +33,12 @@ async fn main() -> std::io::Result<()> {
         // Something can be done after the request handler is completed
 
         response
-    }).await;
+    });
     
     // Example of asynchronous request handler
     app.map_get("/hello", |request| async {
         Results::text("Hello World!")
-    }).await;
+    });
     
     app.run().await
 }
@@ -61,18 +61,18 @@ async fn main() -> std::io::Result<()> {
         // Something can be done after the middleware 2 is completed
 
         response
-    }).await;
+    });
 
     // Middleware 2
     app.use_middleware(|context, next| async move {
         Results::not_found()
-    }).await;
+    });
     
     // Example of asynchronous request handler
     app.map_get("/hello", |request| async {
         // This will never executed
         Results::text("Hello World!")
-    }).await;
+    });
     
     app.run().await
 }

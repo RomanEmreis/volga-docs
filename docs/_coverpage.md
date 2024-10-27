@@ -1,6 +1,6 @@
 ![logo](_media/icon.svg)
 
-# Volga <small>0.1.5</small>
+# Volga <small>0.2.0</small>
 
 > Fast & Easy Web Framework for Rust based on Tokio runtime for fun and painless microservices crafting.
 
@@ -21,7 +21,7 @@ async fn main() -> tokio::io::Result<()> {
     // Example of asynchronous request handler
     server.map_get("/hello", |request| async {
         Results::text("Hello World!")
-    }).await;
+    });
     
     server.run().await
 }

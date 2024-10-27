@@ -26,7 +26,7 @@ async fn main() -> std::io::Result<()> {
             // Doing some long-running job...
         }
         Results::text("done")
-    }).await;
+    });
     
     app.run().await
 }
@@ -53,7 +53,7 @@ async fn main() -> std::io::Result<()> {
         }
         
         Results::text("done")
-    }).await;
+    });
     
     app.run().await
 }

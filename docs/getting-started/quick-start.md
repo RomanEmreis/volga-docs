@@ -5,7 +5,7 @@ A basic minimal Web API with Volga.
 First of all, let's add all necessary crates in `Cargo.toml`:
 ```toml
 [dependencies]
-volga = "0.1.11"
+volga = "0.2.0"
 tokio = "1.40.0"
 ```
 Then, in `main.rs`:
@@ -21,7 +21,7 @@ async fn main() -> std::io::Result<()> {
     // Example of asynchronous GET request handler
     server.map_get("/hello", |request| async {
         Results::text("Hello World!")
-    }).await;
+    });
     
     server.run().await
 }
@@ -38,7 +38,7 @@ async fn main() -> std::io::Result<()> {
     // Example of synchronous GET request handler
     app.map_get("/hello", |request| {
         Results::text("Hello World!")
-    }).await;
+    });
     
     app.run().await
 }
@@ -52,7 +52,7 @@ Next, we're mapping a dedicated handler to the specific route, in that case, it'
 ```rust
 app.map_get("/hello", |request| {
     Results::text("Hello World!")
-}).await;
+});
 ```
 It is important to place the mapping before the last line:
 ```rust
