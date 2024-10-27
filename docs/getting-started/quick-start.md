@@ -16,14 +16,14 @@ use volga::{App, Results, AsyncEndpointsMapping};
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     // Start the server
-    let mut server = App::build("localhost:7878").await?;
+    let mut app = App::build("localhost:7878").await?;
 
     // Example of asynchronous GET request handler
-    server.map_get("/hello", |request| async {
+    app.map_get("/hello", |request| async {
         Results::text("Hello World!")
     });
     
-    server.run().await
+    app.run().await
 }
 ```
 The more general and recommended way to use asynchronous versions all the way but if it's redundant for your project you can use the sync version explicitly:

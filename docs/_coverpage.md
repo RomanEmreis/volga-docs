@@ -16,14 +16,14 @@ use volga::{App, Results, AsyncEndpointsMapping};
 #[tokio::main]
 async fn main() -> tokio::io::Result<()> {
     // Start the server
-    let mut server = App::build("127.0.0.1:7878").await?;
+    let mut app = App::build("127.0.0.1:7878").await?;
 
     // Example of asynchronous request handler
-    server.map_get("/hello", |request| async {
+    app.map_get("/hello", |request| async {
         Results::text("Hello World!")
     });
     
-    server.run().await
+    app.run().await
 }
 ```
 
