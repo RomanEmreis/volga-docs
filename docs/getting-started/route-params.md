@@ -55,7 +55,7 @@ Hello beautiful world!
 ```
 Alternative, and in some cases a more convenient way to get the route parameters:
 ```rust
-use volga::{App, AsyncEndpointsMapping, Results, Params};
+use volga::{App, AsyncEndpointsMapping, ok, Params};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -65,7 +65,7 @@ async fn main() -> std::io::Result<()> {
         let name = request.param("name")?;
         let descr = request.param("descr")?;
 
-        Results::text(&format!("Hello {descr} {name}!"))
+        ok!(&format!("Hello {descr} {name}!"))
     });
 
     app.run().await

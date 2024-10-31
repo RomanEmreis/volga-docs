@@ -45,7 +45,7 @@ async fn main() -> std::io::Result<()> {
 ```
 And by doing this the middleware pipeline will be shortcutted at middleware 2 and the request handler will be never executed:
 ```rust
-use volga::{App, Results, AsyncEndpointsMapping, AsyncMiddlewareMapping};
+use volga::{App, ok, AsyncEndpointsMapping, AsyncMiddlewareMapping};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -71,7 +71,7 @@ async fn main() -> std::io::Result<()> {
     // Example of asynchronous request handler
     app.map_get("/hello", |request| async {
         // This will never executed
-        Results::text("Hello World!")
+        ok!()
     });
     
     app.run().await

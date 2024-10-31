@@ -5,7 +5,7 @@ A basic minimal Web API with Volga.
 First of all, let's add all necessary crates in `Cargo.toml`:
 ```toml
 [dependencies]
-volga = "0.2.0"
+volga = "0.2.1"
 tokio = "1.40.0"
 ```
 Then, in `main.rs`:
@@ -54,7 +54,13 @@ app.map_get("/hello", |request| {
     Results::text("Hello World!")
 });
 ```
-It is important to place the mapping before the last line:
+Alternatively, the `ok!` macro could be a more convenient way to respond with text:
+```rust
+app.map_get("/hello", |request| {
+    ok!("Hello World!")
+});
+```
+It is important to place the route mapping before the last line:
 ```rust
 app.run().await
 ```
@@ -85,4 +91,21 @@ That would return something like this:
 <
 * Connection #0 to host localhost left intact
 Hello World!
+```
+Alternative example with the `ok!` macro:
+```rust
+use volga::{App, ok, SyncEndpointsMapping};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    // Start the server
+    let mut app = App::build("localhost:7878").await?;
+    
+    // Example of synchronous GET request handler
+    app.map_get("/hello", |request| {
+        ok!("Hello World!")
+    });
+    
+    app.run().await
+}
 ```

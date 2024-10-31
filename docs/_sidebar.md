@@ -4,6 +4,7 @@
     * [Query parameters](/getting-started/query-params.md)
     * [Headers](/getting-started/headers.md)
     * [JSON Payload](/getting-started/json-payload.md)
+    * [Files](/getting-started/files.md)
     * [Custom Middlewares](/getting-started/middlewares.md)
 
 * **Advanced**

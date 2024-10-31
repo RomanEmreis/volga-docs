@@ -66,3 +66,58 @@ Then the following command will return the JSON:
 > curl http://127.0.0.1:7878/hello
 {"name":"John","age":35}
 ```
+Alternative usage with `ok!` macro which uses the `Results::json()` under the hood:
+```rust
+use volga::{App, AsyncEndpointsMapping, ok, Payload};
+use serde::Serialize;
+ 
+#[derive(Serialize)]
+struct User {
+    name: String,
+    age: i32
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::build("localhost:7878").await?;
+
+    app.map_get("/hello", |req| async move {
+        let user: User = User {
+            name: String::from("John"),
+            age: 35
+        };
+
+        ok!(&user, json)
+    });
+
+    app.run().await
+}
+```
+And with the `status!` macro that works in a similar way:
+```rust
+use volga::{App, AsyncEndpointsMapping, status, Payload};
+use serde::Serialize;
+ 
+#[derive(Serialize)]
+struct User {
+    name: String,
+    age: i32
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::build("localhost:7878").await?;
+
+    app.map_get("/hello", |req| async move {
+        let user: User = User {
+            name: String::from("John"),
+            age: 35
+        };
+
+        status!(200, &user, json)
+    });
+
+    app.run().await
+}
+```
+The JSON body can be used with `200`, `400`, `401` and `403` statuses.
