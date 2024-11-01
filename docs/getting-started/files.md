@@ -9,7 +9,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
     // GET /hello
-    app.map_get("/download", |req| async move {
+    app.map_get("/download", |request| async move {
         let file_name = "example.txt";
         let file_data = b"Hello, this is some file content!".to_vec();
         
@@ -29,7 +29,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
     // GET /hello
-    app.map_get("/download", |req| async move {
+    app.map_get("/download", |request| async move {
         let file_name = "example.txt";
         let file_data = b"Hello, this is some file content!".to_vec();
         
@@ -48,7 +48,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
     // GET /hello
-    app.map_get("/download", |req| async move {
+    app.map_get("/download", |request| async move {
         let file_name = "example.txt";
         let file_data = b"Hello, this is some file content!".to_vec();
         

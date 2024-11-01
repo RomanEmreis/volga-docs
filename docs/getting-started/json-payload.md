@@ -17,8 +17,8 @@ async fn main() -> std::io::Result<()> {
 
     // POST /hello
     // { name: "John", age: 35 }
-    app.map_post("/hello", |req| async move {
-        let params: User = req.payload()?;
+    app.map_post("/hello", |request| async move {
+        let params: User = request.payload()?;
 
         Results::text(&format!("Hello {}!", user.name))
     });
@@ -49,7 +49,7 @@ struct User {
 async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
-    app.map_get("/hello", |req| async move {
+    app.map_get("/hello", |request| async move {
         let user: User = User {
             name: String::from("John"),
             age: 35
@@ -81,7 +81,7 @@ struct User {
 async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
-    app.map_get("/hello", |req| async move {
+    app.map_get("/hello", |request| async move {
         let user: User = User {
             name: String::from("John"),
             age: 35
@@ -108,7 +108,7 @@ struct User {
 async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
-    app.map_get("/hello", |req| async move {
+    app.map_get("/hello", |request| async move {
         let user: User = User {
             name: String::from("John"),
             age: 35
