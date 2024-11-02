@@ -20,7 +20,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 Alternatively it can be used with `file!` or `status!` macros.
-## ok!
+## file!
 ```rust
 use volga::{App, AsyncEndpointsMapping, file};
 
