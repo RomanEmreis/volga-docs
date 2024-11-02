@@ -1,6 +1,6 @@
 ![logo](_media/icon.svg)
 
-# Volga <small>0.2.1</small>
+# Volga <small>0.2.2</small>
 
 > Fast & Easy Web Framework for Rust based on Tokio runtime for fun and painless microservices crafting.
 

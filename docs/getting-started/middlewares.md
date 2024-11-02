@@ -6,7 +6,7 @@ While shortcutting the pipeline can be advantageous, particularly for implementi
 
 Below is an example illustrating how to configure middleware:
 ```rust
-use volga::{App, Results, AsyncEndpointsMapping, AsyncMiddlewareMapping};
+use volga::{App, ok, AsyncEndpointsMapping, AsyncMiddlewareMapping};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -37,7 +37,7 @@ async fn main() -> std::io::Result<()> {
     
     // Example of asynchronous request handler
     app.map_get("/hello", |request| async {
-        Results::text("Hello World!")
+        ok!("Hello World!")
     });
     
     app.run().await

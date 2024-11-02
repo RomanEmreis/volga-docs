@@ -19,10 +19,10 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-Alternatively it can be used with `ok!` or `status!` macros.
+Alternatively it can be used with `file!` or `status!` macros.
 ## ok!
 ```rust
-use volga::{App, AsyncEndpointsMapping, ok};
+use volga::{App, AsyncEndpointsMapping, file};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -33,7 +33,7 @@ async fn main() -> std::io::Result<()> {
         let file_name = "example.txt";
         let file_data = b"Hello, this is some file content!".to_vec();
         
-        ok!(file_name, file_data, file)
+        file!(file_name, file_data)
     });
 
     app.run().await
@@ -52,7 +52,7 @@ async fn main() -> std::io::Result<()> {
         let file_name = "example.txt";
         let file_data = b"Hello, this is some file content!".to_vec();
         
-        status!(200, file_name, file_data, file)
+        status!(200, file_name, file_data)
     });
 
     app.run().await

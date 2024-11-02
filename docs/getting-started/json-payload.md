@@ -87,7 +87,7 @@ async fn main() -> std::io::Result<()> {
             age: 35
         };
 
-        ok!(&user, json)
+        ok!(&user)
     });
 
     app.run().await
@@ -114,7 +114,7 @@ async fn main() -> std::io::Result<()> {
             age: 35
         };
 
-        status!(200, &user, json)
+        status!(200, &user)
     });
 
     app.run().await
