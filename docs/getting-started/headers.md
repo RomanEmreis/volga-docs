@@ -40,7 +40,7 @@ async fn main() -> std::io::Result<()> {
        headers.insert(String::from("x-api-key"), String::from("some api key"));
        
        Results::from(ResponseContext {
-           content: Box::new(String::from("Hello World!")),
+           content: String::from("Hello World!"),
            headers: Some(headers),
            content_type: None
        })
@@ -79,4 +79,45 @@ and the result will be like this:
 <
 * Connection #0 to host localhost left intact
 Hello World!
+```
+## headers! and ok!
+However, there is a more convenient way to deal with headers using `headers!` or `ok!` macro that is a syntax sugar for the code above.
+```rust
+use volga::{App, AsyncEndpointsMapping, Results, headers, ResponseContext};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+   let mut app = App::build("localhost:7878").await?;
+
+   app.map_get("/hello", |request| async move {
+       let mut headers = headers![
+           ("x-api-key", "some api key")
+       ];
+
+       Results::from(ResponseContext {
+           content: "Hello World!",
+           headers: Some(headers),
+           content_type: None
+       })
+   });
+
+   app.run().await
+}
+```
+Or if we do not need to specify the `content_type` we can simply do this using `ok!` macro:
+```rust
+use volga::{App, AsyncEndpointsMapping, ok};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+   let mut app = App::build("localhost:7878").await?;
+
+   app.map_get("/hello", |request| async move {
+       ok!("Hello World!", [
+           ("x-api-key", "some api key")
+       ])
+   });
+
+   app.run().await
+}
 ```
