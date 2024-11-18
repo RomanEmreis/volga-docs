@@ -32,6 +32,7 @@ curl -X POST "http://127.0.0.1:7878/hello" -H "Content-Type: application/json" -
 Hello John!
 ```
 !> Reading JSON payload only works with asynchronous request handlers.
+
 !> To use the JSON deserialization/serialization it is required to install also [serde](https://crates.io/crates/serde_json/).
 
 To respond with JSON body the `Results::from()` method can be used which has been described earlier and the struct instance passed will be automatically serialized to JSON. 

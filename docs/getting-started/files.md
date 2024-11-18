@@ -63,7 +63,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 ## Upload files
-To upload a file the `request.body()` can be used to stream the file bytes into a file:
+To upload a file the `to_file()` method from `volga::File` trait can be used to stream the bytes into a file efficiently:
 ```rust
 use volga::{App, AsyncEndpointsMapping, ok, File};
 
