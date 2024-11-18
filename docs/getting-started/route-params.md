@@ -2,7 +2,7 @@
 
 Volga supports a rich routing configuration that can be configured by a pattern when mapping a request handler. Calling the `params()` method allows to access all the request parameters `HashMap` collection:
 ```rust
-use volga::{App, AsyncEndpointsMapping, Results, Params};
+use volga::{App, AsyncEndpointsMapping, Params, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -12,7 +12,7 @@ async fn main() -> std::io::Result<()> {
         let params = request.params().unwrap();
         let name = params.get("name").unwrap();
 
-        Results::text(&format!("Hello {name}!"))
+        ok!("Hello {name}!")
     });
 
     app.run().await
@@ -31,7 +31,7 @@ Hello sun!
 ```
 You can also configure multiple parameters:
 ```rust
-use volga::{App, AsyncEndpointsMapping, Results, Params};
+use volga::{App, AsyncEndpointsMapping, Params, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -42,7 +42,7 @@ async fn main() -> std::io::Result<()> {
         let name = params.get("name").unwrap();
         let descr = params.get("descr").unwrap();
 
-        Results::text(&format!("Hello {descr} {name}!"))
+        ok!("Hello {descr} {name}!")
     });
 
     app.run().await
@@ -55,7 +55,7 @@ Hello beautiful world!
 ```
 Alternative, and in some cases a more convenient way to get the route parameters:
 ```rust
-use volga::{App, AsyncEndpointsMapping, ok, Params};
+use volga::{App, AsyncEndpointsMapping, Params, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -65,7 +65,7 @@ async fn main() -> std::io::Result<()> {
         let name = request.param("name")?;
         let descr = request.param("descr")?;
 
-        ok!(&format!("Hello {descr} {name}!"))
+        ok!("Hello {descr} {name}!")
     });
 
     app.run().await

@@ -1,8 +1,8 @@
 ![logo](_media/icon.svg)
 
-# Volga <small>0.2.2</small>
+# Volga <small>0.3.0</small>
 
-> Fast & Easy Web Framework for Rust based on Tokio runtime for fun and painless microservices crafting.
+Fast, Easy, and very flexible Web Framework for Rust based on [Tokio](https://tokio.rs/) runtime and [hyper](https://hyper.rs/) for fun and painless microservices crafting.
 
 - Supports HTTP/1.x
 - Robust routing
@@ -11,16 +11,17 @@
 - Runs on stable Rust 1.80+
 
 ```rust
-use volga::{App, AsyncEndpointsMapping, ok};
+use volga::{App, ok, AsyncEndpointsMapping, Params};
 
 #[tokio::main]
-async fn main() -> tokio::io::Result<()> {
+async fn main() -> std::io::Result<()> {
     // Start the server
     let mut app = App::build("127.0.0.1:7878").await?;
 
     // Example of asynchronous request handler
-    app.map_get("/hello", |request| async {
-        ok!("Hello World!")
+    app.map_get("/hello/{name}", |req| async {
+        let name = req.param("name")?;
+        ok!("Hello {}!", name)
     });
     
     app.run().await

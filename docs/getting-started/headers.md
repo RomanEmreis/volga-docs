@@ -4,7 +4,7 @@ Volga supports both reading request headers and writing response headers.
 
 If you need to read a request header you can call a `headers()` method that returns a `HashMap` collection of all the request headers:
 ```rust
-use volga::{App, AsyncEndpointsMapping, Results, Params};
+use volga::{App, AsyncEndpointsMapping, Params, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -13,7 +13,7 @@ async fn main() -> std::io::Result<()> {
     app.map_get("/hello", |request| async move {
         let api_key = request.headers().get("x-api-key").unwrap();
 
-        Results::text(&format!("The api-key is: {:?}", api_key))
+        ok!("The api-key is: {:?}", api_key)
     });
 
     app.run().await
@@ -40,18 +40,21 @@ async fn main() -> std::io::Result<()> {
        headers.insert(String::from("x-api-key"), String::from("some api key"));
        
        Results::from(ResponseContext {
+           status: 200,
            content: String::from("Hello World!"),
-           headers: Some(headers),
-           content_type: None
+           headers
        })
    });
 
    app.run().await
 }
 ```
-Here we need to use the `ResponseContext` struct that allows us to customize the response with specific Headers and Content-Type.
+Here we need to use the `ResponseContext` struct that allows us to customize the response with specific headers, status or content type.
 
-Both `headers` and `content_type` fields are of `Option<T>` type, So if we only need to specify one of them, like in the example above we assign the `headers`, so the `content_type` can be `None`. In that case, it will be the `text/plain` by default. If we need an explicit Content-Type, we can set it as `Some(mime::TEXT_PLAIN)` or anything else.
+Both `headers` and `status` fields are requred. If the "Content-Type" header is not persisted in the `headers` map the `application/json` content type will be used by default. To use the specific one you can just add it explicitly:
+```rust
+headers.insert(String::from("Content-Type"), String::from("text/plain"));
+```
 
 Then we can run the following command:
 ```bash
@@ -91,20 +94,21 @@ async fn main() -> std::io::Result<()> {
 
    app.map_get("/hello", |request| async move {
        let mut headers = headers![
-           ("x-api-key", "some api key")
+           ("x-api-key", "some api key"),
+           ("Content-Type", "text/plain")
        ];
 
        Results::from(ResponseContext {
+           status: 200
            content: "Hello World!",
-           headers: Some(headers),
-           content_type: None
+           headers
        })
    });
 
    app.run().await
 }
 ```
-Or if we do not need to specify the `content_type` we can simply do this using `ok!` macro:
+Or we can simply combine this with the `ok!` macro:
 ```rust
 use volga::{App, AsyncEndpointsMapping, ok};
 
@@ -114,7 +118,8 @@ async fn main() -> std::io::Result<()> {
 
    app.map_get("/hello", |request| async move {
        ok!("Hello World!", [
-           ("x-api-key", "some api key")
+           ("x-api-key", "some api key"),
+           ("Content-Type", "text/plain")
        ])
    });
 

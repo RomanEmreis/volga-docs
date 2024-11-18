@@ -4,7 +4,7 @@ The request's query parameters can be extracted in the same way as the route par
 
 This is how we can access them:
 ```rust
-use volga::{App, AsyncEndpointsMapping, Results, Params};
+use volga::{App, AsyncEndpointsMapping, Params, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -14,7 +14,7 @@ async fn main() -> std::io::Result<()> {
         let params = request.params().unwrap();
         let id = params.get("name").unwrap();
 
-        Results::text(&format!("Hello {name}!"))
+        ok!("Hello {name}!")
     });
 
     app.run().await
@@ -33,7 +33,7 @@ Hello sun!
 ```
 Similar idea if it is required to apply multiple query parameters:
 ```rust
-use volga::{App, AsyncEndpointsMapping, Results, Params};
+use volga::{App, AsyncEndpointsMapping, Params, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -44,7 +44,7 @@ async fn main() -> std::io::Result<()> {
         let name = params.get("name").unwrap();
         let descr = params.get("descr").unwrap();
 
-        Results::text(&format!("Hello {descr} {name}!"))
+        ok!("Hello {descr} {name}!")
     });
 
     app.run().await
@@ -57,7 +57,7 @@ Hello beautiful world!
 ```
 For convenience, similar to getting the route parameters, we can use the same approach to get the query ones:
 ```rust
-use volga::{App, AsyncEndpointsMapping, ok, Params};
+use volga::{App, AsyncEndpointsMapping, Params, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -67,7 +67,7 @@ async fn main() -> std::io::Result<()> {
         let name = request.param("name")?;
         let descr = request.param("descr")?;
 
-        ok!(&format!("Hello {descr} {name}!"))
+        ok!("Hello {descr} {name}!")
     });
 
     app.run().await
