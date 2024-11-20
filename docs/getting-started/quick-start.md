@@ -5,7 +5,7 @@ A basic minimal Web API with Volga.
 First of all, let's add all necessary crates in `Cargo.toml`:
 ```toml
 [dependencies]
-volga = "0.3.0"
+volga = "0.3.1"
 tokio = "1.41.1"
 ```
 Then, in `main.rs`:
@@ -27,6 +27,13 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 The more general and recommended way to use asynchronous versions all the way but if it's redundant for your project you can use the sync version explicitly:
+Enable the `sync` feature first:
+```toml
+[dependencies]
+volga = { version = "0.3.1", features = ["default", "sync"] }
+tokio = "1.41.1"
+```
+and then:
 ```rust
 use volga::{App, Results, SyncEndpointsMapping};
 

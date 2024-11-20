@@ -1,10 +1,10 @@
 ![logo](_media/icon.svg)
 
-# Volga <small>0.3.0</small>
+# Volga <small>0.3.1</small>
 
 Fast, Easy, and very flexible Web Framework for Rust based on [Tokio](https://tokio.rs/) runtime and [hyper](https://hyper.rs/) for fun and painless microservices crafting.
 
-- Supports HTTP/1.x
+- Supports HTTP/1 and HTTP/2
 - Robust routing
 - Custom middlewares
 - Full Tokio compatibility
