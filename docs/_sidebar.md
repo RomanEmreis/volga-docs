@@ -9,3 +9,5 @@
 
 * **Advanced**
     * [Request cancellation](/advanced/cancellation.md)
+    * [HTTP/1 and HTTP/2](/advanced/http.md)
+    * [Minimal API](/advanced/mini.md)
