@@ -1,14 +1,18 @@
-# Quick start
+# Quick Start
 
-A basic minimal Web API with Volga.
+Build a basic Web API using Volga.
 
-First of all, let's add all necessary crates in `Cargo.toml`:
+## Prerequisites
+
+Ensure you have the following dependencies in your `Cargo.toml`:
+
 ```toml
 [dependencies]
-volga = "0.3.1"
+volga = "0.3.2"
 tokio = "1.41.1"
 ```
-Then, in `main.rs`:
+## Setup
+Create your main application in `main.rs`:
 
 ```rust
 use volga::{App, Results, AsyncEndpointsMapping};
@@ -26,14 +30,15 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-The more general and recommended way to use asynchronous versions all the way but if it's redundant for your project you can use the sync version explicitly:
+## Using Synchronous Handlers
+The more general and recommended way to use asynchronous versions all the way, however, if it's redundant for your project you can use the sync version explicitly.
+
 Enable the `sync` feature first:
 ```toml
 [dependencies]
 volga = { version = "0.3.1", features = ["default", "sync"] }
-tokio = "1.41.1"
 ```
-and then:
+Then adjust `main.rs` as follows:
 ```rust
 use volga::{App, Results, SyncEndpointsMapping};
 
@@ -50,34 +55,34 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-Let's take a look at the code in detail.
-The first line creates an instance of the `App` struct representing our API and bounds it to the specified address.
+## Detailed Walkthrough
+When the `App` struct is instantiated, it represents your API and binds to the specified address:
 ```rust
 let mut app = App::build("localhost:7878").await?;
 ```
-Next, we're mapping a dedicated handler to the specific route, in that case, it's the `GET http://localhost7878/hello`:
+Next, map a specific handler to a route. For instance, mapping our handler to `GET http://localhost:7878/hello`:
 ```rust
 app.map_get("/hello", |request| {
     Results::text("Hello World!")
 });
 ```
-Alternatively, the `ok!` macro could be a more convenient way to respond with text:
+Or just use the `ok!` macro for a simplified text response:
 ```rust
 app.map_get("/hello", |request| {
     ok!("Hello World!")
 });
 ```
-It is important to place the route mapping before the last line:
+Ensure routes are mapped before you start the server with:
 ```rust
 app.run().await
 ```
-That runs the server and starts listening for HTTP requests.
+## Testing the API
 
-Lastly we can test our API using, for example, the `curl` command:
+You can test your API using the `curl` command:
 ```bash
 > curl -v "http://localhost:7878/hello"
 ```
-That would return something like this:
+Response expected:
 ```bash
 * Host localhost:7878 was resolved.
 * IPv6: ::1
@@ -99,20 +104,4 @@ That would return something like this:
 * Connection #0 to host localhost left intact
 Hello World!
 ```
-Alternative example with the `ok!` macro:
-```rust
-use volga::{App, ok, SyncEndpointsMapping};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    // Start the server
-    let mut app = App::build("localhost:7878").await?;
-    
-    // Example of synchronous GET request handler
-    app.map_get("/hello", |request| {
-        ok!("Hello World!")
-    });
-    
-    app.run().await
-}
-```
+You can also check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/hello_world.rs)

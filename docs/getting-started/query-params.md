@@ -1,8 +1,10 @@
-# Query parameters
+# Query Parameters
 
-The request's query parameters can be extracted in the same way as the route parameters. They live in the same `HashMap` collection and cannot share the names. If the query parameter appears to have the same name as the route parameter, it will be overwritten by the value from the route parameter.
+Volga supports extraction of query parameters similarly to route parameters. However, keep in mind that query parameters, which share names with route parameters, will be overwritten by the route parameters values in the same `HashMap` collection.
 
-This is how we can access them:
+## Access Query Parameters
+
+To demonstrate how to access query parameters, consider the following example:
 ```rust
 use volga::{App, AsyncEndpointsMapping, Params, ok};
 
@@ -11,16 +13,19 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
     app.map_get("/hello", |request| async move {
+        // Get parameters from the request
         let params = request.params().unwrap();
-        let id = params.get("name").unwrap();
+        // Access the 'name' parameter
+        let name = params.get("name").unwrap();
 
-        ok!("Hello {name}!")
+        ok!("Hello {}!", name)
     });
 
     app.run().await
 }
 ```
-And if we run this code and try to make some requests, it will return the following:
+## Testing the API with Query Parameters
+You can test the API by making requests with query parameters:
 ```bash
 > curl http://localhost:7878/hello?name=world
 Hello world!
@@ -31,7 +36,8 @@ Hello earth!
 > curl http://localhost:7878/hello?name=sun
 Hello sun!
 ```
-Similar idea if it is required to apply multiple query parameters:
+## Handling Multiple Query Parameters
+For APIs that require multiple query parameters, you can set them up similarly:
 ```rust
 use volga::{App, AsyncEndpointsMapping, Params, ok};
 
@@ -40,22 +46,27 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
     app.map_get("/hello", |request| async move {
+        // Get parameters from the request
         let params = request.params().unwrap();
+
+        // Access the 'name' parameter
         let name = params.get("name").unwrap();
+        // Access the 'descr' parameter
         let descr = params.get("descr").unwrap();
 
-        ok!("Hello {descr} {name}!")
+        ok!("Hello {} {}!", descr, name)
     });
 
     app.run().await
 }
 ```
-And the if you run this command, it will return this result:
+Testing this with multiple query parameters will yield:
 ```bash
 > curl "http://localhost:7878/hello?descr=beautiful&name=world"
 Hello beautiful world!
 ```
-For convenience, similar to getting the route parameters, we can use the same approach to get the query ones:
+## Direct Access to Query Parameters
+To directly access query parameters, bypassing the need to unwrap the `HashMap`, you can use the `param()` or `param_str()` methods as shown:
 ```rust
 use volga::{App, AsyncEndpointsMapping, Params, ok};
 
@@ -63,13 +74,21 @@ use volga::{App, AsyncEndpointsMapping, Params, ok};
 async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
+    // GET /hello?name=John&age=35
     app.map_get("/hello", |request| async move {
-        let name = request.param("name")?;
-        let descr = request.param("descr")?;
+        // Access the 'name' parameter
+        let name: &str = request.param_str("name")?;
+        // Access the 'age' parameter
+        let age: i32 = request.param("age")?;
 
-        ok!("Hello {descr} {name}!")
+        ok!("Hello {}! You're age is: {}!", name, age)
     });
 
     app.run().await
 }
 ```
+By using `param()` `param_str()`, you can avoid dealing with potential `None` values directly, streamlining your code and managing error responses more effectively.
+
+This guide should provide you with the tools needed to efficiently utilize query parameters in your Volga-based web applications.
+
+You can check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/query_params.rs)

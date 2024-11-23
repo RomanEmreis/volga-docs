@@ -1,8 +1,10 @@
 # Headers
 
-Volga supports both reading request headers and writing response headers. 
+Volga makes it possible to easily manage HTTP headers, both for reading from requests and writing to responses.
 
-If you need to read a request header you can call a `headers()` method that returns a `HashMap` collection of all the request headers:
+## Reading Request Headers
+
+To read headers from an incoming request, you can call the `headers()` method, which returns a `HashMap` containing all the headers:
 ```rust
 use volga::{App, AsyncEndpointsMapping, Params, ok};
 
@@ -11,7 +13,10 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::build("localhost:7878").await?;
 
     app.map_get("/hello", |request| async move {
-        let api_key = request.headers().get("x-api-key").unwrap();
+        let api_key = request
+            .headers()
+            .get("x-api-key")
+            .unwrap_or_else(|| "No API key provided");
 
         ok!("The api-key is: {:?}", api_key)
     });
@@ -19,12 +24,13 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-And then you can run the following command to test it:
+You can test this by sending a request with the `curl`:
 ```bash
 > curl "http://127.0.0.1:7878/health" -H "x-api-key: test"
 The api-key is: "test"
 ```
-To add your custom headers, you need to create a new `HashMap` and insert all the keyvalues whatever you want:
+## Writing Response Headers
+To add custom headers to your response, create a new HashMap, populate it with your headers, and pass it to `ResponseContext`:
 ```rust
 use volga::{App, AsyncEndpointsMapping, Results, ResponseContext};
 use std::collections::HashMap;
@@ -36,8 +42,9 @@ async fn main() -> std::io::Result<()> {
    app.map_get("/hello", |request| async move {
        let mut headers = HashMap::new();
 
-       // Insert a custom header
+       // Insert custom headers
        headers.insert(String::from("x-api-key"), String::from("some api key"));
+       headers.insert(String::from("Content-Type"), String::from("text/plain"));
        
        Results::from(ResponseContext {
            status: 200,
@@ -49,18 +56,17 @@ async fn main() -> std::io::Result<()> {
    app.run().await
 }
 ```
-Here we need to use the `ResponseContext` struct that allows us to customize the response with specific headers, status or content type.
+Here we need to use the `ResponseContext` struct that allows us to customize the response with specific headers or status.
 
-Both `headers` and `status` fields are requred. If the "Content-Type" header is not persisted in the `headers` map the `application/json` content type will be used by default. To use the specific one you can just add it explicitly:
+Both `headers` and `status` fields are requred. If the **Content-Type** header is not persisted in the `headers` the `application/json` content type will be used by default. To use the specific one you can just add it explicitly:
 ```rust
 headers.insert(String::from("Content-Type"), String::from("text/plain"));
 ```
-
-Then we can run the following command:
+Execute the following `curl` command to see the headers in action::
 ```bash
 > curl -v "http://127.0.0.1:7878/health"
 ```
-and the result will be like this:
+The response will include your custom headers:
 ```bash
 * Host localhost:7878 was resolved.
 * IPv6: ::1
@@ -76,15 +82,15 @@ and the result will be like this:
 < HTTP/1.1 200 OK
 < date: Sun, 6 Oct 2024 08:22:17 +0000
 < server: Volga
-< content-length: 14
+< content-length: 12
 < content-type: text/plain
 < x-api-key: some api key
 <
 * Connection #0 to host localhost left intact
 Hello World!
 ```
-## headers! and ok!
-However, there is a more convenient way to deal with headers using `headers!` or `ok!` macro that is a syntax sugar for the code above.
+## Simplifying Header Handling with `headers!` and `ok!`
+Volga also provides macros, such as `headers!` and `ok!`, which streamline the process of setting headers:
 ```rust
 use volga::{App, AsyncEndpointsMapping, Results, headers, ResponseContext};
 
@@ -108,7 +114,7 @@ async fn main() -> std::io::Result<()> {
    app.run().await
 }
 ```
-Or we can simply combine this with the `ok!` macro:
+Or we can combine them with the `ok!` macro to make this even simpler:
 ```rust
 use volga::{App, AsyncEndpointsMapping, ok};
 
@@ -118,11 +124,14 @@ async fn main() -> std::io::Result<()> {
 
    app.map_get("/hello", |request| async move {
        ok!("Hello World!", [
-           ("x-api-key", "some api key"),
-           ("Content-Type", "text/plain")
+           ("Content-Type", "text/plain"),
+           ("x-api-key", "some api key")
        ])
    });
 
    app.run().await
 }
 ```
+This approach combines response content and headers succinctly, making your code more readable and maintainable.
+
+Check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/headers.rs)

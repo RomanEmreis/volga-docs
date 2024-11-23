@@ -1,10 +1,18 @@
-# Custom middleware
+# Custom Middleware
 
-Volga features a middleware pipeline in which middleware functions are sequentially called, culminating in the request handler.
-To ensure this behavior, a special closure named `next` must be invoked within each middleware; otherwise to do so will result in the pipeline being shortcutted. 
-While shortcutting the pipeline can be advantageous, particularly for implementing request filters, the presence of the next closure also provides greater control, enabling the execution of specific code before or after subsequent middleware functions. 
+Volga framework features a flexible middleware pipeline that allows you to process and modify HTTP requests and responses sequentially through middleware functions before reaching the final request handler.
 
-Below is an example illustrating how to configure middleware:
+## Overview of Middleware Behavior
+
+Each middleware function in the pipeline must explicitly call a `next` closure to pass control to the next middleware or the request handler. Failing to invoke `next` results in shortcutting the rest of the pipeline, which can be useful for handling specific conditions before reaching further processing stages.
+
+Having the ability to call the `next` closure gives you extensive control over the execution flow, enabling you to run code before or after subsequent middleware functions or the request handler.
+
+## Configuring Middleware
+
+### Example: Sequential Middleware Execution
+
+Here’s a practical example of how to configure sequential middleware in Volga:
 ```rust
 use volga::{App, ok, AsyncEndpointsMapping, AsyncMiddlewareMapping};
 
@@ -16,10 +24,12 @@ async fn main() -> std::io::Result<()> {
     // Middleware 1
     app.use_middleware(|context, next| async move {
         // Something can be done before the middleware 2
+        println!("Before Middleware 2");
 
         let response = next(context).await;
 
         // Something can be done after the middleware 2 is completed
+        println!("After Middleware 2");
 
         response
     });
@@ -27,10 +37,12 @@ async fn main() -> std::io::Result<()> {
     // Middleware 2
     app.use_middleware(|context, next| async move {
         // Something can be done before the request handler
+        println!("Before Request Handler");
 
         let response = next(context).await;
 
         // Something can be done after the request handler is completed
+        println!("After Request Handler");
 
         response
     });
@@ -43,9 +55,10 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-And by doing this the middleware pipeline will be shortcutted at middleware 2 and the request handler will be never executed:
+### Example: Middleware Short-Cutting Pipeline
+The following example demonstrates how to shortcut the middleware pipeline to prevent the request handler from being executed. This approach can be particularly useful for implementing authorization filters or pre-request validations that may terminate the request early:
 ```rust
-use volga::{App, ok, AsyncEndpointsMapping, AsyncMiddlewareMapping};
+use volga::{App, ok, status, AsyncEndpointsMapping, AsyncMiddlewareMapping};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -55,17 +68,20 @@ async fn main() -> std::io::Result<()> {
     // Middleware 1
     app.use_middleware(|context, next| async move {
         // Something can be done before the middleware 2
+        println!("Processed by Middleware 1");
 
         let response = next(context).await;
 
         // Something can be done after the middleware 2 is completed
+        println!("Back in Middleware 1");
 
         response
     });
 
     // Middleware 2
     app.use_middleware(|context, next| async move {
-        Results::not_found()
+        // Directly returns without calling 'next', shortcutting the pipeline
+        status!(400)
     });
     
     // Example of asynchronous request handler
@@ -77,3 +93,5 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
+
+Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/middleware.rs).

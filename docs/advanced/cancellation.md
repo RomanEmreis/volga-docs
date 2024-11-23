@@ -6,7 +6,7 @@ This is how it can be used:
 
 ```rust
 use std::time::Duration;
-use volga::{App, Results, AsyncEndpointsMapping, Cancel};
+use volga::{App, ok, AsyncEndpointsMapping, Cancel};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -25,7 +25,8 @@ async fn main() -> std::io::Result<()> {
 
             // Doing some long-running job...
         }
-        Results::text("done")
+
+        ok!("done")
     });
     
     app.run().await
@@ -34,7 +35,7 @@ async fn main() -> std::io::Result<()> {
 More robust version with using `tokio::select!`:
 ```rust
 use std::time::Duration;
-use volga::{App, Results, AsyncEndpointsMapping, Cancel};
+use volga::{App, ok, AsyncEndpointsMapping, Cancel};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -52,7 +53,7 @@ async fn main() -> std::io::Result<()> {
             result = long_running_task() => ()
         }
         
-        Results::text("done")
+        ok!("done")
     });
     
     app.run().await

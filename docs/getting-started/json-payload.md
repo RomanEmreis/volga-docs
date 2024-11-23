@@ -1,6 +1,10 @@
-# JSON payload
+# Handling JSON
 
-To configure a `POST` request that takes a JSON body and then deserializes it to strongly typed struct, we can use the `payload<T>()` method:
+Volga simplifies the process of dealing with JSON data in your web applications, both for ingesting incoming JSON payloads in `POST` requests and sending JSON responses.
+
+## Receiving JSON Data
+To accept a JSON body in a `POST` request and deserialize it into a strongly-typed struct, use the `payload<T>()` method. First, ensure your struct derives from `Deserialize`:
+
 ```rust
 use volga::{App, AsyncEndpointsMapping, Payload, ok};
 use serde::Deserialize;
@@ -26,17 +30,21 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-And then to run the following command:
+To test this endpoint, you can use the `curl` command like this:
 ```bash
 curl -X POST "http://127.0.0.1:7878/hello" -H "Content-Type: application/json" -d "{ "name": "John", "age": 35 }"
 Hello John!
 ```
-!> Reading JSON payload only works with asynchronous request handlers.
 
-!> To use the JSON deserialization/serialization it is required to install also [serde](https://crates.io/crates/serde_json/).
+!> To use JSON deserialization, you'll need to add [`serde`](https://crates.io/crates/serde) as a dependency in your project.
+## Sending JSON Responses
+To send responses as JSON, Volga provides a couple of convenient methods:
 
-To respond with JSON body the `Results::from()` method can be used which has been described earlier and the struct instance passed will be automatically serialized to JSON. 
-However, if we don't need custom headers or any specific Content-Type, the more convenient way could be using a dedicated method `Results::json()`:
+### Using Results::from()
+The `Results::from()` method can be used which has been described earlier and the struct instance passed will be automatically serialized to JSON.
+
+### Using Results::json()
+This method directly serializes Rust structs into JSON output. Ensure your struct implements Serialize:
 ```rust
 use volga::{App, AsyncEndpointsMapping, Results, Payload};
 use serde::Serialize;
@@ -63,12 +71,13 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-Then the following command will return the JSON:
+To see the JSON response in action:
 ```bash
 > curl http://127.0.0.1:7878/hello
 {"name":"John","age":35}
 ```
-Alternative usage with `ok!` macro which uses the `Results::json()` under the hood:
+### Simplified Version with ok! Macro
+For a more streamlined approach, the `ok!` macro automatically uses `Results::json()` under the hood when passing a serializable object:
 ```rust
 use volga::{App, AsyncEndpointsMapping, ok, Payload};
 use serde::Serialize;
@@ -95,7 +104,8 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-And with the `status!` macro that works in a similar way:
+### Using Status with JSON
+You can also include HTTP status codes in your JSON responses using the `status!` macro:
 ```rust
 use volga::{App, AsyncEndpointsMapping, status, Payload};
 use serde::Serialize;
@@ -122,4 +132,6 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-The JSON body can be used with `200`, `400`, `401` and `403` statuses.
+The JSON body can be coupled with standard HTTP statuses such as `200`, `400`, `401`, `403` and others to provide clear client-side messages.
+
+Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/json.rs)
