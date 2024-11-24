@@ -78,7 +78,7 @@ async fn main() -> std::io::Result<()> {
     // GET /hello/John/35
     app.map_get("/hello/{name}/{age}", |request| async move {
         // Access the 'name' parameter
-        let name: &str = request.param_str("name")?;
+        let name: String = request.param("name")?;
         // Access the 'age' parameter
         let age: u32 = request.param("age")?;
 
