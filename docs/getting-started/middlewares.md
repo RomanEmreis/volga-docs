@@ -4,9 +4,9 @@ Volga framework features a flexible middleware pipeline that allows you to proce
 
 ## Overview of Middleware Behavior
 
-Each middleware function in the pipeline must explicitly call a `next` closure to pass control to the next middleware or the request handler. Failing to invoke `next` results in shortcutting the rest of the pipeline, which can be useful for handling specific conditions before reaching further processing stages.
+Each middleware function in the pipeline must explicitly call a [`next`](https://docs.rs/volga/latest/volga/app/middlewares/type.Next.html) closure to pass control to the next middleware or the request handler. Failing to invoke [`next`](https://docs.rs/volga/latest/volga/app/middlewares/type.Next.html) results in shortcutting the rest of the pipeline, which can be useful for handling specific conditions before reaching further processing stages.
 
-Having the ability to call the `next` closure gives you extensive control over the execution flow, enabling you to run code before or after subsequent middleware functions or the request handler.
+Having the ability to call the [`next`](https://docs.rs/volga/latest/volga/app/middlewares/type.Next.html) closure gives you extensive control over the execution flow, enabling you to run code before or after subsequent middleware functions or the request handler.
 
 ## Configuring Middleware
 
@@ -14,12 +14,12 @@ Having the ability to call the `next` closure gives you extensive control over t
 
 Here’s a practical example of how to configure sequential middleware in Volga:
 ```rust
-use volga::{App, ok, AsyncEndpointsMapping, AsyncMiddlewareMapping};
+use volga::{App, Router, Middleware, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    // Start the server
-    let mut app = App::build("localhost:7878").await?;
+    // Configure the server
+    let mut app = App::new();
 
     // Middleware 1
     app.use_middleware(|context, next| async move {
@@ -47,23 +47,24 @@ async fn main() -> std::io::Result<()> {
         response
     });
     
-    // Example of asynchronous request handler
-    app.map_get("/hello", |request| async {
+    // Example of request handler
+    app.map_get("/hello", || async {
         ok!("Hello World!")
     });
     
+    // Run the server
     app.run().await
 }
 ```
 ### Example: Middleware Short-Cutting Pipeline
 The following example demonstrates how to shortcut the middleware pipeline to prevent the request handler from being executed. This approach can be particularly useful for implementing authorization filters or pre-request validations that may terminate the request early:
 ```rust
-use volga::{App, ok, status, AsyncEndpointsMapping, AsyncMiddlewareMapping};
+use volga::{App, Router, Middleware, ok, status};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    // Start the server
-    let mut app = App::build("localhost:7878").await?;
+    // Configure the server
+    let mut app = App::new();
 
     // Middleware 1
     app.use_middleware(|context, next| async move {
@@ -85,11 +86,12 @@ async fn main() -> std::io::Result<()> {
     });
     
     // Example of asynchronous request handler
-    app.map_get("/hello", |request| async {
+    app.map_get("/hello", || async {
         // This will never executed
         ok!()
     });
     
+    // Run the server
     app.run().await
 }
 ```

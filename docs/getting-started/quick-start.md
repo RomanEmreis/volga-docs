@@ -8,67 +8,42 @@ Ensure you have the following dependencies in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = "0.3.2"
+volga = "0.4.1"
 tokio = "1.41.1"
 ```
 ## Setup
 Create your main application in `main.rs`:
 
 ```rust
-use volga::{App, Results, AsyncEndpointsMapping};
+use volga::{App, Routes, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    // Start the server
-    let mut app = App::build("localhost:7878").await?;
+    // Configure the server
+    let mut app = App::new();
 
-    // Example of asynchronous GET request handler
-    app.map_get("/hello", |request| async {
-        Results::text("Hello World!")
+    // Example of simple GET request handler
+    app.map_get("/hello", || async {
+        ok!("Hello World!")
     });
     
-    app.run().await
-}
-```
-## Using Synchronous Handlers
-The more general and recommended way to use asynchronous versions all the way, however, if it's redundant for your project you can use the sync version explicitly.
-
-Enable the `sync` feature first:
-```toml
-[dependencies]
-volga = { version = "0.3.1", features = ["default", "sync"] }
-```
-Then adjust `main.rs` as follows:
-```rust
-use volga::{App, Results, SyncEndpointsMapping};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    // Start the server
-    let mut app = App::build("localhost:7878").await?;
-    
-    // Example of synchronous GET request handler
-    app.map_get("/hello", |request| {
-        Results::text("Hello World!")
-    });
-    
+    // Run the server
     app.run().await
 }
 ```
 ## Detailed Walkthrough
-When the `App` struct is instantiated, it represents your API and binds to the specified address:
+When the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) struct is instantiated, it represents your API and by default binds it to `http://localhost:7878`:
 ```rust
-let mut app = App::build("localhost:7878").await?;
+let mut app = App::new();
 ```
-Next, map a specific handler to a route. For instance, mapping our handler to `GET http://localhost:7878/hello`:
+Or if you need to bind it to another socket you can use the [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind) method like this:
 ```rust
-app.map_get("/hello", |request| {
-    Results::text("Hello World!")
-});
+// Binds the server to http://localhost:5000
+let mut app = App::new().bind("localhost:5000");
 ```
-Or just use the `ok!` macro for a simplified text response:
+Next, map a specific handler to a route. For instance, mapping our handler to `GET /hello`:
 ```rust
-app.map_get("/hello", |request| {
+app.map_get("/hello", || {
     ok!("Hello World!")
 });
 ```

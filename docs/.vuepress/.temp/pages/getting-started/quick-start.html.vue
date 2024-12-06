@@ -1,0 +1,71 @@
+<template><div><h1 id="quick-start" tabindex="-1"><a class="header-anchor" href="#quick-start"><span>Quick Start</span></a></h1>
+<p>Build a basic Web API using Volga.</p>
+<h2 id="prerequisites" tabindex="-1"><a class="header-anchor" href="#prerequisites"><span>Prerequisites</span></a></h2>
+<p>Ensure you have the following dependencies in your <code v-pre>Cargo.toml</code>:</p>
+<div class="language-toml line-numbers-mode" data-highlighter="prismjs" data-ext="toml" data-title="toml"><pre v-pre><code><span class="line"><span class="token punctuation">[</span><span class="token table class-name">dependencies</span><span class="token punctuation">]</span></span>
+<span class="line"><span class="token key property">volga</span> <span class="token punctuation">=</span> <span class="token string">"0.4.1"</span></span>
+<span class="line"><span class="token key property">tokio</span> <span class="token punctuation">=</span> <span class="token string">"1.41.1"</span></span>
+<span class="line"></span></code></pre>
+<div class="line-numbers" aria-hidden="true" style="counter-reset:line-number 0"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h2 id="setup" tabindex="-1"><a class="header-anchor" href="#setup"><span>Setup</span></a></h2>
+<p>Create your main application in <code v-pre>main.rs</code>:</p>
+<div class="language-rust line-numbers-mode" data-highlighter="prismjs" data-ext="rs" data-title="rs"><pre v-pre><code><span class="line"><span class="token keyword">use</span> <span class="token namespace">volga<span class="token punctuation">::</span></span><span class="token punctuation">{</span><span class="token class-name">App</span><span class="token punctuation">,</span> <span class="token class-name">Routes</span><span class="token punctuation">,</span> ok<span class="token punctuation">}</span><span class="token punctuation">;</span></span>
+<span class="line"></span>
+<span class="line"><span class="token attribute attr-name">#[tokio::main]</span></span>
+<span class="line"><span class="token keyword">async</span> <span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token namespace">std<span class="token punctuation">::</span>io<span class="token punctuation">::</span></span><span class="token class-name">Result</span><span class="token operator">&lt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">></span> <span class="token punctuation">{</span></span>
+<span class="line">    <span class="token comment">// Configure the server</span></span>
+<span class="line">    <span class="token keyword">let</span> <span class="token keyword">mut</span> app <span class="token operator">=</span> <span class="token class-name">App</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></span>
+<span class="line"></span>
+<span class="line">    <span class="token comment">// Example of simple GET request handler</span></span>
+<span class="line">    app<span class="token punctuation">.</span><span class="token function">map_get</span><span class="token punctuation">(</span><span class="token string">"/hello"</span><span class="token punctuation">,</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token closure-punctuation punctuation">|</span></span> <span class="token keyword">async</span> <span class="token punctuation">{</span></span>
+<span class="line">        <span class="token macro property">ok!</span><span class="token punctuation">(</span><span class="token string">"Hello World!"</span><span class="token punctuation">)</span></span>
+<span class="line">    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></span>
+<span class="line">    </span>
+<span class="line">    <span class="token comment">// Run the server</span></span>
+<span class="line">    app<span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token keyword">await</span></span>
+<span class="line"><span class="token punctuation">}</span></span>
+<span class="line"></span></code></pre>
+<div class="line-numbers" aria-hidden="true" style="counter-reset:line-number 0"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h2 id="detailed-walkthrough" tabindex="-1"><a class="header-anchor" href="#detailed-walkthrough"><span>Detailed Walkthrough</span></a></h2>
+<p>When the <a href="https://docs.rs/volga/latest/volga/app/struct.App.html" target="_blank" rel="noopener noreferrer"><code v-pre>App</code></a> struct is instantiated, it represents your API and by default binds it to <code v-pre>http://localhost:7878</code>:</p>
+<div class="language-rust line-numbers-mode" data-highlighter="prismjs" data-ext="rs" data-title="rs"><pre v-pre><code><span class="line"><span class="token keyword">let</span> <span class="token keyword">mut</span> app <span class="token operator">=</span> <span class="token class-name">App</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></span>
+<span class="line"></span></code></pre>
+<div class="line-numbers" aria-hidden="true" style="counter-reset:line-number 0"><div class="line-number"></div></div></div><p>Or if you need to bind it to another socket you can use the <a href="https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind" target="_blank" rel="noopener noreferrer"><code v-pre>bind()</code></a> method like this:</p>
+<div class="language-rust line-numbers-mode" data-highlighter="prismjs" data-ext="rs" data-title="rs"><pre v-pre><code><span class="line"><span class="token comment">// Binds the server to http://localhost:5000</span></span>
+<span class="line"><span class="token keyword">let</span> <span class="token keyword">mut</span> app <span class="token operator">=</span> <span class="token class-name">App</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">bind</span><span class="token punctuation">(</span><span class="token string">"localhost:5000"</span><span class="token punctuation">)</span><span class="token punctuation">;</span></span>
+<span class="line"></span></code></pre>
+<div class="line-numbers" aria-hidden="true" style="counter-reset:line-number 0"><div class="line-number"></div><div class="line-number"></div></div></div><p>Next, map a specific handler to a route. For instance, mapping our handler to <code v-pre>GET /hello</code>:</p>
+<div class="language-rust line-numbers-mode" data-highlighter="prismjs" data-ext="rs" data-title="rs"><pre v-pre><code><span class="line">app<span class="token punctuation">.</span><span class="token function">map_get</span><span class="token punctuation">(</span><span class="token string">"/hello"</span><span class="token punctuation">,</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token closure-punctuation punctuation">|</span></span> <span class="token punctuation">{</span></span>
+<span class="line">    <span class="token macro property">ok!</span><span class="token punctuation">(</span><span class="token string">"Hello World!"</span><span class="token punctuation">)</span></span>
+<span class="line"><span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></span>
+<span class="line"></span></code></pre>
+<div class="line-numbers" aria-hidden="true" style="counter-reset:line-number 0"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>Ensure routes are mapped before you start the server with:</p>
+<div class="language-rust line-numbers-mode" data-highlighter="prismjs" data-ext="rs" data-title="rs"><pre v-pre><code><span class="line">app<span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token keyword">await</span></span>
+<span class="line"></span></code></pre>
+<div class="line-numbers" aria-hidden="true" style="counter-reset:line-number 0"><div class="line-number"></div></div></div><h2 id="testing-the-api" tabindex="-1"><a class="header-anchor" href="#testing-the-api"><span>Testing the API</span></a></h2>
+<p>You can test your API using the <code v-pre>curl</code> command:</p>
+<div class="language-bash line-numbers-mode" data-highlighter="prismjs" data-ext="sh" data-title="sh"><pre v-pre><code><span class="line"><span class="token operator">></span> <span class="token function">curl</span> <span class="token parameter variable">-v</span> <span class="token string">"http://localhost:7878/hello"</span></span>
+<span class="line"></span></code></pre>
+<div class="line-numbers" aria-hidden="true" style="counter-reset:line-number 0"><div class="line-number"></div></div></div><p>Response expected:</p>
+<div class="language-bash line-numbers-mode" data-highlighter="prismjs" data-ext="sh" data-title="sh"><pre v-pre><code><span class="line">* Host localhost:7878 was resolved.</span>
+<span class="line">* IPv6: ::1</span>
+<span class="line">* IPv4: <span class="token number">127.0</span>.0.1</span>
+<span class="line">*   Trying <span class="token punctuation">[</span>::1<span class="token punctuation">]</span>:7878<span class="token punctuation">..</span>.</span>
+<span class="line">* Connected to localhost <span class="token punctuation">(</span>::1<span class="token punctuation">)</span> port <span class="token number">7878</span></span>
+<span class="line"><span class="token operator">></span> GET /hello HTTP/1.1</span>
+<span class="line"><span class="token operator">></span> Host: localhost:7878</span>
+<span class="line"><span class="token operator">></span> User-Agent: curl/8.9.1</span>
+<span class="line"><span class="token operator">></span> Accept: */*</span>
+<span class="line"><span class="token operator">></span></span>
+<span class="line">* Request completely sent off</span>
+<span class="line"><span class="token operator">&lt;</span> HTTP/1.1 <span class="token number">200</span> OK</span>
+<span class="line"><span class="token operator">&lt;</span> date: Sun, <span class="token number">6</span> Oct <span class="token number">2024</span> 08:22:17 +0000</span>
+<span class="line"><span class="token operator">&lt;</span> server: Volga</span>
+<span class="line"><span class="token operator">&lt;</span> content-length: <span class="token number">12</span></span>
+<span class="line"><span class="token operator">&lt;</span> content-type: text/plain</span>
+<span class="line"><span class="token operator">&lt;</span></span>
+<span class="line">* Connection <span class="token comment">#0 to host localhost left intact</span></span>
+<span class="line">Hello World<span class="token operator">!</span></span>
+<span class="line"></span></code></pre>
+<div class="line-numbers" aria-hidden="true" style="counter-reset:line-number 0"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>You can also check out the full example <a href="https://github.com/RomanEmreis/volga/blob/main/examples/hello_world.rs" target="_blank" rel="noopener noreferrer">here</a></p>
+</div></template>
+
+
