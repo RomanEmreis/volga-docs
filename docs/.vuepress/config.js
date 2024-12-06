@@ -29,7 +29,10 @@ export default defineUserConfig({
       },
     ],
     sidebar: [
-      'Home',
+      {
+        text: 'Home',
+        link: '/',
+      },
       {
         text: 'Getting Started',
         prefix: '/getting-started/',
