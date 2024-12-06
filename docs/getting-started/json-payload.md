@@ -34,7 +34,7 @@ curl -X POST "http://127.0.0.1:7878/hello" -H "Content-Type: application/json" -
 Hello John!
 ```
 ::: tip
-You can wrap your struct's fields into [`Option<T>`](https://doc.rust-lang.org/std/option/) as similar as described for [Optional Query Params](/getting-started/query-params.html#handle-optional-params)
+You can wrap your struct's fields into [`Option<T>`](https://doc.rust-lang.org/std/option/) as similar as described for [Optional Query Params](/volga-docs/getting-started/query-params.html#handle-optional-params)
 :::
 
 ## Sending JSON Responses
