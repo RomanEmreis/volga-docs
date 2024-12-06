@@ -8,6 +8,7 @@ export default defineUserConfig({
   lang: 'en-US',
   title: 'Volga',
   description: 'Easy & Fast Web Framework for Rust',
+  base: '/volga-docs/',
   theme: defaultTheme({
     navbar: [
       {
