@@ -17,11 +17,7 @@ export default defineUserConfig({
         link: '/',
       },
       {
-        text: 'crates.io',
-        link: 'https://crates.io/crates/volga',
-      },
-      {
-        text: 'API',
+        text: 'API Docs',
         link: 'https://docs.rs/volga/latest/volga/',
       },
       {
