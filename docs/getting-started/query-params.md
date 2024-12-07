@@ -1,7 +1,7 @@
 # Query Parameters
 
 Volga supports extraction of query parameters into dedicated struct by using [`Query<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/query/struct.Query.html). Where `T` should be either deserializable struct or [`HashMap`](https://doc.rust-lang.org/std/collections/struct.HashMap.html). 
-If you'd like to use a struct, similarly to [`Path<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/path/struct.Path.html) for route params, make sure that you have also [serde](https://crates.io/crates/serde) installed.
+If you'd like to use a struct, similarly to [`Path<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/path/struct.Path.html) for route params, make sure that you also have [serde](https://crates.io/crates/serde) installed.
 
 ## Access Query Parameters
 
@@ -29,13 +29,13 @@ async fn main() -> std::io::Result<()> {
 ## Testing the API with Query Parameters
 You can test the API by making requests with query parameters:
 ```bash
-> curl http://localhost:7878/hello?name=John
+> curl "http://localhost:7878/hello?name=John"
 Hello John!
 
-> curl http://localhost:7878/hello?name=Jane
+> curl "http://localhost:7878/hello?name=Jane"
 Hello Jane!
 
-> curl http://localhost:7878/hello?name=World
+> curl "http://localhost:7878/hello?name=World"
 Hello World!
 ```
 ## Handling Multiple Query Parameters
@@ -69,14 +69,14 @@ Testing this with multiple query parameters will yield:
 Hello John (email: john@email.com)! Your age is: 33
 ```
 ## Handle optional params
-For the example above of we run the `curl` command with ignoring some parameter, e.g. `email` we'll get the `400 BAD REQUEST` response:
+For the example above if we run the `curl` command by ignoring some parameter, e.g. `email` we'll get the `400 BAD REQUEST` response:
 ```bash
 > curl "http://localhost:7878/hello?name=John&age=33"
 
 < HTTP/1.1 400 BAD REQUEST
 Query parsing error: missing field `name`
 ```
-However if we want to keep some of the parameters as optional, we can wrap them in [`Option<T>`](https://doc.rust-lang.org/std/option/) as follows
+However, if we want to keep some of the parameters as optional, we can wrap them in [`Option<T>`](https://doc.rust-lang.org/std/option/) as follows:
 ```rust
 use volga::{App, Router, Query, ok};
 use serde::Deserialize;

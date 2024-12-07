@@ -36,7 +36,7 @@ When the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) struct 
 ```rust
 let mut app = App::new();
 ```
-Or if you need to bind it to another socket you can use the [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind) method like this:
+Or if you need to bind it to another socket, you can use the [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind) method like this:
 ```rust
 // Binds the server to http://localhost:5000
 let mut app = App::new().bind("localhost:5000");

@@ -3,8 +3,7 @@
 Volga simplifies the process of dealing with JSON data in your web applications, both for ingesting incoming JSON payloads in requests and sending JSON responses.
 
 ## Receiving JSON Data
-To accept a JSON body in a request and deserialize it into a strongly-typed entity, use the [`Json<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/json/struct.Json.html) struct. Where `T` should be deserializable struct, so ensure your it derives from [`Deserialize`](https://docs.rs/serde/latest/serde/trait.Deserialize.html) from [serde](https://crates.io/crates/serde):
-
+To accept a JSON body in a request and deserialize it into a strongly-typed entity, use the [`Json<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/json/struct.Json.html) struct. Where `T` should be a deserializable struct, so ensure it derives from [`Deserialize`](https://docs.rs/serde/latest/serde/trait.Deserialize.html) from [serde](https://crates.io/crates/serde):
 ```rust
 use volga::{App, Router, Json, ok};
 use serde::Deserialize;
@@ -34,14 +33,14 @@ curl -X POST "http://127.0.0.1:7878/hello" -H "Content-Type: application/json" -
 Hello John!
 ```
 ::: tip
-You can wrap your struct's fields into [`Option<T>`](https://doc.rust-lang.org/std/option/) as similar as described for [Optional Query Params](/volga-docs/getting-started/query-params.html#handle-optional-params)
+You can wrap your struct fields into [`Option<T>`](https://doc.rust-lang.org/std/option/) as similar as described for [Optional Query Params](/volga-docs/getting-started/query-params.html#handle-optional-params)
 :::
 
 ## Sending JSON Responses
 To send responses as JSON, Volga provides a couple of convenient methods:
 
 ### Using `Results::from()`
-The [`Results::from()`](https://docs.rs/volga/latest/volga/app/results/struct.Results.html#method.from) method can be used which has been described earlier and the struct instance passed will be automatically serialized to JSON.
+The [`Results::from()`](https://docs.rs/volga/latest/volga/app/results/struct.Results.html#method.from) method can be used, which has been described earlier, and the struct instance passed will be automatically serialized to JSON.
 
 ### Using `Results::json()`
 The [`Results::json()`](https://docs.rs/volga/latest/volga/app/results/struct.Results.html#method.json) method directly serializes Rust structs into JSON output. Ensure your struct implements [`Serialize`](https://docs.rs/serde/latest/serde/trait.Serialize.html):

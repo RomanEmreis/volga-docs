@@ -18,7 +18,7 @@ async fn main() -> std::io::Result<()> {
 
     // GET /download
     app.map_get("/download", || async {
-        let file_name = "example.txt";
+        let file_name = "path/to/example.txt";
         let file = File::open(file_name).await?;
         
         Results::file(file_name, file).await
@@ -40,7 +40,7 @@ async fn main() -> std::io::Result<()> {
 
     // GET /download
     app.map_get("/download", || async {
-        let file_name = "example.txt";
+        let file_name = "path/to/example.txt";
         let file = File::open(file_name).await?;
         
         file!(file_name, file)
@@ -63,7 +63,7 @@ async fn main() -> std::io::Result<()> {
 
     // POST /upload
     app.map_post("/upload", |file: File| async move {
-        file.save("example.txt").await?;
+        file.save("path/to/example.txt").await?;
         
         ok!()
     });

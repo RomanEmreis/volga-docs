@@ -61,8 +61,8 @@ async fn long_running_task() {
     }
 }
 ```
-In the example above, when a remote client cancels the request the [`cancellation_token.cancelled()`](https://docs.rs/tokio-util/0.7.13/tokio_util/sync/struct.CancellationToken.html#method.cancelled) will be finished first, and then [`tokio::select!`](https://docs.rs/tokio/latest/tokio/macro.select.html) will cancel the `long_running_task()`.
+In the example above, when a remote client cancels the request, the [`cancellation_token.cancelled()`](https://docs.rs/tokio-util/0.7.13/tokio_util/sync/struct.CancellationToken.html#method.cancelled) will be finished first, and then [`tokio::select!`](https://docs.rs/tokio/latest/tokio/macro.select.html) will cancel the `long_running_task()`.
 
-This feature could help save a lot of computing resources, preventing long-running tasks from running for nothing, while fast small tasks that run faster than 300 ms won't be affected.
+This feature could help save a lot of computing resources, preventing long-running tasks from running for nothing, while fast, small tasks that run faster than 300 ms won't be affected.
 
 [Here](https://docs.rs/tokio-util/latest/tokio_util/sync/struct.CancellationToken.html) you can find some additional information about `CancellationToken`.

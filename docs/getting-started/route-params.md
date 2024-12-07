@@ -1,5 +1,5 @@
 # Route Parameters
-Volga offers robust routing configurations allowing you to harness dynamic routes using parameters. By utilizing the function arguments that implement [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) trait you can pass them directly to your request handler.
+Volga offers robust routing configurations allowing you to harness dynamic routes using parameters. By utilizing the function arguments that implement the [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) trait, you can pass them directly to your request handler.
 
 ## Example: Single Route Parameter
 
@@ -19,17 +19,17 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 ## Testing the Route
-In the curly brackets, we described the `GET` route with a `name` parameter, so if we run requests over the Web API it will call the desired handler and pass an appropriate `name` value as a function argument.
+In the curly brackets, we described the `GET` route with a `name` parameter, so if we run requests over the Web API, it will call the desired handler and pass an appropriate `name` value as a function argument.
 
 Using the `curl` command, you can test the above configuration:
 ```bash
-> curl http://localhost:7878/hello/world
+> curl "http://localhost:7878/hello/world"
 Hello world!
 
-> curl http://localhost:7878/hello/earth
+> curl "http://localhost:7878/hello/earth"
 Hello earth!
 
-> curl http://localhost:7878/hello/sun
+> curl "http://localhost:7878/hello/sun"
 Hello sun!
 ```
 ## Example: Multiple Route Parameters
@@ -54,12 +54,12 @@ When you run the following curl command, it will return:
 Hello beautiful world!
 ```
 ::: warning
-It is important to keep the handler function's arguments order strictly the same as described in the route.
-So for the `hello/{descr}/{name}` it supposed to be `|descr: String, name: String|`.
+It is important to strictly keep the order of the arguments for the handler function as described in the route.
+So for the `hello/{descr}/{name}` it is supposed to be `|descr: String, name: String|`.
 :::
 
 ## Using `Path<T>`
-Alternatively, use the [`Path<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/path/struct.Path.html) to wrap the route parameters into dedicated struct. Where `T` should be either deserializable struct or `HashMap`. Make sure that you have also [serde](https://crates.io/crates/serde) installed:
+Alternatively, use the [`Path<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/path/struct.Path.html) to wrap the route parameters into a dedicated struct. Where `T` should be either deserializable struct or `HashMap`. Make sure that you also have [serde](https://crates.io/crates/serde) installed:
 ```rust
 use volga::{App, Router, Path, ok};
 use serde::Deserialize;

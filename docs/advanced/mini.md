@@ -6,7 +6,7 @@ To leverage a minimal HTTP/1 functionality, you need just:
 [dependencies]
 volga = { version = "0.3.1", features = ["mini"] }
 ```
-And the similar for the HTTP/2
+And similar for the HTTP/2
 ```toml
 [dependencies]
 volga = { version = "0.3.1", features = ["mini2"] }

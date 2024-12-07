@@ -29,7 +29,7 @@ Content-Type: text/plain
 ```
 
 ### Reading a custom HTTP header with `Header<T>`
-If you need to read some custom HTTP header, you can specify a **unit struct** that describes your header and then implement [`FromHeaders`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/trait.FromHeaders.html) trait for it, here is the example of how you can do it:
+If you need to read some custom HTTP header, you can specify a **unit struct** that describes your header and then implement the [`FromHeaders`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/trait.FromHeaders.html) trait for it, here is the example of how you can do it:
 ```rust
 use volga::{App, Router, ok};
 use volga::headers::{Header, FromHeaders, HeaderMap, HeaderValue};
@@ -67,7 +67,7 @@ Now you can test this by running `curl` command:
 Received x-api-key: 123-321
 ```
 ### Using `Headers`
-Same can be achieved also by using [`Headers`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/struct.Headers.html) struct:
+The same can be achieved also by using [`Headers`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/struct.Headers.html) struct:
 ```rust
 use volga::{App, Router, ok};
 use volga::headers::Headers;
@@ -94,7 +94,7 @@ Received x-api-key: 123-321
 ```
 
 ## Writing Response Headers
-To add custom headers to your response, create a new [`HashMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html), populate it with your headers, then wrap it to [`ResponseContext`](https://docs.rs/volga/latest/volga/app/results/struct.ResponseContext.html) and then use the [`Results::from()`](https://docs.rs/volga/latest/volga/app/results/struct.Results.html#method.from) method:
+To add custom headers to your response, create a new [`HashMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html), populate it with your headers, then wrap it into a [`ResponseContext`](https://docs.rs/volga/latest/volga/app/results/struct.ResponseContext.html) and then use the [`Results::from()`](https://docs.rs/volga/latest/volga/app/results/struct.Results.html#method.from) method:
 ```rust
 use std::collections::HashMap;
 use volga::{App, Router, Results, ResponseContext};
@@ -122,7 +122,7 @@ async fn main() -> std::io::Result<()> {
 ```
 Here we need to use the [`ResponseContext`](https://docs.rs/volga/latest/volga/app/results/struct.ResponseContext.html) struct that allows us to customize the response with specific headers or status.
 
-Both `headers` and `status` fields are requred. If the **Content-Type** header is not persisted in the `headers` the `application/json` content type will be used by default. To use the specific one you can just add it explicitly:
+Both `headers` and `status` fields are required. If the **Content-Type** header is not persisted in the `headers` the `application/json` content type will be used by default. To use the specific one, you can just add it explicitly:
 ```rust
 headers.insert(String::from("Content-Type"), String::from("text/plain"));
 ```
