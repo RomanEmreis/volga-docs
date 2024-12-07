@@ -10,6 +10,7 @@ export default defineUserConfig({
   description: 'Easy & Fast Web Framework for Rust',
   base: '/volga-docs/',
   theme: defaultTheme({
+    contributors: false,
     navbar: [
       {
         text: 'Home',
