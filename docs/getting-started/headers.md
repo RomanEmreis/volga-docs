@@ -77,7 +77,7 @@ use volga::headers::{
 
 // Custom headers
 custom_headers! {
-    (ApiKey, "x-api-ke"),
+    (ApiKey, "x-api-key"),
     (CorrelationId, "x-corr-id")
 }
 
