@@ -8,8 +8,8 @@ Ensure you have the following dependencies in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = "0.4.1"
-tokio = "1.41.1"
+volga = "0.4.2"
+tokio = { version = "1", features = ["full"] }
 ```
 ## Setup
 Create your main application in `main.rs`:

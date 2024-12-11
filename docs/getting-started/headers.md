@@ -66,6 +66,37 @@ Now you can test this by running `curl` command:
 > curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321"
 Received x-api-key: 123-321
 ```
+### Simplifying custom headers handling with `custom_headers!` macro
+The code above can be a way simplified by using the [`custom_headers!`](https://docs.rs/volga/0.4.2/volga/app/endpoints/args/headers/macro.custom_headers.html) macro, expecially if you need to add multiple headers:
+```rust
+use volga::{App, Router, ok};
+use volga::headers::{
+    Header,
+    cuctom_headers
+};
+
+// Custom headers
+custom_headers! {
+    (ApiKey, "x-api-ke"),
+    (CorrelationId, "x-corr-id")
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_get("/hello", |api_key: Header<ApiKey>, corr_id: Header<CorrelationId>| async move {
+        ok!("Received x-api-key: {api_key}; correlation-id: {corr_id}")
+    });
+
+    app.run().await
+}
+```
+And then you can test this by running `curl` command:
+```bash
+> curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321" -H "correlation-id: 456-654"
+Received x-api-key: 123-321; correlation-id: 456-654
+```
 ### Using `Headers`
 The same can be achieved also by using [`Headers`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/struct.Headers.html) struct:
 ```rust
@@ -198,4 +229,4 @@ async fn main() -> std::io::Result<()> {
 ```
 This approach combines response content and headers succinctly, making your code more readable and maintainable.
 
-Check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/headers.rs)
+Check out the full examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/headers.rs) and [here](https://github.com/RomanEmreis/volga/blob/main/examples/custom_request_headers.rs)
