@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="generator" content="VuePress 2.0.0-rc.18" />
+    <style>
+      :root {
+        --vp-c-bg: #fff;
+      }
+
+      [data-theme='dark'] {
+        --vp-c-bg: #1b1b1f;
+      }
+
+      html,
+      body {
+        background-color: var(--vp-c-bg);
+      }
+    </style>
+    <script>
+      const userMode = localStorage.getItem('vuepress-color-scheme')
+      const systemDarkMode =
+        'matchMedia' in window
+          ? window.matchMedia('(prefers-color-scheme: dark)').matches
+          : false
+
+      if (userMode === 'light') {
+        document.documentElement.dataset.theme = 'light'
+      } else if (userMode === 'dark' || systemDarkMode) {
+        document.documentElement.dataset.theme = 'dark'
+      }
+    </script>
+    <title>Volga</title><meta name="description" content="Easy & Fast Web Framework for Rust">
+    <link rel="preload" href="/volga-docs/assets/style-DSDzxmQH.css" as="style"><link rel="stylesheet" href="/volga-docs/assets/style-DSDzxmQH.css">
+    <link rel="modulepreload" href="/volga-docs/assets/app-FkcaLdwi.js"><link rel="modulepreload" href="/volga-docs/assets/404.html-BmRhRg6k.js">
+    <link rel="prefetch" href="/volga-docs/assets/index.html-x16CKoC_.js" as="script"><link rel="prefetch" href="/volga-docs/assets/cancellation.html-DjFfSt3G.js" as="script"><link rel="prefetch" href="/volga-docs/assets/http.html-DX2PUGge.js" as="script"><link rel="prefetch" href="/volga-docs/assets/mini.html-Dl8G6Sxf.js" as="script"><link rel="prefetch" href="/volga-docs/assets/files.html-CRoH5Q_5.js" as="script"><link rel="prefetch" href="/volga-docs/assets/headers.html-CnKgujnH.js" as="script"><link rel="prefetch" href="/volga-docs/assets/json-payload.html-Dr5XtklY.js" as="script"><link rel="prefetch" href="/volga-docs/assets/middlewares.html-BLDqlVpn.js" as="script"><link rel="prefetch" href="/volga-docs/assets/query-params.html-DMUeyWck.js" as="script"><link rel="prefetch" href="/volga-docs/assets/quick-start.html-Kyfxssp4.js" as="script"><link rel="prefetch" href="/volga-docs/assets/route-params.html-BO19Ag7Q.js" as="script"><link rel="prefetch" href="/volga-docs/assets/setupDevtools-7MC2TMWH-BxYWczAc.js" as="script">
+  </head>
+  <body>
+    <div id="app"><!--[--><div class="vp-theme-container" vp-container data-v-67c08c1d><main class="page" data-v-67c08c1d><div class="theme-default-content" vp-content data-v-67c08c1d><h1 data-v-67c08c1d>404</h1><blockquote data-v-67c08c1d>Looks like we&#39;ve got some broken links.</blockquote><a class="route-link" href="/volga-docs/" data-v-67c08c1d>Take me home</a></div></main></div><!--[--><!----><!--]--><!--]--></div>
+    <script type="module" src="/volga-docs/assets/app-FkcaLdwi.js" defer></script>
+  </body>
+</html>
