@@ -17,14 +17,14 @@ async fn main() -> std::io::Result<()> {
     // HEAD /resource
     app.map_head("/resource", || async {
         ok!([
-            ("x-custom-head", "some-value")
+            ("x-custom-header", "some-value-get")
         ])
     });
 
     // GET /resource
     app.map_get("/resource", || async {
         ok!("Hello World!", [
-            ("x-custom-get", "some-value")
+            ("x-custom-header", "some-value-get")
         ])
     });
 
