@@ -24,7 +24,7 @@ async fn main() -> std::io::Result<()> {
     // GET /resource
     app.map_get("/resource", || async {
         ok!("Hello World!", [
-            ("x-custom-head", "some-value")
+            ("x-custom-get", "some-value")
         ])
     });
 
