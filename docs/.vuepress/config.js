@@ -48,6 +48,7 @@ export default defineUserConfig({
         prefix: '/advanced/',
         children: [
           'cancellation',
+          'custom-trace-opt-head',
           'http',
           'mini'
         ]

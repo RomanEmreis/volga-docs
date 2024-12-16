@@ -8,7 +8,7 @@ Ensure you have the following dependencies in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = "0.4.2"
+volga = "0.4.3"
 tokio = { version = "1", features = ["full"] }
 ```
 ## Setup

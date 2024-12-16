@@ -67,7 +67,7 @@ Now you can test this by running `curl` command:
 Received x-api-key: 123-321
 ```
 ### Simplifying custom headers handling with `custom_headers!` macro
-The code above can be a way simplified by using the [`custom_headers!`](https://docs.rs/volga/0.4.2/volga/app/endpoints/args/headers/macro.custom_headers.html) macro, expecially if you need to add multiple headers:
+The code above can be a way simplified by using the [`custom_headers!`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/macro.custom_headers.html) macro, expecially if you need to add multiple headers:
 ```rust
 use volga::{App, Router, ok};
 use volga::headers::{
