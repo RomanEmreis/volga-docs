@@ -8,7 +8,7 @@ To read headers from an incoming request, you can use [`Header<T>`](https://docs
 
 ### Using `Header<T>`
 ```rust
-use volga::{App, Router, ok};
+use volga::{App, ok};
 use volga::headers::{Header, ContentType};
 
 #[tokio::main]
@@ -31,7 +31,7 @@ Content-Type: text/plain
 ### Reading a custom HTTP header with `Header<T>`
 If you need to read some custom HTTP header, you can specify a **unit struct** that describes your header and then implement the [`FromHeaders`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/trait.FromHeaders.html) trait for it, here is the example of how you can do it:
 ```rust
-use volga::{App, Router, ok};
+use volga::{App, ok};
 use volga::headers::{Header, FromHeaders, HeaderMap, HeaderValue};
 
 // The `x-api-key` header
@@ -69,7 +69,7 @@ Received x-api-key: 123-321
 ### Simplifying custom headers handling with `custom_headers!` macro
 The code above can be a way simplified by using the [`custom_headers!`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/macro.custom_headers.html) macro, expecially if you need to add multiple headers:
 ```rust
-use volga::{App, Router, ok};
+use volga::{App, ok};
 use volga::headers::{
     Header,
     cuctom_headers
@@ -100,7 +100,7 @@ Received x-api-key: 123-321; correlation-id: 456-654
 ### Using `Headers`
 The same can be achieved also by using [`Headers`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/struct.Headers.html) struct:
 ```rust
-use volga::{App, Router, ok};
+use volga::{App, ok};
 use volga::headers::Headers;
 
 #[tokio::main]
@@ -128,7 +128,7 @@ Received x-api-key: 123-321
 To add custom headers to your response, create a new [`HashMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html), populate it with your headers, then wrap it into a [`ResponseContext`](https://docs.rs/volga/latest/volga/app/results/struct.ResponseContext.html) and then use the [`Results::from()`](https://docs.rs/volga/latest/volga/app/results/struct.Results.html#method.from) method:
 ```rust
 use std::collections::HashMap;
-use volga::{App, Router, Results, ResponseContext};
+use volga::{App, Results, ResponseContext};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -187,7 +187,7 @@ Hello World!
 ## Simplifying Header Handling with `headers!` and `ok!`
 Volga also provides macros, such as [`headers!`](https://docs.rs/volga/latest/volga/macro.headers.html) and [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html), which streamline the process of setting headers:
 ```rust
-use volga::{App, Router, Results, ResponseContext, headers};
+use volga::{App, Results, ResponseContext, headers};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -211,7 +211,7 @@ async fn main() -> std::io::Result<()> {
 ```
 Or we can combine them with the [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html) macro to make this even simpler:
 ```rust
-use volga::{App, Router, ok};
+use volga::{App, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

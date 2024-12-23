@@ -9,12 +9,17 @@ Each middleware function in the pipeline must explicitly call a [`next`](https:/
 Having the ability to call the [`next`](https://docs.rs/volga/latest/volga/app/middlewares/type.Next.html) closure gives you extensive control over the execution flow, enabling you to run code before or after subsequent middleware functions or the request handler.
 
 ## Configuring Middleware
+First of all, if you're not using the `full` features, you need to enable the `middleware` feature in your `Cargo.toml`
+```toml
+[dependencies]
+volga = { version = "0.4.4", features = ["middleware"] }
+```
 
 ### Example: Sequential Middleware Execution
 
 Here’s a practical example of how to configure sequential middleware in Volga:
 ```rust
-use volga::{App, Router, Middleware, ok};
+use volga::{App, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -59,7 +64,7 @@ async fn main() -> std::io::Result<()> {
 ### Example: Middleware Short-Cutting Pipeline
 The following example demonstrates how to shortcut the middleware pipeline to prevent the request handler from being executed. This approach can be particularly useful for implementing authorization filters or pre-request validations that may terminate the request early:
 ```rust
-use volga::{App, Router, Middleware, ok, status};
+use volga::{App, ok, status};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

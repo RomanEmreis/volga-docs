@@ -8,14 +8,14 @@ Ensure you have the following dependencies in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = "0.4.3"
+volga = "0.4.4"
 tokio = { version = "1", features = ["full"] }
 ```
 ## Setup
 Create your main application in `main.rs`:
 
 ```rust
-use volga::{App, Routes, ok};
+use volga::{App, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

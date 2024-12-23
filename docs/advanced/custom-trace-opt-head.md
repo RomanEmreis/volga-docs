@@ -8,7 +8,7 @@ The `HEAD` method will return the headers without the body.
 
 To customize the behavior for the `HEAD` method, explicitly define it using the [`map_head`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_head) method provided by the [`Router`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html) trait:
 ```rust
-use volga::{App, Router, ok};
+use volga::{App, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -37,7 +37,7 @@ Here, the `HEAD` method returns headers without a body, often mirroring the head
 
 For specifically handling `OPTIONS` requests, use the [`map_options`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_options) method to map this HTTP method:
 ```rust
-use volga::{App, Router, ok};
+use volga::{App, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -65,7 +65,7 @@ The example above includes the `Allow` header to indicate supported HTTP methods
 The `TRACE` method is useful for debugging, as it enables tracing the request path to the server and returns the request message for diagnostic purposes:
 
 ```rust
-use volga::{App, Router, HttpRequest, stream};
+use volga::{App, HttpRequest, stream};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

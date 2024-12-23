@@ -9,7 +9,7 @@ Volga's [`Results::file()`](https://docs.rs/volga/latest/volga/app/results/struc
 
 Here is an example showing how to set up a route for file downloads:
 ```rust
-use volga::{App, Router, Results};
+use volga::{App, Results};
 use tokio::fs::File;
 
 #[tokio::main]
@@ -31,7 +31,7 @@ async fn main() -> std::io::Result<()> {
 Volga also offers the [`file!`](https://docs.rs/volga/latest/volga/macro.file.html) macro to streamline the process.
 The file! macro provides a short syntax for initiating file downloads:
 ```rust
-use volga::{App, Router, file};
+use volga::{App, file};
 use tokio::fs::File;
 
 #[tokio::main]
@@ -55,7 +55,7 @@ For file uploads, Volga's [`save()`](https://docs.rs/volga/latest/volga/app/endp
 ### Example of File Upload
 This example demonstrates how to set up a route to handle file uploads:
 ```rust
-use volga::{App, Router, File, ok};
+use volga::{App, File, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

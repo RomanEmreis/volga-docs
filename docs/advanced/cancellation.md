@@ -6,7 +6,7 @@ This is how it can be used:
 
 ```rust
 use std::time::Duration;
-use volga::{App, Router, CancellationToken, ok};
+use volga::{App, CancellationToken, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -32,7 +32,7 @@ async fn main() -> std::io::Result<()> {
 More robust version with using [`tokio::select!`](https://docs.rs/tokio/latest/tokio/macro.select.html):
 ```rust
 use std::time::Duration;
-use volga::{App, Router, CancellationToken, ok};
+use volga::{App, CancellationToken, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

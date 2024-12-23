@@ -5,7 +5,7 @@ Volga simplifies the process of dealing with JSON data in your web applications,
 ## Receiving JSON Data
 To accept a JSON body in a request and deserialize it into a strongly-typed entity, use the [`Json<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/json/struct.Json.html) struct. Where `T` should be a deserializable struct, so ensure it derives from [`Deserialize`](https://docs.rs/serde/latest/serde/trait.Deserialize.html) from [serde](https://crates.io/crates/serde):
 ```rust
-use volga::{App, Router, Json, ok};
+use volga::{App, Json, ok};
 use serde::Deserialize;
  
 #[derive(Deserialize)]
@@ -45,7 +45,7 @@ The [`Results::from()`](https://docs.rs/volga/latest/volga/app/results/struct.Re
 ### Using `Results::json()`
 The [`Results::json()`](https://docs.rs/volga/latest/volga/app/results/struct.Results.html#method.json) method directly serializes Rust structs into JSON output. Ensure your struct implements [`Serialize`](https://docs.rs/serde/latest/serde/trait.Serialize.html):
 ```rust
-use volga::{App, Router, Results};
+use volga::{App, Results};
 use serde::Serialize;
  
 #[derive(Serialize)]
@@ -78,7 +78,7 @@ To see the JSON response in action:
 ### Simplified Version with `ok!` Macro
 For a more streamlined approach, the [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html) macro automatically compiles into [`Results::json()`](https://docs.rs/volga/latest/volga/app/results/struct.Results.html#method.json) under the hood when passing a serializable object:
 ```rust
-use volga::{App, Router, ok};
+use volga::{App, ok};
 use serde::Serialize;
  
 #[derive(Serialize)]
@@ -105,7 +105,7 @@ async fn main() -> std::io::Result<()> {
 ```
 Moreover, with the [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html) macro you can also use the untyped JSON:
 ```rust
-use volga::{App, Router, ok};
+use volga::{App, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -121,7 +121,7 @@ async fn main() -> std::io::Result<()> {
 ### Using Status with JSON
 You can also include HTTP status codes in your JSON responses using the [`status!`](https://docs.rs/volga/latest/volga/macro.status.html) macro:
 ```rust
-use volga::{App, Router, status};
+use volga::{App, status};
 use serde::Serialize;
  
 #[derive(Serialize)]
