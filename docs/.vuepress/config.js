@@ -41,6 +41,7 @@ export default defineUserConfig({
           'json-payload',
           'files',
           'middlewares',
+          'di'
         ]
       },
       {
