@@ -60,8 +60,7 @@ In this example:
 
 ::: info
 `T` must implement [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html), [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html), [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html), and [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html). 
-To simplify this requirement, Volga provides the `Inject` trait alias:  
-`use volga::di::Inject;`
+To simplify this requirement, Volga provides the `Inject` trait alias: `use volga::di::Inject`.
 :::
 
 ### Scoped
@@ -118,7 +117,7 @@ By implementing [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) 
 :::
 
 ## DI in middleware
-If you need to request a dependency in middleware, you can use the `resolve::<T>()` method of [`HttpContext`].
+If you need to request a dependency in middleware, you can use the `resolve::<T>()` method of `HttpContext`.
 ```rust
 app.use_middleware(|ctx: HttpContext, next: Next| async move {
     let cache = ctx.resolve::<InMemoryCache>()?;
