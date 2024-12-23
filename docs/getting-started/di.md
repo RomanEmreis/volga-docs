@@ -123,7 +123,7 @@ app.register_transient::<InMemoryCache>();
 
 Whenever the `Dc<InMemoryCache>` is injected into a handler, a new instance is created using its `Default` implementation.
 
-::: tips
+::: tip
 - **Manual Control:** Implementing custom [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) and [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) behaviors gives you fine-grained control over service instantiation.
 - **Choosing Lifetime:** Use:
   - **Singleton** for shared resources or global states.
