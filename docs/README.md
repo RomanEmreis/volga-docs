@@ -2,7 +2,7 @@
 
 Fast, Easy, and very flexible Web Framework for Rust based on [Tokio](https://tokio.rs/) runtime and [hyper](https://hyper.rs/) for fun and painless microservices crafting.
 
-[![latest](https://img.shields.io/badge/crates.io-0.4.4-blue)](https://crates.io/crates/volga)
+[![latest](https://img.shields.io/badge/crates.io-0.4.5-blue)](https://crates.io/crates/volga)
 [![latest](https://img.shields.io/badge/rustc-1.80+-964B00)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-violet.svg)](https://github.com/RomanEmreis/volga/blob/main/LICENSE)
 [![Build](https://github.com/RomanEmreis/volga/actions/workflows/rust.yml/badge.svg)](https://github.com/RomanEmreis/volga/actions/workflows/rust.yml)
@@ -10,7 +10,7 @@ Fast, Easy, and very flexible Web Framework for Rust based on [Tokio](https://to
 
 ```toml
 [dependencies]
-volga = "0.4.4"
+volga = "0.4.5"
 tokio = { version = "1", features = ["full"] }
 ```
 ```rust
