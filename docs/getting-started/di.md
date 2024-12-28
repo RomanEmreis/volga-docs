@@ -59,7 +59,7 @@ In this example:
 - The [`Dc<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/dc/struct.Dc.html) behaves similarly to other Volga extractors, such as [`Json<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/json/struct.Json.html) or [`Query<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/query/struct.Query.html).
 
 ::: info
-`T` must implement [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html), [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html), [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html) and [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) if it doesn't depend from anything or we're using already instantiated instance.
+`T` must implement [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html), [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html), [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html) and [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) if it doesn't depend on anything or if we're using an already created instance.
 :::
 
 ### Scoped
@@ -109,14 +109,14 @@ Key differences from Singleton:
 - Each request gets its own, unique instance of `InMemoryCache`.
 
 ### Transient
-A **Transient** dependency creates a new instance every time it is requested, regardless of the request or context. You can register a transient service using the [`add_transient::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient) method. The behavior is similar to Scoped, but a new instance is created on every injection request.
+A **Transient** dependency creates a new instance whenever requested, regardless of the request or context. You can register a transient service using the [`add_transient::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient) method. The behavior is similar to Scoped, but a new instance is created on every injection request.
 
 ::: tip
-By implementing [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) and [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) manually, you can control the instantiation behavior for **Scoped** and **Transient** services. For the more advanced scenarios, especially when you need to construct you service by injecting other dependencies you need to use the [`Inject`](https://docs.rs/volga/latest/volga/app/di/trait.Inject.html) trait.
+By implementing [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) and [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) manually, you can control the instantiation behavior for **Scoped** and **Transient** services. For the more advanced scenarios, especially when you need to construct your service by injecting other dependencies you need to use the [`Inject`](https://docs.rs/volga/latest/volga/app/di/trait.Inject.html) trait.
 :::
 
 ## DI in middleware
-If you need to request a dependency in middleware, you can use the `resolve::<T>()` method of `HttpContext`.
+If you need to request a dependency in middleware, use the [`resolve::<T>()`](https://docs.rs/volga/latest/volga/app/http_context/struct.HttpContext.html#method.resolve) method of [`HttpContext`](https://docs.rs/volga/latest/volga/app/http_context/struct.HttpContext.html).
 ```rust
 app.use_middleware(|ctx: HttpContext, next: Next| async move {
     let cache = ctx.resolve::<InMemoryCache>()?;
