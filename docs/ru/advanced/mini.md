@@ -1,12 +1,12 @@
-# Minimal API
-Starting with version **v0.3.1**, new features have been introduced that offer an efficient method to utilize essential functionalities without requiring the `full`/`default` feature set.
+# Минимальный API
+Начиная с версии **v0.3.1**, были введены новые функции, которые предлагают минимальную функциональность. На текущий момент минимальный набор не включает функции `di` и `middleware`
 
-To leverage a minimal HTTP/1 functionality, you need just:
+Чтобы использовать минимальную функциональность HTTP/1, вам нужно всего лишь:
 ```toml
 [dependencies]
 volga = { version = "0.3.1", features = ["mini"] }
 ```
-And similar for the HTTP/2
+и аналогично для HTTP/2
 ```toml
 [dependencies]
 volga = { version = "0.3.1", features = ["mini2"] }
