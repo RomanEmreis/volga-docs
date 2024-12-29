@@ -1,5 +1,5 @@
 # Minimal API
-Starting with version **v0.3.1**, new features have been introduced that offer an efficient method to utilize essential functionalities without requiring the `full`/`default` feature set.
+Starting with version **v0.3.1**, new features have been introduced that offer minimal functionality. Currently they are exclude `di` and `middleware` features.
 
 To leverage a minimal HTTP/1 functionality, you need just:
 ```toml
