@@ -6,7 +6,7 @@ Implementing HTTP methods such as `HEAD`, `OPTIONS`, and `TRACE` with the Volga 
 By default, when you map a handler to the `GET` method, Volga also maps it to the `HEAD` method. 
 The `HEAD` method will return the headers without the body.
 
-To customize the behavior for the `HEAD` method, explicitly define it using the [`map_head`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_head) method provided by the [`Router`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html) trait:
+To customize the behavior for the `HEAD` method, explicitly define it using the [`map_head`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_head) method:
 ```rust
 use volga::{App, ok};
 

@@ -1,12 +1,12 @@
-# Custom Handling of HEAD, OPTIONS, and TRACE Methods
+# Пользовательская обработка методов HEAD, OPTIONS и TRACE
 
-Implementing HTTP methods such as `HEAD`, `OPTIONS`, and `TRACE` with the Volga can be streamlined using well-defined steps. This guide presents effective ways to handle these methods in your Volga application.
+В данном руководстве представлены различные способы обработки таких методов HTTP как `HEAD`, `OPTIONS` и `TRACE`.
 
-## HEAD Method
-By default, when you map a handler to the `GET` method, Volga also maps it to the `HEAD` method. 
-The `HEAD` method will return the headers without the body.
+## Метод HEAD
+По умолчанию, когда вы сопоставляете обработчик с методом `GET`, Вола также сопоставляет его с методом `HEAD`.
+Метод `HEAD` возвращает заголовки без тела.
 
-To customize the behavior for the `HEAD` method, explicitly define it using the [`map_head`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_head) method provided by the [`Router`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html) trait:
+Чтобы настроить поведение метода `HEAD`, явно определите его с помощью метода [`map_head`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_head):
 ```rust
 use volga::{App, ok};
 
@@ -31,11 +31,11 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-Here, the `HEAD` method returns headers without a body, often mirroring the headers that a `GET` request would have returned.
+Здесь метод `HEAD` возвращает заголовки без тела, часто зеркально отражая те заголовки, которые вернул бы запрос `GET`.
 
-## OPTIONS Method
+## Метод OPTIONS
 
-For specifically handling `OPTIONS` requests, use the [`map_options`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_options) method to map this HTTP method:
+Для специальной обработки запросов `OPTIONS` используйте метод [`map_options`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_options) для сопоставления этого метода HTTP:
 ```rust
 use volga::{App, ok};
 
@@ -58,11 +58,11 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-The example above includes the `Allow` header to indicate supported HTTP methods for the resource. The response body is optional, based on the specific needs of your API.
+Пример выше включает заголовок `Allow` для указания поддерживаемых HTTP-методов для ресурса. Тело ответа необязательно и зависит от конкретных потребностей вашего API.
 
-## TRACE Method
+## Метод TRACE
 
-The `TRACE` method is useful for debugging, as it enables tracing the request path to the server and returns the request message for diagnostic purposes:
+Метод `TRACE` полезен для отладки, так как он позволяет отслеживать путь запроса к серверу и возвращает сообщение запроса для диагностических целей:
 
 ```rust
 use volga::{App, HttpRequest, stream};
@@ -82,9 +82,9 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-This handler captures the incoming request and sends it back in the response with the appropriate content type.
+Этот обработчик захватывает входящий запрос и отправляет его обратно в ответе с соответствующим типом содержимого.
 
-You can check th examples here:
+Вы можете посмотреть примеры здесь:
 * [HEAD](https://github.com/RomanEmreis/volga/blob/main/examples/head_request.rs)
 * [OPTIONS](https://github.com/RomanEmreis/volga/blob/main/examples/options_request.rs)
 * [TRACE](https://github.com/RomanEmreis/volga/blob/main/examples/trace_request.rs)
