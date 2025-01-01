@@ -25,4 +25,5 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
+[<img src="https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/github_source.svg" alt="GitHub Source" />]([https://crates.io/crates/volga](https://github.com/RomanEmreis/volga))
 [<img src="https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/crates_io.svg" alt="Get it on crates.io" />](https://crates.io/crates/volga)
