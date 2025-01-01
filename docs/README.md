@@ -2,12 +2,6 @@
 
 Fast, Easy, and very flexible Web Framework for Rust based on [Tokio](https://tokio.rs/) runtime and [hyper](https://hyper.rs/) for fun and painless microservices crafting.
 
-[![latest](https://img.shields.io/badge/crates.io-0.4.5-blue)](https://crates.io/crates/volga)
-[![latest](https://img.shields.io/badge/rustc-1.80+-964B00)](https://www.rust-lang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-violet.svg)](https://github.com/RomanEmreis/volga/blob/main/LICENSE)
-[![Build](https://github.com/RomanEmreis/volga/actions/workflows/rust.yml/badge.svg)](https://github.com/RomanEmreis/volga/actions/workflows/rust.yml)
-[![Release](https://github.com/RomanEmreis/volga/actions/workflows/release.yml/badge.svg)](https://github.com/RomanEmreis/volga/actions/workflows/release.yml)
-
 ```toml
 [dependencies]
 volga = "0.4.5"
@@ -30,3 +24,5 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
+
+[<img src="https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/crates_io.svg" alt="Get it on crates.io" />](https://crates.io/crates/volga)
