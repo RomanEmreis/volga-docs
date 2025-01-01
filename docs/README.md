@@ -2,17 +2,6 @@
 
 Fast, Easy, and very flexible Web Framework for Rust based on [Tokio](https://tokio.rs/) runtime and [hyper](https://hyper.rs/) for fun and painless microservices crafting.
 
-
-
-<div align="center">
-
-<a href="https://romanemreis.github.io/volga-docs/getting-started/quick-start.html" style="display: inline-block; padding: 10px 20px; background-color: #f0bf4d; color: #000; text-decoration: none; border-radius: 25px; font-family: Arial, sans-serif; font-size: 16px; text-align: center;">
-  Get Started
-</a>
-
-</div>
-
-
 ## Quick Start
 
 ```toml
@@ -37,3 +26,12 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
+
+
+<div align="center">
+
+<button onclick="https://romanemreis.github.io/volga-docs/getting-started/quick-start.html" style="display: inline-block; padding: 10px 20px; background-color: #299764; color: #000; text-decoration: none; border-radius: 25px; font-family: Arial, sans-serif; font-size: 16px; text-align: center;">
+  Learn More
+</button>
+
+</div>
