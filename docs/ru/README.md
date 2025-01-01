@@ -2,12 +2,7 @@
 
 Очень гибкий, простой и быстрый веб-фреймворк для Rust на основе сред [Tokio](https://tokio.rs/) и [hyper](https://hyper.rs/) для безболезненной и увлекательной разработки микросервисов.
 
-[![latest](https://img.shields.io/badge/crates.io-0.4.5-blue)](https://crates.io/crates/volga)
-[![latest](https://img.shields.io/badge/rustc-1.80+-964B00)](https://www.rust-lang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-violet.svg)](https://github.com/RomanEmreis/volga/blob/main/LICENSE)
-[![Build](https://github.com/RomanEmreis/volga/actions/workflows/rust.yml/badge.svg)](https://github.com/RomanEmreis/volga/actions/workflows/rust.yml)
-[![Release](https://github.com/RomanEmreis/volga/actions/workflows/release.yml/badge.svg)](https://github.com/RomanEmreis/volga/actions/workflows/release.yml)
-
+## Начало работы
 ```toml
 [dependencies]
 volga = "0.4.5"
@@ -30,3 +25,12 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
+
+
+<div align="center">
+
+<a href="https://romanemreis.github.io/volga-docs/getting-started/quick-start.html" style="display: inline-block; padding: 10px 20px; background-color: #299764; color: #fff; text-decoration: none; border-radius: 25px; font-family: Arial, sans-serif; font-size: 16px; text-align: center;">
+  <p3>Подробнее</p3>
+</a>
+
+</div>
