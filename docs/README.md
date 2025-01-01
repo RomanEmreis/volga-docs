@@ -6,10 +6,7 @@ Fast, Easy, and very flexible Web Framework for Rust based on [Tokio](https://to
 [<img src="https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/crates_io.svg" alt="Get it on crates.io" />](https://crates.io/crates/volga)
 
 
-[Get Started](https://romanemreis.github.io/volga-docs/getting-started/quick-start.html){: .button }
-
-<Button>Get Started</Button>
-
+<Button size="large">Get Started</Button>
 
 
 ```toml
