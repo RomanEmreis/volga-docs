@@ -1,4 +1,4 @@
-# Working with Files in Volga
+# Working with Files
 
 Volga provides robust functionality for handling file operations such as downloading and uploading files within your Web Applications.
 
