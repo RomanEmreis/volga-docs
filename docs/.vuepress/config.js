@@ -43,7 +43,7 @@ export default defineUserConfig({
             link: '/',
           },
           {
-            text: 'Getting Started',
+            text: 'Basics',
             prefix: '/getting-started/',
             children: [
               'quick-start',
@@ -91,7 +91,7 @@ export default defineUserConfig({
             link: '/ru/',
           },
           {
-            text: 'Начало работы',
+            text: 'Основы',
             prefix: '/ru/getting-started/',
             children: [
               'quick-start',
