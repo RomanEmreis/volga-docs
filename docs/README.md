@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
 
 <div align="center">
 
-<a href="https://romanemreis.github.io/volga-docs/getting-started/quick-start.html" style="display: inline-block; padding: 10px 20px; background-color: #299764; color: #000; text-decoration: none; border-radius: 25px; font-family: Arial, sans-serif; font-size: 16px; text-align: center;">
+<a href="https://romanemreis.github.io/volga-docs/getting-started/quick-start.html" style="display: inline-block; padding: 10px 20px; background-color: #299764; color: #fff; text-decoration: none; border-radius: 25px; font-family: Arial, sans-serif; font-size: 16px; text-align: center;">
   <h2>Learn More</h2>
 </a>
 
