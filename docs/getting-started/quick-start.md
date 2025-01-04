@@ -1,10 +1,22 @@
 # Quick Start
 
-Build a basic Web API using Volga.
+Build a basic "Hello, World" Web API using Volga.
 
 ## Prerequisites
 
-Ensure you have the following dependencies in your `Cargo.toml`:
+### Install Rust
+If you haven't installed Rust yet, it is recommended to use the `rustup`. [Here](https://doc.rust-lang.org/book/ch01-01-installation.html) is the official guide where you can find how to do it.
+
+Volga currently has a minimum supported Rust version (MSRV) of 1.80. Running `rustup update` will ensure you have the latest Rust version available.
+
+### Create an app
+Create a new binary-based app:
+```bash
+cargo new hello-world
+cd hello-world
+```
+
+Add the following dependencies in your `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -24,7 +36,7 @@ async fn main() -> std::io::Result<()> {
 
     // Example of simple GET request handler
     app.map_get("/hello", || async {
-        ok!("Hello World!")
+        ok!("Hello, World!")
     });
     
     // Run the server
@@ -44,7 +56,7 @@ let mut app = App::new().bind("localhost:5000");
 Next, map a specific handler to a route. For instance, mapping our handler to `GET /hello`:
 ```rust
 app.map_get("/hello", || {
-    ok!("Hello World!")
+    ok!("Hello, World!")
 });
 ```
 Ensure routes are mapped before you start the server with:
@@ -77,6 +89,6 @@ Response expected:
 < content-type: text/plain
 <
 * Connection #0 to host localhost left intact
-Hello World!
+Hello, World!
 ```
 You can also check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/hello_world.rs)
