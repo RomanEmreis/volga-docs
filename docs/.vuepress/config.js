@@ -54,7 +54,9 @@ export default defineUserConfig({
               'json-payload',
               'files',
               'middlewares',
-              'di'
+              'di',
+              `compression`,
+              `decompression`
             ]
           },
           {
@@ -102,7 +104,9 @@ export default defineUserConfig({
               'json-payload',
               'files',
               'middlewares',
-              'di'
+              'di',
+              `compression`,
+              `decompression`
             ]
           },
           {
