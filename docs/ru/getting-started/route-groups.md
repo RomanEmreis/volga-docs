@@ -41,4 +41,4 @@ async fn create_user(name: String) -> HttpResult {
 - **Сопоставление методов**:  
   Внутри группы маршруты определяются с помощью таких методов, как [`map_get`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_get) и [`map_post`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_post). Они работают так же, как и в основном объекте приложения, но наследуют префикс, определенный для группы.
 
-больше примеров можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/route_groups.rs).
+Больше примеров можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/route_groups.rs).

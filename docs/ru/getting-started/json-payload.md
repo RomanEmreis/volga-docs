@@ -3,7 +3,7 @@
 Волга упрощает работу с JSON в ваших веб-приложениях, как для приема входящих JSON в запросах, так и для отправки JSON-ответов.
 
 ## Получение JSON
-Чтобы принять JSON в теле запроса и десериализовать его в строго типизированную сущность, используйте структуру [`Json<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/json/struct.Json.html). Тип `T` должен быть десериализуемой структурой, поэтому убедитесь, что он реализует trait [`Deserialize`](https://docs.rs/serde/latest/serde/trait.Deserialize.html) из [serde](https://crates.io/crates/serde):
+Чтобы принять JSON в теле запроса и десериализовать его в строго типизированную сущность, используйте структуру [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html). Тип `T` должен быть десериализуемой структурой, поэтому убедитесь, что он реализует trait [`Deserialize`](https://docs.rs/serde/latest/serde/trait.Deserialize.html) из [serde](https://crates.io/crates/serde):
 ```rust
 use volga::{App, Json, ok};
 use serde::Deserialize;
@@ -40,10 +40,10 @@ curl -X POST "http://127.0.0.1:7878/hello" -H "Content-Type: application/json" -
 Для отправки ответов в формате JSON Волга предоставляет несколько удобных методов:
 
 ### Использование `Results::from()`
-Метод [`Results::from()`](https://docs.rs/volga/latest/volga/app/results/struct.Results.html#method.from), который был описан ранее, автоматически сериализует переданную структуру в JSON.
+Метод [`Results::from()`](https://docs.rs/volga/latest/volga/http/response/struct.Results.html#method.from), который был описан ранее, автоматически сериализует переданную структуру в JSON.
 
 ### Использование `Results::json()`
-Метод [`Results::json()`](https://docs.rs/volga/latest/volga/app/results/struct.Results.html#method.json) напрямую сериализует структуры Rust в JSON. Убедитесь, что ваша структура реализует trait [`Serialize`](https://docs.rs/serde/latest/serde/trait.Serialize.html):
+Метод [`Results::json()`](https://docs.rs/volga/latest/volga/http/response/struct.Results.html#method.json) напрямую сериализует структуры Rust в JSON. Убедитесь, что ваша структура реализует trait [`Serialize`](https://docs.rs/serde/latest/serde/trait.Serialize.html):
 ```rust
 use volga::{App, Results};
 use serde::Serialize;
@@ -76,7 +76,7 @@ async fn main() -> std::io::Result<()> {
 {"name":"John","age":35}
 ```
 ### Упрощенная версия с макросом `ok!`
-Для более компактного подхода используйте макрос [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html), который автоматически компилируется в [`Results::json()`](https://docs.rs/volga/latest/volga/app/results/struct.Results.html#method.json), если передать сериализуемый объект:
+Для более компактного подхода используйте макрос [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html), который автоматически компилируется в [`Results::json()`](https://docs.rs/volga/latest/volga/http/response/struct.Results.html#method.json), если передать сериализуемый объект:
 ```rust
 use volga::{App, ok};
 use serde::Serialize;

@@ -4,7 +4,7 @@
 
 ## Чтение заголовков запроса
 
-Вы можете извлечь определённый заголовок из запроса с помощью [`Header<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/struct.Header.html) или получить все заголовки в виде хеш-таблицы [`Headers`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/struct.Headers.html).
+Вы можете извлечь определённый заголовок из запроса с помощью [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) или получить все заголовки в виде хеш-таблицы [`Headers`](https://docs.rs/volga/latest/volga/headers/header/struct.Headers.html).
 
 ### Использование `Header<T>`
 ```rust
@@ -29,7 +29,7 @@ Content-Type: text/plain
 ```
 
 ### Чтение кастомного HTTP-заголовка с `Header<T>`
-Если вам нужно прочитать свой HTTP-заголовок, создайте структуру и реализуйте для неё trait [`FromHeaders`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/trait.FromHeaders.html):
+Если вам нужно прочитать свой HTTP-заголовок, создайте структуру и реализуйте для неё trait [`FromHeaders`](https://docs.rs/volga/latest/volga/headers/trait.FromHeaders.html):
 ```rust
 use volga::{App, ok};
 use volga::headers::{Header, FromHeaders, HeaderMap, HeaderValue};
@@ -66,7 +66,7 @@ Received x-api-key: 123-321
 ```
 
 ### Упрощение работы с кастомными заголовками с помощью `custom_headers!`
-Вместо реализации трейта вручную, вы можете использовать макрос [`custom_headers!`](https://docs.rs/volga/latest/volga/app/endpoints/args/headers/macro.custom_headers.html):
+Вместо реализации трейта вручную, вы можете использовать макрос [`custom_headers!`](https://docs.rs/volga/latest/volga/macro.custom_headers.html):
 ```rust
 use volga::{App, ok};
 use volga::headers::{
@@ -125,10 +125,10 @@ Received x-api-key: 123-321
 ```
 
 ## Запись заголовков в ответ
-Для добавления своих заголовков в ответ создайте [`HeaderMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html), добавьте заголовки, а затем оберните результат в [`ResponseContext`](https://docs.rs/volga/latest/volga/app/results/struct.ResponseContext.html):
+Для добавления своих заголовков в ответ создайте [`HeaderMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html), добавьте заголовки, а затем оберните результат в [`ResponseContext`](https://docs.rs/volga/latest/volga/http/response/struct.ResponseContext.html):
 ```rust
 use std::collections::HashMap;
-use volga::{App, Results, ResponseContext};
+use volga::{App, ResponseContext};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -140,11 +140,11 @@ async fn main() -> std::io::Result<()> {
        headers.insert(String::from("x-api-key"), String::from("some api key"));
        headers.insert(String::from("Content-Type"), String::from("text/plain"));
        
-       Results::from(ResponseContext {
+       ResponseContext {
            status: 200,
            content: "Hello World!",
            headers
-       })
+       }
    });
 
    app.run().await
@@ -165,7 +165,7 @@ Hello World!
 ## Упрощение при помощи макросов `headers!` и `ok!`
 Волга предоставляет такие макросы как [`headers!`](https://docs.rs/volga/latest/volga/macro.headers.html) и [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html), которые так же помогают упростить работу с заголовками:
 ```rust
-use volga::{App, Results, ResponseContext, headers};
+use volga::{App, ResponseContext, headers};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -177,11 +177,11 @@ async fn main() -> std::io::Result<()> {
            ("Content-Type", "text/plain")
        ];
 
-       Results::from(ResponseContext {
+       ResponseContext {
            status: 200
            content: "Hello World!",
            headers
-       })
+       }
    });
 
    app.run().await

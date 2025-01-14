@@ -71,7 +71,7 @@ Hello beautiful world!
 
 ## Использование `Path<T>`
 
-Кроме того, вы можете использовать [`Path<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/path/struct.Path.html), чтобы обернуть параметры маршрута в специализированную структуру. Где `T` — это либо десериализуемая структура, либо `HashMap`. Убедитесь, что у вас установлена библиотека [serde](https://crates.io/crates/serde):
+Кроме того, вы можете использовать [`Path<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.Path.html), чтобы обернуть параметры маршрута в специализированную структуру. Где `T` — это либо десериализуемая структура, либо `HashMap`. Убедитесь, что у вас установлена библиотека [serde](https://crates.io/crates/serde):
 
 ```rust
 use volga::{App, Path, ok};

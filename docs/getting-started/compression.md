@@ -58,6 +58,8 @@ Then you can test in with the `curl` command:
 > curl -v --location "http://127.0.0.1:7878/users" \
       -H "Accept-Encoding: br" \
       -H "Content-Type: application/json"
+```
+```bash
 *   Trying 127.0.0.1:7878...
 * Connected to 127.0.0.1 (127.0.0.1) port 7878
 > GET /hello HTTP/1.1

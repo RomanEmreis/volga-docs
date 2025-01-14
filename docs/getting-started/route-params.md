@@ -59,7 +59,7 @@ So for the `hello/{descr}/{name}` it is supposed to be `|descr: String, name: St
 :::
 
 ## Using `Path<T>`
-Alternatively, use the [`Path<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/path/struct.Path.html) to wrap the route parameters into a dedicated struct. Where `T` should be either deserializable struct or `HashMap`. Make sure that you also have [serde](https://crates.io/crates/serde) installed:
+Alternatively, use the [`Path<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.Path.html) to wrap the route parameters into a dedicated struct. Where `T` should be either deserializable struct or `HashMap`. Make sure that you also have [serde](https://crates.io/crates/serde) installed:
 ```rust
 use volga::{App, Path, ok};
 use serde::Deserialize;

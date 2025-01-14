@@ -4,9 +4,9 @@ Volga framework features a flexible middleware pipeline that allows you to proce
 
 ## Overview of Middleware Behavior
 
-Each middleware function in the pipeline must explicitly call a [`next`](https://docs.rs/volga/latest/volga/app/middlewares/type.Next.html) closure to pass control to the next middleware or the request handler. Failing to invoke [`next`](https://docs.rs/volga/latest/volga/app/middlewares/type.Next.html) results in shortcutting the rest of the pipeline, which can be useful for handling specific conditions before reaching further processing stages.
+Each middleware function in the pipeline must explicitly call a [`next`](https://docs.rs/volga/latest/volga/middleware/type.Next.html) closure to pass control to the next middleware or the request handler. Failing to invoke [`next`](https://docs.rs/volga/latest/volga/middleware/type.Next.html) results in shortcutting the rest of the pipeline, which can be useful for handling specific conditions before reaching further processing stages.
 
-Having the ability to call the [`next`](https://docs.rs/volga/latest/volga/app/middlewares/type.Next.html) closure gives you extensive control over the execution flow, enabling you to run code before or after subsequent middleware functions or the request handler.
+Having the ability to call the [`next`](https://docs.rs/volga/latest/volga/middleware/type.Next.html) closure gives you extensive control over the execution flow, enabling you to run code before or after subsequent middleware functions or the request handler.
 
 ## Configuring Middleware
 First of all, if you're not using the `full` features, you need to enable the `middleware` feature in your `Cargo.toml`

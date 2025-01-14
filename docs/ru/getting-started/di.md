@@ -55,8 +55,8 @@ async fn main() -> std::io::Result<()> {
 
 В этом примере:
 - Метод [`add_singleton`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_singleton) регистрирует `InMemoryCache` как Singleton.
-- Экстрактор [`Dc<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/dc/struct.Dc.html) разрешает зависимости по мере необходимости.
-- [`Dc<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/dc/struct.Dc.html) работает аналогично другим экстракторам, таким как [`Json<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/json/struct.Json.html) или [`Query<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/query/struct.Query.html).
+- Экстрактор [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) разрешает зависимости по мере необходимости.
+- [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) работает аналогично другим экстракторам, таким как [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html) или [`Query<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/query/struct.Query.html).
 
 ::: info
 Тип `T` должен реализовывать [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html), [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html), [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html) и [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html), если он не зависит от других объектов или используется готовый экземпляр.
@@ -112,11 +112,11 @@ async fn main() -> std::io::Result<()> {
 **Transient** зависимость создает новый экземпляр при каждом запросе к контейнеру, независимо от контекста или запроса. Регистрация осуществляется с помощью метода [`add_transient::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient). Поведение похоже на Scoped, но экземпляр создается при каждом внедрении зависимости.
 
 ::: tip
-Реализуя вручную [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) и [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html), вы можете управлять поведением создания экземпляров для **Scoped** и **Transient** зависимостей, а для более сложных сценариев используйте trait [`Inject`](https://docs.rs/volga/latest/volga/app/di/trait.Inject.html).
+Реализуя вручную [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) и [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html), вы можете управлять поведением создания экземпляров для **Scoped** и **Transient** зависимостей, а для более сложных сценариев используйте trait [`Inject`](https://docs.rs/volga/latest/volga/di/inject/trait.Inject.html).
 :::
 
 ## Использование DI в middleware
-Чтобы внедрить зависимость в middleware, используйте метод [`resolve::<T>()`](https://docs.rs/volga/latest/volga/app/http_context/struct.HttpContext.html#method.resolve) структуры [`HttpContext`](https://docs.rs/volga/latest/volga/app/http_context/struct.HttpContext.html).
+Чтобы внедрить зависимость в middleware, используйте метод [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) структуры [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
 ```rust
 app.use_middleware(|ctx: HttpContext, next: Next| async move {
     let cache = ctx.resolve::<InMemoryCache>()?;

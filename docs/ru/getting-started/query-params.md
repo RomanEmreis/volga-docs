@@ -1,7 +1,7 @@
 # Параметры запроса
 
-Волга поддерживает извлечение параметров запроса в специальную структуру при помощи [`Query<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/query/struct.Query.html). `T` может быть либо десериализуемой структурой, либо [`HashMap`](https://doc.rust-lang.org/std/collections/struct.HashMap.html).  
-Если вы хотите использовать свою структуру, как и в случае с [`Path<T>`](https://docs.rs/volga/latest/volga/app/endpoints/args/path/struct.Path.html) для параметров маршрута, убедитесь, что у вас установлена библиотека [serde](https://crates.io/crates/serde).
+Волга поддерживает извлечение параметров запроса в специальную структуру при помощи [`Query<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/query/struct.Query.html). `T` может быть либо десериализуемой структурой, либо [`HashMap`](https://doc.rust-lang.org/std/collections/struct.HashMap.html).  
+Если вы хотите использовать свою структуру, как и в случае с [`Path<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.Path.html) для параметров маршрута, убедитесь, что у вас установлена библиотека [serde](https://crates.io/crates/serde).
 
 ## Доступ к параметрам запроса
 
