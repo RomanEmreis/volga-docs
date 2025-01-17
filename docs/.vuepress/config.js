@@ -57,7 +57,8 @@ export default defineUserConfig({
               'middlewares',
               'di',
               `compression`,
-              `decompression`
+              `decompression`,
+              'https'
             ]
           },
           {
@@ -66,8 +67,7 @@ export default defineUserConfig({
             children: [
               'cancellation',
               'custom-trace-opt-head',
-              'http',
-              'mini'
+              'http'
             ]
           }
         ]
@@ -108,7 +108,8 @@ export default defineUserConfig({
               'middlewares',
               'di',
               `compression`,
-              `decompression`
+              `decompression`,
+              'https'
             ]
           },
           {
@@ -117,8 +118,7 @@ export default defineUserConfig({
             children: [
               'cancellation',
               'custom-trace-opt-head',
-              'http',
-              'mini'
+              'http'
             ]
           }
         ]
