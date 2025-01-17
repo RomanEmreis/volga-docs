@@ -6,7 +6,7 @@ If you're not using the `full` feature set, ensure you enable the `tls` feature 
 
 ```toml
 [dependencies]
-volga = { version = "0.4.5", features = ["tls"] }
+volga = { version = "0.4.8", features = ["tls"] }
 ```
 
 ## Simple HTTPS server
