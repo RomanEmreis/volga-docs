@@ -6,7 +6,7 @@
 
 ```toml
 [dependencies]
-volga = { version = "0.4.5", features = ["tls"] }
+volga = { version = "0.4.8", features = ["tls"] }
 ```
 
 ## Простой HTTPS сервер
