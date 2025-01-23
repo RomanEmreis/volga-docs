@@ -51,7 +51,7 @@ Then, if you'll hit the `GET http://127.0.0.1:7878/tracing` endpoint multiple ti
 
 ## Enabling tracing middleware
 With the above example, however, if you check the response headers, you won't find anything related to span id, etc.
-To include it you may want to leverage the `use_tracing()` method that enabled the middleware that adds this header.
+To include it you may want to leverage the [`use_tracing()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_tracing) method that enabled the middleware that adds this header.
 ```rust{12-14,19-20}
 use volga::{App, tracing::TracingConfig};
 use tracing::trace;
@@ -82,7 +82,7 @@ async fn main() -> std::io::Result<()> {v
     app.run().await
 }
 ```
-By default it adds the `request-id` HTTP response header, if you want to use your own header you can configure it with th `with_header_name()`:
+By default it adds the `request-id` HTTP response header, if you want to use your own header you can configure it with the [`with_header_name()`](https://docs.rs/volga/latest/volga/tracing/struct.TracingConfig.html#method.with_header_name) method from [`TracingConfig`](https://docs.rs/volga/latest/volga/tracing/struct.TracingConfig.html):
 ```rust
 let tracing = TracingConfig::new()
     .with_header()
