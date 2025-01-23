@@ -1,6 +1,6 @@
 # Логгирование и Трассировка
 
-Функции трассировки и ведения журнала в Волге основаны на [фреймворке tracing](https://docs.rs/tracing/latest/tracing/index.html) и поддерживают его для сбора структурированной диагностической информации на основе событий из коробки.
+Функции трассировки и логгирования в Волге основаны на [фреймворке tracing](https://docs.rs/tracing/latest/tracing/index.html) и поддерживают его для сбора структурированной диагностической информации на основе событий из коробки.
 В дополнение к этому, вы можете настроить включение span/request/correction id в заголовки ответов, чтобы улучшить метрику observability вашего приложения.
 
 Если вы не используете набор функций `full`, убедитесь, что вы включили функцию `tracing` в `Cargo.toml`, кроме того, вам необходимо установить библиотеки [`tracing`](https://crates.io/crates/tracing) и [`tracing-subscriber`](https://crates.io/crates/tracing-subscriber):
@@ -50,7 +50,7 @@ async fn main() -> std::io::Result<()> {
 ```
 
 ## Подключение трассировочного middleware
-Однако в приведенном выше примере, если вы проверите заголовки ответа, вы не найдете ничего, связанного со span id. Чтобы добавить это, вы можете использовать метод [`use_tracing()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_tracing), который включает middleware, добавляющее этот заголовок.
+Однако в приведенном выше примере, если вы проверите заголовки ответа, вы не найдете ничего, связанного со span id. Чтобы исправить это, вы можете использовать метод [`use_tracing()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_tracing), который включает middleware, добавляющее этот заголовок.
 ```rust{12-14,19-20}
 use volga::{App, tracing::TracingConfig};
 use tracing::trace;
@@ -81,7 +81,7 @@ async fn main() -> std::io::Result<()> {v
     app.run().await
 }
 ```
-По умолчанию оно добавляет заголовок HTTP-ответа `request-id`, но если вы хотите использовать свой собственный заголовок, вы можете настроить его с помощью метода [`with_header_name()`](https://docs.rs/volga/latest/volga/tracing/struct.TracingConfig.html#method.with_header_name) для [`TracingConfig`](https://docs.rs/volga/latest/volga/tracing/struct.TracingConfig.html):
+По умолчанию middleware добавляет заголовок HTTP-ответа `request-id`, но если вы хотите использовать свой собственный заголовок, вы можете настроить его с помощью метода [`with_header_name()`](https://docs.rs/volga/latest/volga/tracing/struct.TracingConfig.html#method.with_header_name) для [`TracingConfig`](https://docs.rs/volga/latest/volga/tracing/struct.TracingConfig.html):
 ```rust
 let tracing = TracingConfig::new()
     .with_header()
