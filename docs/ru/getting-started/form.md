@@ -63,7 +63,7 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-В качестве альтернативы, указав [`Form<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/form/struct.Form.html) в качестве возвращаемого типа, вы можете вернуть структуру вашего типа напрямую, благодаря трейту [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html):
+В качестве альтернативы, указав [`Form<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/form/struct.Form.html) в качестве возвращаемого типа, вы можете вернуть структуру вашего типа напрямую, благодаря типажу [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html):
 
 ```rust
 use volga::{App, Form};

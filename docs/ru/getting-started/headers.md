@@ -29,7 +29,7 @@ Content-Type: text/plain
 ```
 
 ### Чтение кастомного HTTP-заголовка с `Header<T>`
-Если вам нужно прочитать свой HTTP-заголовок, создайте структуру и реализуйте для неё trait [`FromHeaders`](https://docs.rs/volga/latest/volga/headers/trait.FromHeaders.html):
+Если вам нужно прочитать свой HTTP-заголовок, создайте структуру и реализуйте для неё типаж [`FromHeaders`](https://docs.rs/volga/latest/volga/headers/trait.FromHeaders.html):
 ```rust
 use volga::{App, ok};
 use volga::headers::{Header, FromHeaders, HeaderMap, HeaderValue};
@@ -65,8 +65,8 @@ async fn main() -> std::io::Result<()> {
 Received x-api-key: 123-321
 ```
 
-### Упрощение работы с кастомными заголовками с помощью `custom_headers!`
-Вместо реализации трейта вручную, вы можете использовать макрос [`custom_headers!`](https://docs.rs/volga/latest/volga/macro.custom_headers.html):
+### Упрощение работы с кастомными заголовками с помощью макроса `custom_headers!`
+Вместо реализации типажа вручную, вы можете использовать макрос [`custom_headers!`](https://docs.rs/volga/latest/volga/macro.custom_headers.html):
 ```rust
 use volga::{App, ok};
 use volga::headers::{

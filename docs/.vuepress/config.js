@@ -58,7 +58,8 @@ export default defineUserConfig({
               'di',
               `compression`,
               `decompression`,
-              'https'
+              'https',
+              `tracing`
             ]
           },
           {
@@ -109,7 +110,8 @@ export default defineUserConfig({
               'di',
               `compression`,
               `decompression`,
-              'https'
+              'https',
+              `tracing`
             ]
           },
           {

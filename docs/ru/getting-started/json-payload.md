@@ -3,7 +3,7 @@
 Волга упрощает работу с JSON в ваших веб-приложениях, как для приема входящих JSON в запросах, так и для отправки JSON-ответов.
 
 ## Получение JSON
-Чтобы принять JSON в теле запроса и десериализовать его в строго типизированную сущность, используйте структуру [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html). Тип `T` должен быть десериализуемой структурой, поэтому убедитесь, что он реализует trait [`Deserialize`](https://docs.rs/serde/latest/serde/trait.Deserialize.html) из [serde](https://crates.io/crates/serde):
+Чтобы принять JSON в теле запроса и десериализовать его в строго типизированную сущность, используйте структуру [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html). Тип `T` должен быть десериализуемой структурой, поэтому убедитесь, что он реализует типаж [`Deserialize`](https://docs.rs/serde/latest/serde/trait.Deserialize.html) из [serde](https://crates.io/crates/serde):
 ```rust
 use volga::{App, Json, ok};
 use serde::Deserialize;
