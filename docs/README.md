@@ -5,7 +5,7 @@ Fast, Easy, and very flexible Web Framework for Rust based on [Tokio](https://to
 ## Getting Started
 ```toml
 [dependencies]
-volga = "0.4.9"
+volga = "0.5.0"
 tokio = { version = "1", features = ["full"] }
 ```
 ```rust

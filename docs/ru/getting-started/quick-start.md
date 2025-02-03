@@ -21,7 +21,7 @@ cd hello-world
 
 ```toml
 [dependencies]
-volga = "0.4.9"
+volga = "0.5.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
