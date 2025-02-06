@@ -44,32 +44,44 @@ export default defineUserConfig({
           },
           {
             text: 'Basics',
-            prefix: '/getting-started/',
+            prefix: '/basics/',
             children: [
               'quick-start',
               'route-params',
               'query-params',
               `route-groups`,
               'headers',
+            ]
+          },
+          {
+            text: 'Data Formats',
+            prefix: '/data/',
+            children: [
               'json-payload',
               'form',
               'files',
-              'middlewares',
-              'di',
-              `compression`,
-              `decompression`,
+            ]
+          },
+          {
+            text: 'Protocols',
+            prefix: '/protocols/',
+            children: [
+              'http',
               'https',
-              'tracing',
-              'errors'
             ]
           },
           {
             text: 'Advanced',
             prefix: '/advanced/',
             children: [
+              'middlewares',
+              `compression`,
+              `decompression`,
+              'errors',
+              'di',
+              'tracing',
               'cancellation',
               'custom-trace-opt-head',
-              'http'
             ]
           }
         ]
@@ -97,32 +109,44 @@ export default defineUserConfig({
           },
           {
             text: 'Основы',
-            prefix: '/ru/getting-started/',
+            prefix: '/ru/basics/',
             children: [
               'quick-start',
               'route-params',
               'query-params',
               `route-groups`,
               'headers',
+            ]
+          },
+          {
+            text: 'Форматы данных',
+            prefix: '/ru/data/',
+            children: [
               'json-payload',
               'form',
               'files',
-              'middlewares',
-              'di',
-              `compression`,
-              `decompression`,
+            ]
+          },
+          {
+            text: 'Протоколы',
+            prefix: '/ru/protocols/',
+            children: [
+              'http',
               'https',
-              'tracing',
-              'errors'
             ]
           },
           {
             text: 'Продвинутые сценарии',
             prefix: '/ru/advanced/',
             children: [
+              'middlewares',
+              `compression`,
+              `decompression`,
+              'errors',
+              'di',
+              'tracing',
               'cancellation',
               'custom-trace-opt-head',
-              'http'
             ]
           }
         ]
