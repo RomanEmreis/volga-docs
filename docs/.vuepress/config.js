@@ -80,6 +80,7 @@ export default defineUserConfig({
               'errors',
               'di',
               'tracing',
+              'static-files',
               'cancellation',
               'custom-trace-opt-head',
             ]
@@ -145,6 +146,7 @@ export default defineUserConfig({
               'errors',
               'di',
               'tracing',
+              'static-files',
               'cancellation',
               'custom-trace-opt-head',
             ]
