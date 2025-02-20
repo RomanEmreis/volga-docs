@@ -33,7 +33,7 @@ curl -X POST "http://127.0.0.1:7878/hello" -H "Content-Type: application/json" -
 Привет, John!
 ```
 ::: tip
-Вы можете обернуть поля вашей структуры в [`Option<T>`](https://doc.rust-lang.org/std/option/), как описано в разделе [Обработка опциональных параметров запроса](/volga-docs/ru/getting-started/query-params.html#обработка-опциональных-параметров).
+Вы можете обернуть поля вашей структуры в [`Option<T>`](https://doc.rust-lang.org/std/option/), как описано в разделе [Обработка опциональных параметров запроса](/volga-docs/ru/basics/query-params.html#обработка-опциональных-параметров).
 :::
 
 ## Отправка JSON

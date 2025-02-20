@@ -68,6 +68,7 @@ export default defineUserConfig({
             children: [
               'http',
               'https',
+              'ws'
             ]
           },
           {
@@ -134,6 +135,7 @@ export default defineUserConfig({
             children: [
               'http',
               'https',
+              'ws'
             ]
           },
           {
