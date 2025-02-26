@@ -17,7 +17,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new().bind("localhost:7878");
 
     // Configure the GET request handler
-    app.map_get("/hello/{name}", |name: String| async move {
+    app.map_get("/hello/{name}", async |name: String| {
         ok!("Hello {}!", name)
     });
     
