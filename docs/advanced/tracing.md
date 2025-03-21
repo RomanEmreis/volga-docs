@@ -69,7 +69,7 @@ async fn main() -> std::io::Result<()> {v
         .with_header();
     
     let mut app = App::new()
-        .with_tracing(tracing);
+        .set_tracing(tracing);
 
     // Enable tracing middleware
     app.use_tracing();
@@ -111,4 +111,4 @@ Then you can test in with the `curl` command:
 Done!
 ```
 
-Full example you can find [here](https://github.com/RomanEmreis/volga/blob/main/examples/tracing.rs):
+Full example you can find [here](https://github.com/RomanEmreis/volga/blob/main/examples/tracing.rs)

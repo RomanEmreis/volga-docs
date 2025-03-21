@@ -25,7 +25,7 @@ use volga::{App, tls::TlsConfig};
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new()
-        .with_tls(TlsConfig::new());
+        .set_tls(TlsConfig::new());
 
     app.map_get("/hello", || async {
         "Hello, World!"
@@ -131,8 +131,7 @@ use volga::{App, tls::TlsConfig};
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new()
-        .with_tls(TlsConfig::new()
-            .with_https_redirection());
+        .with_tls(|tls| tls.with_https_redirection());
 
     // Включает HSTS middleware
     app.use_hsts();

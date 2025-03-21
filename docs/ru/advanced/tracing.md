@@ -68,7 +68,7 @@ async fn main() -> std::io::Result<()> {v
         .with_header();
     
     let mut app = App::new()
-        .with_tracing(tracing);
+        .set_tracing(tracing);
 
     // Подключаем трассировочное middleware
     app.use_tracing();
@@ -110,4 +110,4 @@ let tracing = TracingConfig::new()
 Done!
 ```
 
-Полный пример можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/tracing.rs):
+Полный пример можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/tracing.rs)

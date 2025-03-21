@@ -82,6 +82,7 @@ export default defineUserConfig({
               'di',
               'tracing',
               'static-files',
+              'cors',
               'cancellation',
               'custom-trace-opt-head',
             ]
@@ -149,6 +150,7 @@ export default defineUserConfig({
               'di',
               'tracing',
               'static-files',
+              `cors`,
               'cancellation',
               'custom-trace-opt-head',
             ]

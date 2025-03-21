@@ -38,7 +38,7 @@ use volga::App;
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new()
-        .with_content_root("/static");
+        .with_host_env(|env| env.with_content_root("/static"));
 
     // Enables routing to static files
     app.map_static_assets();
@@ -47,7 +47,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-By default, the content root folder is set to the project root (`project/`). Calling [`with_content_root("/static")`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_content_root) reconfigures it to `project/static/`.
+By default, the content root folder is set to the project root (`project/`). Calling [`with_content_root("/static")`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_content_root) reconfigures it to `project/static/`.
 
 Next, calling [`map_static_assets()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_static_assets) automatically maps all necessary `GET` and `HEAD` routes:
 
@@ -66,8 +66,9 @@ use volga::App;
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new()
-        .with_content_root("/static")
-        .with_fallback_file("404.html");
+        .with_host_env(|env| env
+            .with_content_root("/static")
+            .with_fallback_file("404.html"));
 
     // Enables routing to static files
     app.map_static_assets();
@@ -79,7 +80,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Since fallback files are disabled by default, we explicitly set the `404.html` file using [`with_fallback_file("404.html")`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_fallback_file).
+Since fallback files are disabled by default, we explicitly set the `404.html` file using [`with_fallback_file("404.html")`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_fallback_file).
 
 A more concise version of the above code is:
 
@@ -89,8 +90,9 @@ use volga::App;
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new()
-        .with_content_root("/static")
-        .with_fallback_file("404.html");
+        .with_host_env(|env| env
+            .with_content_root("/static")
+            .with_fallback_file("404.html"));
 
     // Enables routing to static files 
     // and fallback to 404.html
@@ -103,12 +105,12 @@ async fn main() -> std::io::Result<()> {
 The [`use_static_files()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_static_files) method combines [`map_static_assets()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_static_assets) and [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file). However, the fallback feature is only enabled if a fallback file is specified.
 
 ::: tip
-You can set [`with_fallback_file("index.html")`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_fallback_file) to always redirect to the main page for unknown routes.
+You can set [`with_fallback_file("index.html")`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_fallback_file) to always redirect to the main page for unknown routes.
 :::
 
 ## Directory Browsing
 
-Like fallback files, directory browsing is disabled by default. You can enable it using [`with_files_listing()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_files_listing). However, this is not recommended for production environments.
+Like fallback files, directory browsing is disabled by default. You can enable it using [`with_files_listing()`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_files_listing). However, this is not recommended for production environments.
 
 ```rust
 use volga::App;
@@ -116,9 +118,10 @@ use volga::App;
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new()
-        .with_content_root("/static")
-        .with_fallback_file("404.html")
-        .with_files_listing();
+        .with_host_env(|env| env
+            .with_content_root("/static")
+            .with_fallback_file("404.html")
+            .with_files_listing());
 
     // Enables routing to static files 
     // and fallback to 404.html
@@ -128,11 +131,9 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-## Hosting Environment
+## Host Environment
 
-For more advanced scenarios, you can use the [`HostEnv`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html) struct, which represents the application's hosting environment. 
-
-In the previous examples, methods prefixed with `with_` were configuring [`HostEnv`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html) under the hood. Using `HostEnv` directly makes it easier to switch between environments.
+For more advanced scenarios, you can use the [`HostEnv`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html) struct, which represents the application's host environment. Using `HostEnv` directly makes it easier to switch between environments.
 
 Here’s how you can achieve the same configuration with `HostEnv`:
 
@@ -146,7 +147,7 @@ async fn main() -> std::io::Result<()> {
         .with_files_listing();
 
     let mut app = App::new()
-        .with_hosting_environment(env);
+        .set_host_env(env);
 
     // Enables routing to static files 
     // and fallback to 404.html
