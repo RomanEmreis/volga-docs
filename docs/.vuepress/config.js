@@ -60,6 +60,7 @@ export default defineUserConfig({
               'json-payload',
               'form',
               'files',
+              'sse'
             ]
           },
           {
@@ -128,6 +129,7 @@ export default defineUserConfig({
               'json-payload',
               'form',
               'files',
+              'sse'
             ]
           },
           {
