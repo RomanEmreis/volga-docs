@@ -12,7 +12,7 @@
 Прежде всего, если вы не используете функцию `full`, то либо необходимо добавить функцию `middleware`, либо переключиться на `full` в вашем `Cargo.toml`:
 ```toml
 [dependencies]
-volga = { version = "0.4.4", features = ["middleware"] }
+volga = { version = "0.6.0", features = ["middleware"] }
 ```
 
 ### Пример: Последовательное выполнение Middleware
@@ -27,7 +27,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // Middleware 1
-    app.use_middleware(|context, next| async move {
+    app.wrap(|context, next| async move {
         // Код до выполнения Middleware 2
         println!("Перед Middleware 2");
 
@@ -40,11 +40,11 @@ async fn main() -> std::io::Result<()> {
     });
 
     // Middleware 2
-    app.use_middleware(|context, next| async move {
+    app.with(|next| async {
         // Код до выполнения обработчика запроса
         println!("Перед обработчиком запроса");
 
-        let response = next(context).await;
+        let response = next.await;
 
         // Код после завершения обработчика запроса
         println!("После обработчика запроса");
@@ -73,7 +73,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // Middleware 1
-    app.use_middleware(|context, next| async move {
+    app.wrap(|context, next| async move {
         // Код до выполнения Middleware 2
         println!("Обработано Middleware 1");
 
@@ -86,7 +86,7 @@ async fn main() -> std::io::Result<()> {
     });
 
     // Middleware 2
-    app.use_middleware(|context, _next| async move {
+    app.wrap(|_| async {
         // Немедленный возврат без вызова 'next', прерывание конвейера
         status!(400)
     });
@@ -101,5 +101,13 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
+
+## .wrap() и .with()
+
+Как вы могли заметить, для настройки конвейера промежуточных обработчиков доступны два схожих метода. Метод [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) предоставляет низкоуровневый доступ и полный контроль над всем объектом [`HttpRequest`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequest.html), включая [`HttpBody`](https://docs.rs/volga/latest/volga/http/body/struct.HttpBody.html). Это делает его особенно подходящим для сложных сценариев, таких как сжатие, распаковка, кодирование или декодирование. В свою очередь, метод [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) ориентирован на удобство и покрывает около 80% типичных случаев. Он предоставляет гибкий доступ к внедрению зависимостей, [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) и других метаданных запроса, однако не позволяет получить доступ к телу запроса.
+
+::: tip
+Как правило, рекомендуется использовать [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), если только вам не нужен доступ к телу запроса.
+:::
 
 Полный пример можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/middleware.rs).

@@ -12,7 +12,7 @@ Having the ability to call the [`next`](https://docs.rs/volga/latest/volga/middl
 First of all, if you're not using the `full` features, you need to enable the `middleware` feature in your `Cargo.toml`
 ```toml
 [dependencies]
-volga = { version = "0.4.4", features = ["middleware"] }
+volga = { version = "0.6.0", features = ["middleware"] }
 ```
 
 ### Example: Sequential Middleware Execution
@@ -27,7 +27,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // Middleware 1
-    app.use_middleware(|context, next| async move {
+    app.wrap(|context, next| async move {
         // Something can be done before the middleware 2
         println!("Before Middleware 2");
 
@@ -40,11 +40,11 @@ async fn main() -> std::io::Result<()> {
     });
 
     // Middleware 2
-    app.use_middleware(|context, next| async move {
+    app.with(|next| async move {
         // Something can be done before the request handler
         println!("Before Request Handler");
 
-        let response = next(context).await;
+        let response = next.await;
 
         // Something can be done after the request handler is completed
         println!("After Request Handler");
@@ -72,7 +72,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // Middleware 1
-    app.use_middleware(|context, next| async move {
+    app.wrap(|context, next| async move {
         // Something can be done before the middleware 2
         println!("Processed by Middleware 1");
 
@@ -85,7 +85,7 @@ async fn main() -> std::io::Result<()> {
     });
 
     // Middleware 2
-    app.use_middleware(|context, next| async move {
+    app.with(|_| async {
         // Directly returns without calling 'next', shortcutting the pipeline
         status!(400)
     });
@@ -100,5 +100,12 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
+
+## .wrap() vs .with()
+As you may have noticed, there are two similar methods for configuring the middleware pipeline. The [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) method offers lower-level access and provides full control over the entire [`HttpRequest`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequest.html), including the [`HttpBody`](https://docs.rs/volga/latest/volga/http/body/struct.HttpBody.html). This makes it ideal for advanced use cases such as compression, decompression, encoding, or decoding. In contrast, the [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) method is designed for convenience and covers around 80% of typical scenarios. It offers flexible access to dependency injection, [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html), and other request metadata, but does not expose the request body.
+
+::: tip
+As a general rule, prefer [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) unless your use case specifically requires access to the request body.
+:::
 
 Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/middleware.rs).

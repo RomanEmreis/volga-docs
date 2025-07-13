@@ -20,6 +20,7 @@ export default defineUserConfig({
   base: '/volga-docs/',
   theme: defaultTheme({
     contributors: false,
+    smoothScroll: true,
     locales: {
       '/': {
         selectLanguageName: 'English',
@@ -51,6 +52,7 @@ export default defineUserConfig({
               'query-params',
               `route-groups`,
               'headers',
+              'middleware'
             ]
           },
           {
@@ -121,6 +123,7 @@ export default defineUserConfig({
               'query-params',
               `route-groups`,
               'headers',
+              'middleware'
             ]
           },
           {
