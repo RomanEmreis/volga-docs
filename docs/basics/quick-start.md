@@ -124,7 +124,7 @@ fn main() {
 Although the `main` function appears synchronous, the server still runs asynchronously under the hood using the `tokio` runtime.
 
 :::info
-The ['run_blocking()'](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run_blocking) approach is suitable for quick prototyping, simple tools, or learning scenarios where you want to avoid dealing with async setup.
+The [`run_blocking()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run_blocking) approach is suitable for quick prototyping, simple tools, or learning scenarios where you want to avoid dealing with async setup.
 However, using `#[tokio::main]` is generally recommended for **production** applications, as it gives you full control over the async runtime, allows more advanced configuration, and better supports integration with other async libraries and services.
 :::
 
