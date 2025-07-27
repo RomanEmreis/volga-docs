@@ -165,4 +165,4 @@ async fn main() -> std::io::Result<()> {
 
 Additionally, [`HostEnv`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html) can be extracted in middlewares and request handlers.
 
-For a full example, see [this repository](https://github.com/RomanEmreis/volga/blob/main/examples/static_files.rs).
+For a full example, see [this repository](https://github.com/RomanEmreis/volga/blob/main/examples/static_files/src/main.rs).

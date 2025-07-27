@@ -21,7 +21,7 @@ cd hello-world
 
 ```toml
 [dependencies]
-volga = "0.6.0"
+volga = "0.6.1"
 tokio = { verion = "1", features = ["full"] }
 ```
 
@@ -108,4 +108,40 @@ app.run().await
 Hello World!
 ```
 
-Полный пример можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/hello_world.rs).
+### Пример блокирующего старта
+Волга также поддерживает создание Web API без явной зависимости от `tokio`, используя метод [`run_blocking()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run_blocking).
+
+Это позволяет упростить зависимости `Cargo.toml`:
+
+```toml
+[dependencies]
+volga = "0.6.1"
+```
+
+Тогда `main.rs` может выглядеть так:
+
+```rust
+use volga::{App, ok};
+
+fn main() {
+    // Создаем сервер
+    let mut app = App::new();
+
+    // Пример обработчика простого GET-запроса
+    app.map_get("/hello", || async {
+        ok!("Hello, World!")
+    });
+
+    // Запускаем сервер
+    app.run_blocking()
+}
+```
+
+Хотя функция `main` выглядит синхронной, сервер по-прежнему работает асинхронно, используя среду выполнения `tokio`.
+
+:::info
+Подход с ['run_blocking()'](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run_blocking) подходит для быстрого создания прототипов, простых инструментов или учебных сценариев, где вы хотите избежать работы с настройкой асинхронного рантайма.
+Однако использование `#[tokio::main]` рекомендуемый подход для **продакшена**, поскольку он обеспечивает полный контроль над асинхронной средой выполнения, допускает более расширенную настройку и лучше поддерживает интеграцию с другими асинхронными библиотеками и сервисами.
+:::
+
+Полный пример можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/hello_world/src/main.rs).

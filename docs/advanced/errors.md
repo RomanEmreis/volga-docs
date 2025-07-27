@@ -103,4 +103,4 @@ problem! {
 };
 ```
 
-For a complete example, see the full implementation [here](https://github.com/RomanEmreis/volga/blob/main/examples/global_error_handler.rs). 
+For a complete example, see the full implementation [here](https://github.com/RomanEmreis/volga/blob/main/examples/global_error_handler/src/main.rs). 

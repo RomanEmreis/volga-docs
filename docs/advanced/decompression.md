@@ -61,4 +61,4 @@ When a request is received, the decompression middleware checks the `Content-Enc
 
 If the `Content-Encoding` header specifies an unsupported algorithm, the middleware responds with a [`415 Unsupported Media Type`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/415) status code.
 
-Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/decompression.rs)
+Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/decompression/src/main.rs)

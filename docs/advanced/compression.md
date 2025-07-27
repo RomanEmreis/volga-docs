@@ -87,4 +87,4 @@ When a request is received, the compression middleware examines the `Accept-Enco
 
 If the `Accept-Encoding` header specifies an unsupported algorithm, the middleware responds with a [`406 Not Acceptable`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/406) status code.
 
-Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/compression.rs)
+Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/compression/src/main.rs)

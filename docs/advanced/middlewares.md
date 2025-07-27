@@ -108,4 +108,4 @@ As you may have noticed, there are two similar methods for configuring the middl
 As a general rule, prefer [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) unless your use case specifically requires access to the request body.
 :::
 
-Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/middleware.rs).
+Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/middleware/src/main.rs).

@@ -148,4 +148,4 @@ async fn main() -> std::io::Result<()> {
 ```
 The JSON body can be coupled with standard HTTP statuses such as `200`, `400`, `401`, `403` and others to provide clear client-side messages.
 
-Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/json.rs)
+Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/json/src/main.rs)

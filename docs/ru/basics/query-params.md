@@ -119,4 +119,4 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Полный пример доступен [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/query_params.rs).
+Полный пример доступен [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/query_params/src/main.rs).

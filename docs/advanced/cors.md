@@ -61,4 +61,4 @@ async fn main() -> std::io::Result<()> {
 If you need to enable credentials using [`with_credentials(true)`](https://docs.rs/volga/latest/volga/http/cors/struct.CorsConfig.html#method.with_credentials), note that it **cannot** be used with wildcard origins, headers, or methods for security reasons. These constraints are validated in [`use_cors()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_cors), which will panic if misconfigured.
 :::
 
-A complete example is available [here](https://github.com/RomanEmreis/volga/blob/main/examples/cors.rs).
+A complete example is available [here](https://github.com/RomanEmreis/volga/blob/main/examples/cors/src/main.rs).

@@ -132,4 +132,4 @@ app.use_middleware(|ctx: HttpContext, next: Next| async move {
 - **Scoped**: Новый экземпляр для каждого HTTP-запроса.
 - **Transient**: Новый экземпляр при каждом запросе к контейнеру.
 
-Более сложные примеры можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/dependency_injection.rs).
+Более сложные примеры можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/dependency_injection/src/main.rs).

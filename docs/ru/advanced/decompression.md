@@ -54,4 +54,4 @@ curl -v -X POST --location 'http://127.0.0.1:7878/users' \
 
 Если заголовок `Content-Encoding` указывает на неподдерживаемый алгоритм, то middleware отвечает кодом состояния [`415 Unsupported Media Type`](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/415).
 
-Полный пример можно посмотреть [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/decompression.rs)
+Полный пример можно посмотреть [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/decompression/src/main.rs)

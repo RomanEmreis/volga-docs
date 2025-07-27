@@ -106,4 +106,4 @@ async fn main() -> std::io::Result<()> {
 
 This guide should provide you with the tools needed to efficiently utilize query parameters in your Volga-based web applications.
 
-You can check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/query_params.rs)
+You can check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/query_params/src/main.rs)

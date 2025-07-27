@@ -85,6 +85,6 @@ async fn main() -> std::io::Result<()> {
 This handler captures the incoming request and sends it back in the response with the appropriate content type.
 
 You can check th examples here:
-* [HEAD](https://github.com/RomanEmreis/volga/blob/main/examples/head_request.rs)
-* [OPTIONS](https://github.com/RomanEmreis/volga/blob/main/examples/options_request.rs)
-* [TRACE](https://github.com/RomanEmreis/volga/blob/main/examples/trace_request.rs)
+* [HEAD](https://github.com/RomanEmreis/volga/blob/main/examples/head_request/src/main.rs)
+* [OPTIONS](https://github.com/RomanEmreis/volga/blob/main/examples/options_request/src/main.rs)
+* [TRACE](https://github.com/RomanEmreis/volga/blob/main/examples/trace_request/src/main.rs)

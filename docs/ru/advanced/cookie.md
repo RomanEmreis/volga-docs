@@ -147,7 +147,7 @@ app.add_singleton(PrivateKey::generate());
 
 ## Примеры
 
-* [Basic Cookies](https://github.com/RomanEmreis/volga/blob/main/examples/cookies.rs)
-* [Signed Cookies](https://github.com/RomanEmreis/volga/blob/main/examples/signed_cookies.rs)
-* [Private Cookies](https://github.com/RomanEmreis/volga/blob/main/examples/private_cookies.rs)
+* [Basic Cookies](https://github.com/RomanEmreis/volga/blob/main/examples/cookies/src/main.rs)
+* [Signed Cookies](https://github.com/RomanEmreis/volga/blob/main/examples/signed_cookies/src/main.rs)
+* [Private Cookies](https://github.com/RomanEmreis/volga/blob/main/examples/private_cookies/src/main.rs)
 

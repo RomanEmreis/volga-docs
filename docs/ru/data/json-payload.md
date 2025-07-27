@@ -148,4 +148,4 @@ async fn main() -> std::io::Result<()> {
 ```
 Тело JSON можно дополнить стандартными HTTP-статусами, такими как `200`, `400`, `401`, `403` и другими, чтобы предоставлять понятные сообщения для клиента.
 
-Вот [полный пример](https://github.com/RomanEmreis/volga/blob/main/examples/json.rs).
+Вот [полный пример](https://github.com/RomanEmreis/volga/blob/main/examples/json/src/main.rs).

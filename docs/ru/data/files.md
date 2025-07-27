@@ -51,7 +51,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Вы можете посмотреть полный пример скачивания файлов [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/file_download.rs).
+Вы можете посмотреть полный пример скачивания файлов [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/file_download/src/main.rs).
 
 ## Загрузка файлов
 Для загрузки файлов Волга предоставляет методы [`save()`](https://docs.rs/volga/latest/volga/http/endpoints/args/file/struct.FileStream.html#method.save) и [`save_as()`](https://docs.rs/volga/latest/volga/http/endpoints/args/file/struct.FileStream.html#method.save_as), которые является частью [`volga::File`](https://docs.rs/volga/latest/volga/http/endpoints/args/file/struct.FileStream.html). Эти методы позволяет передавать входящий поток байт непосредственно в файл на сервере, обеспечивая высокую производительность.
@@ -74,7 +74,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Полный пример можно посмотреть [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/file_upload.rs).
+Полный пример можно посмотреть [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/file_upload/src/main.rs).
 
 ## Загрузка нескольких файлов
 В случае, если вам нужно загрузить несколько файлов, вы можете использовать многокомпонентную загрузку файлов. Это отдельная функция, и если вы не используете набор функций `full`, ее можно явно включить в `Cargo.toml`:
@@ -124,4 +124,4 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Больше примеров вы можете найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/multipart.rs)
+Больше примеров вы можете найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/multipart/src/main.rs)

@@ -142,5 +142,5 @@ By attaching [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.htm
 :::
 
 ## Examples
-* [Request filter example](https://github.com/RomanEmreis/volga/blob/main/examples/request_validation.rs)
-* [Response handler example](https://github.com/RomanEmreis/volga/blob/main/examples/response_handler.rs)
+* [Request filter example](https://github.com/RomanEmreis/volga/blob/main/examples/request_validation/src/main.rs)
+* [Response handler example](https://github.com/RomanEmreis/volga/blob/main/examples/response_handler/src/main.rs)

@@ -151,7 +151,7 @@ Once registered, you can extract [`SignedCookies`](https://docs.rs/volga/latest/
 
 ## Additional Examples
 
-* [Basic Cookies](https://github.com/RomanEmreis/volga/blob/main/examples/cookies.rs)
-* [Signed Cookies](https://github.com/RomanEmreis/volga/blob/main/examples/signed_cookies.rs)
-* [Private Cookies](https://github.com/RomanEmreis/volga/blob/main/examples/private_cookies.rs)
+* [Basic Cookies](https://github.com/RomanEmreis/volga/blob/main/examples/cookies/src/main.rs)
+* [Signed Cookies](https://github.com/RomanEmreis/volga/blob/main/examples/signed_cookies/src/main.rs)
+* [Private Cookies](https://github.com/RomanEmreis/volga/blob/main/examples/private_cookies/src/main.rs)
 

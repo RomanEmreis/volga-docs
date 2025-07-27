@@ -97,4 +97,4 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Полный пример доступен по [ссылке](https://github.com/RomanEmreis/volga/blob/main/examples/route_params.rs).
+Полный пример доступен по [ссылке](https://github.com/RomanEmreis/volga/blob/main/examples/route_params/src/main.rs).

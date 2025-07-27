@@ -97,17 +97,18 @@ And then you can test this by running `curl` command:
 > curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321" -H "correlation-id: 456-654"
 Received x-api-key: 123-321; correlation-id: 456-654
 ```
-### Using `Headers`
-The same can be achieved also by using [`Headers`](https://docs.rs/volga/latest/volga/headers/header/struct.Headers.html) struct:
+
+### Using `HttpHeaders`
+The same can be achieved also by using [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) struct:
 ```rust
 use volga::{App, ok};
-use volga::headers::Headers;
+use volga::headers::HttpHeaders;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
-    app.map_get("/hello", |headers: Headers| async move {
+    app.map_get("/hello", |headers: HttpHeaders| async move {
         let api_key = headers.get("x-api-key")
             .unwrap()
             .to_str()
@@ -123,6 +124,43 @@ You can test this by sending a request with the `curl`:
 > curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321"
 Received x-api-key: 123-321
 ```
+
+### Using `http_header`
+Another convenient way to work with custom HTTP headers in Volga is the [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html) attribute macro.
+It’s especially useful when you want to define strongly-typed header wrappers with clear semantics.
+
+Here’s an example of how to create and use a custom header:
+```rust
+use volga::{App, ok};
+use volga::headers::{Header, http_header};
+
+// Define a custom header type
+#[http_header("x-api-key")]
+struct ApiKey;
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_get("/hello", |api_key: Header<ApiKey>| async move {
+        ok!("Received x-api-key: {api_key}")
+    });
+
+    app.run().await
+}
+```
+You can test the endpoint with `curl`:
+```bash
+curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321"
+Received x-api-key: 123-321
+```
+
+:::info
+The [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html) macro is part of the optional `macros` feature.
+Make sure to enable it in your `Cargo.toml`:
+```toml
+volga = { version = "...", features = ["macros"] }
+:::
 
 ## Writing Response Headers
 To add custom headers to your response, create a new [`HashMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html), populate it with your headers, and then wrap it into a [`ResponseContext`](https://docs.rs/volga/latest/volga/http/response/struct.ResponseContext.html):
@@ -229,4 +267,4 @@ async fn main() -> std::io::Result<()> {
 ```
 This approach combines response content and headers succinctly, making your code more readable and maintainable.
 
-Check out the full examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/headers.rs) and [here](https://github.com/RomanEmreis/volga/blob/main/examples/custom_request_headers.rs)
+Check out the full examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/headers/src/main.rs) and [here](https://github.com/RomanEmreis/volga/blob/main/examples/custom_request_headers/src/main.rs)

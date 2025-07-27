@@ -145,4 +145,4 @@ async fn main() -> std::io::Result<()> {
 ```
 Then if you run this code you will receive the `Strict-Transport-Security` HTTP header along with the successful response.
 
-You can find more examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/tls.rs).
+You can find more examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/tls/src/main.rs).

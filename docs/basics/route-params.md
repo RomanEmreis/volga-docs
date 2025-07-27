@@ -86,4 +86,4 @@ async fn main() -> std::io::Result<()> {
 
 Using these examples, you can add dynamic routing to your Volga-based web server, enhancing the flexibility and functionality of your applications.
 
-Check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/route_params.rs)
+Check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/route_params/src/main.rs)

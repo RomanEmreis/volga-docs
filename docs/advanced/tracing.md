@@ -111,4 +111,4 @@ Then you can test in with the `curl` command:
 Done!
 ```
 
-Full example you can find [here](https://github.com/RomanEmreis/volga/blob/main/examples/tracing.rs)
+Full example you can find [here](https://github.com/RomanEmreis/volga/blob/main/examples/tracing_example/src/main.rs)

@@ -85,4 +85,4 @@ async fn main() -> std::io::Result<()> {
 
 Если заголовок `Accept-Encoding` указывает неподдерживаемый сервером алгоритм, то middleware отвечает кодом состояния [`406 Not Acceptable`](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/406).
 
-Полный пример можно посмотреть [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/compression.rs)
+Полный пример можно посмотреть [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/compression/src/main.rs)

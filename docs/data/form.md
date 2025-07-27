@@ -93,4 +93,4 @@ async fn get_user(name: String) -> Form<User> {
 }
 ```
 
-Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/form.rs)
+Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/form/src/main.rs)

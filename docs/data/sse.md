@@ -51,4 +51,4 @@ Message::new().json(payload);
 In addition to setting the message data, the `Message` builder also supports customization of the event name, ID, comments, and client reconnection retry interval. For details on the SSE message format, refer to [MDN's guide](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format).
 
 
-You may also find a full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/sse.rs).
+You may also find a full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/sse/src/main.rs).

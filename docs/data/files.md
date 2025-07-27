@@ -49,7 +49,7 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-You can check out the full example of file downloading [here](https://github.com/RomanEmreis/volga/blob/main/examples/file_download.rs).
+You can check out the full example of file downloading [here](https://github.com/RomanEmreis/volga/blob/main/examples/file_download/src/main.rs).
 
 ## Uploading Files
 
@@ -73,7 +73,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/file_upload.rs)
+Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/file_upload/src/main.rs)
 
 ## Multipart uploading
 In case, if you need to upload multiple files, you can leverage a multipart file uploading. It's a separate feature  and if you're not using the `full` feature set it can be explicitly enabled in your `Cargo.toml`:
@@ -123,4 +123,4 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-More robust examples you can find [here](https://github.com/RomanEmreis/volga/blob/main/examples/multipart.rs)
+More robust examples you can find [here](https://github.com/RomanEmreis/volga/blob/main/examples/multipart/src/main.rs)

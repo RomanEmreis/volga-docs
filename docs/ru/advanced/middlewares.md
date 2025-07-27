@@ -110,4 +110,4 @@ async fn main() -> std::io::Result<()> {
 Как правило, рекомендуется использовать [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), если только вам не нужен доступ к телу запроса.
 :::
 
-Полный пример можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/middleware.rs).
+Полный пример можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/middleware/src/main.rs).

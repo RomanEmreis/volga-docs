@@ -142,5 +142,5 @@ async fn produce_err() -> IoError {
 :::
 
 ## Примеры
-* [Пример фильтрации запроса](https://github.com/RomanEmreis/volga/blob/main/examples/request_validation.rs)
-* [Пример обработки ответа](https://github.com/RomanEmreis/volga/blob/main/examples/response_handler.rs)
+* [Пример фильтрации запроса](https://github.com/RomanEmreis/volga/blob/main/examples/request_validation/src/main.rs)
+* [Пример обработки ответа](https://github.com/RomanEmreis/volga/blob/main/examples/response_handler/src/main.rs)

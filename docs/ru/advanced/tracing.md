@@ -110,4 +110,4 @@ let tracing = TracingConfig::new()
 Done!
 ```
 
-Полный пример можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/tracing.rs)
+Полный пример можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/tracing_example/src/main.rs)

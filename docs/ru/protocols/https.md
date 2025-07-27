@@ -145,4 +145,4 @@ async fn main() -> std::io::Result<()> {
 ```
 Затем, если вы запустите этот код, вы получите HTTP-заголовок `Strict-Transport-Security` вместе с успешным ответом.
 
-Больше примеров вы можете найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/tls.rs).
+Больше примеров вы можете найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/tls/src/main.rs).

@@ -85,6 +85,6 @@ async fn main() -> std::io::Result<()> {
 Этот обработчик захватывает входящий запрос и отправляет его обратно в ответе с соответствующим типом содержимого.
 
 Вы можете посмотреть примеры здесь:
-* [HEAD](https://github.com/RomanEmreis/volga/blob/main/examples/head_request.rs)
-* [OPTIONS](https://github.com/RomanEmreis/volga/blob/main/examples/options_request.rs)
-* [TRACE](https://github.com/RomanEmreis/volga/blob/main/examples/trace_request.rs)
+* [HEAD](https://github.com/RomanEmreis/volga/blob/main/examples/head_request/src/main.rs)
+* [OPTIONS](https://github.com/RomanEmreis/volga/blob/main/examples/options_request/src/main.rs)
+* [TRACE](https://github.com/RomanEmreis/volga/blob/main/examples/trace_request/src/main.rs)

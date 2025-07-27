@@ -97,17 +97,17 @@ async fn main() -> std::io::Result<()> {
 Received x-api-key: 123-321; correlation-id: 456-654
 ```
 
-### Использование `Headers`
-Альтернативный способ:
+### Использование `HttpHeaders`
+Альтернативный способ с помощью структуры [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html):
 ```rust
 use volga::{App, ok};
-use volga::headers::Headers;
+use volga::headers::HttpHeaders;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
-    app.map_get("/hello", |headers: Headers| async move {
+    app.map_get("/hello", |headers: HttpHeaders| async move {
         let api_key = headers.get("x-api-key")
             .unwrap()
             .to_str()
@@ -123,6 +123,46 @@ async fn main() -> std::io::Result<()> {
 > curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321"
 Received x-api-key: 123-321
 ```
+
+### Using `http_header`
+Ещё один удобный способ работы с кастомными HTTP-заголовками - это аттрибут [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html).
+Он особенно полезен, когда вы хотите определить строго типизированные заголовки с чёткой семантикой.
+
+Вот пример создания и использования такого заголовка:
+```rust
+use volga::{App, ok};
+use volga::headers::{
+    Header, 
+    http_header
+};
+
+// Определяем кастомный заголовок
+#[http_header("x-api-key")]
+struct ApiKey;
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_get("/hello", |api_key: Header<ApiKey>| async move {
+        ok!("Received x-api-key: {api_key}")
+    });
+
+    app.run().await
+}
+```
+Пример запроса:
+```bash
+curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321"
+Received x-api-key: 123-321
+```
+
+:::info
+Аттрибут [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html) является частью дополнительной функции `macros`.
+Убедитесь, что она включен в вашем `Cargo.toml`:
+```toml
+volga = { version = "...", features = ["macro"] }
+:::
 
 ## Запись заголовков в ответ
 Для добавления своих заголовков в ответ создайте [`HeaderMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html), добавьте заголовки, а затем оберните результат в [`ResponseContext`](https://docs.rs/volga/latest/volga/http/response/struct.ResponseContext.html):
@@ -205,4 +245,4 @@ async fn main() -> std::io::Result<()> {
    app.run().await
 }
 ```
-Полные примеры доступны [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/headers.rs) и [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/custom_request_headers.rs).
+Полные примеры доступны [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/headers/src/main.rs) и [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/custom_request_headers/src/main.rs).

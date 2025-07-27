@@ -159,5 +159,5 @@ async fn handle_message(msg: String, counter: Dc<Counter>) -> String {
 }
 ```
 
-You can find a complete example [here](https://github.com/RomanEmreis/volga/blob/main/examples/websockets.rs).
+You can find a complete example [here](https://github.com/RomanEmreis/volga/blob/main/examples/websockets/src/main.rs).
 

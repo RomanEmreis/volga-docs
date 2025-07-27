@@ -39,4 +39,4 @@ async fn create_user(name: String) -> HttpResult {
 - **Mapping Methods**:  
   Within the group, routes are defined using methods like [`map_get`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_get) and [`map_post`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_post). These work just like they do on the root application object but inherit the prefix defined in the group.
 
-You can find more examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/route_groups.rs).
+You can find more examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/route_groups/src/main.rs).

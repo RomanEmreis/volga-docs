@@ -131,4 +131,4 @@ app.use_middleware(|ctx: HttpContext, next: Next| async move {
 - **Scoped**: New instance for each HTTP request.
 - **Transient**: New instance for every injection request.
 
-For more advanced examples, check out the [this](https://github.com/RomanEmreis/volga/blob/main/examples/dependency_injection.rs).
+For more advanced examples, check out the [this](https://github.com/RomanEmreis/volga/blob/main/examples/dependency_injection/src/main.rs).

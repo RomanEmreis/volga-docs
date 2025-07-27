@@ -50,4 +50,4 @@ Message::new().json(payload);
 
 В дополнение к этому, `Message` также поддерживает настройку имени события (поле `event`), идентификатора (поле `id`), комментариев (поле `comment`) и интервала попыток повторного подключения клиента (поле `retry`). Подробную информацию о формате сообщения SSE см. в [руководстве MDN](https://developer.mozilla.org/ru/docs/Web/API/Server-sent_events/Using_server-sent_events#%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%82_%D0%BF%D0%BE%D1%82%D0%BE%D0%BA%D0%B0_%D1%81%D0%BE%D0%B1%D1%8B%D1%82%D0%B8%D0%B9).
 
-Полный пример использования можно так же найти по по [ссылке](https://github.com/RomanEmreis/volga/blob/main/examples/sse.rs).
+Полный пример использования можно так же найти по по [ссылке](https://github.com/RomanEmreis/volga/blob/main/examples/sse/src/main.rs).
