@@ -119,7 +119,7 @@ By implementing [`Default`](https://doc.rust-lang.org/std/default/trait.Default.
 If you need to request a dependency in middleware, use either [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) or [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) methods of [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
 The main difference between them is that the first one requires to implement the [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) trait for `T` while the latter returns an [`Arc<T>`](https://doc.rust-lang.org/std/sync/struct.Arc.html).
 ```rust
-app.use_middleware(|ctx: HttpContext, next: Next| async move {
+app.wrap(|ctx: HttpContext, next: Next| async move {
     let cache = ctx.resolve::<InMemoryCache>()?;
     // do something....
     next(ctx).await

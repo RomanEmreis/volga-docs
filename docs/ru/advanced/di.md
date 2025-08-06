@@ -120,7 +120,7 @@ async fn main() -> std::io::Result<()> {
 Основное различие между ними заключается в том, что первый метод требует реализации типажа [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) для `T`, тогда как последний просто возвращает [`Arc<T>`](https://doc.rust-lang.org/std/sync/struct.Arc.html).
 
 ```rust
-app.use_middleware(|ctx: HttpContext, next: Next| async move {
+app.wrap(|ctx: HttpContext, next: Next| async move {
     let cache = ctx.resolve::<InMemoryCache>()?;
     // Выполнить действия...
     next(ctx).await
