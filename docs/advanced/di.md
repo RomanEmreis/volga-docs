@@ -116,13 +116,20 @@ By implementing [`Default`](https://doc.rust-lang.org/std/default/trait.Default.
 :::
 
 ## DI in middleware
-If you need to request a dependency in middleware, use either [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) or [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) methods of [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
+If you need to request/inject a dependency in middleware, if you're using method [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), you may leverage the [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) extractor similarly to request handlers. For the [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) use either [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) or [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) methods of [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
 The main difference between them is that the first one requires to implement the [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) trait for `T` while the latter returns an [`Arc<T>`](https://doc.rust-lang.org/std/sync/struct.Arc.html).
 ```rust
-app.wrap(|ctx: HttpContext, next: Next| async move {
+// using .wrap()
+app.wrap(|ctx: HttpContext, next: NextFn| async move {
     let cache = ctx.resolve::<InMemoryCache>()?;
     // do something....
     next(ctx).await
+});
+
+// using .with()
+app.with(|cache: Dc<InMemoryCache>, next: Next| async move {
+    // do something....
+    next.await
 });
 ```
 
