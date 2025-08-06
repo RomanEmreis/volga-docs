@@ -59,7 +59,7 @@ In this example:
 - The [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) behaves similarly to other Volga extractors, such as [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html) or [`Query<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/query/struct.Query.html).
 
 ::: info
-`T` must [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html), [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html) and [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) if it doesn't depend on anything or if we're using an already created instance.
+`T` must be [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html), [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html) and either [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) or [`Singleton`](https://docs.rs/volga/latest/volga/di/derive.Singleton.html) if it doesn't depend on anything or if we're using an already created instance.
 :::
 
 ### Scoped

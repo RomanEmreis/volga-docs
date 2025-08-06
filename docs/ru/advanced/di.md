@@ -59,7 +59,7 @@ async fn main() -> std::io::Result<()> {
 - [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) работает аналогично другим экстракторам, таким как [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html) или [`Query<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/query/struct.Query.html).
 
 ::: info
-Тип `T` должен реализовывать типажи [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html), [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html) и [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html), если он не зависит от других объектов или используется готовый экземпляр.
+Тип `T` должен реализовывать типажи [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html), [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html) и либо [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) или [`Singleton`](https://docs.rs/volga/latest/volga/di/derive.Singleton.html), если он не зависит от других объектов или используется готовый экземпляр.
 :::
 
 ### Scoped
