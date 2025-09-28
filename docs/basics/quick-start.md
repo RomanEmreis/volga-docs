@@ -99,7 +99,7 @@ This allows you to simplify your `Cargo.toml` dependencies:
 
 ```toml
 [dependencies]
-volga = "0.6.1"
+volga = "0.6.3"
 ```
 
 Your `main.rs` might then look like this:

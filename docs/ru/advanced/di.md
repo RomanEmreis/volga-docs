@@ -59,7 +59,7 @@ async fn main() -> std::io::Result<()> {
 - [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) работает аналогично другим экстракторам, таким как [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html) или [`Query<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/query/struct.Query.html).
 
 ::: info
-Тип `T` должен реализовывать типажи [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html), [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html) и [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html), если он не зависит от других объектов или используется готовый экземпляр.
+Тип `T` должен реализовывать типажи [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html), [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html) и либо [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) или [`Singleton`](https://docs.rs/volga/latest/volga/di/derive.Singleton.html), если он не зависит от других объектов или используется готовый экземпляр.
 :::
 
 ### Scoped
@@ -116,14 +116,21 @@ async fn main() -> std::io::Result<()> {
 :::
 
 ## Использование DI в middleware
-Чтобы внедрить зависимость в middleware, используйте метод [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve), либо [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) структуры [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
+Чтобы внедрить зависимость в middleware, в случае использования [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) можно воспользоваться структурой [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) аналогично использованию в обработчиках запросов. Для [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) используйте метод [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve), либо [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) структуры [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
 Основное различие между ними заключается в том, что первый метод требует реализации типажа [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) для `T`, тогда как последний просто возвращает [`Arc<T>`](https://doc.rust-lang.org/std/sync/struct.Arc.html).
 
 ```rust
-app.use_middleware(|ctx: HttpContext, next: Next| async move {
+// Пример .wrap()
+app.wrap(|ctx: HttpContext, next: NextFn| async move {
     let cache = ctx.resolve::<InMemoryCache>()?;
     // Выполнить действия...
     next(ctx).await
+});
+
+// Пример .with()
+app.with(|cache: Dc<InMemoryCache>, next: Next| async move {
+    // Выполнить действия...
+    next.await
 });
 ```
 

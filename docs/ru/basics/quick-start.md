@@ -115,7 +115,7 @@ Hello World!
 
 ```toml
 [dependencies]
-volga = "0.6.5"
+volga = "0.6.6"
 ```
 
 Тогда `main.rs` может выглядеть так:
