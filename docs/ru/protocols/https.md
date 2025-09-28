@@ -6,12 +6,71 @@
 
 ```toml
 [dependencies]
-volga = { version = "0.4.8", features = ["tls"] }
+volga = { version = "0.6.6", features = ["tls"] }
 ```
 
 ## Простой HTTPS сервер
 
-### Генерация Self-Signed сертификатов
+### Использование сертификатов разработки
+
+Для локальной разработки и тестирования вы можете использовать автоматическую генерацию самоподписанных сертификатов.
+Для этого, сначала необходимо подключить функцию `dev-cert` в `Cargo.toml`:
+
+```toml
+[dependencies]
+volga = { version = "0.6.6", features = ["tls", "dev-cert"] }
+```
+
+Затем, в файле `main.rs` вы можете включить сертификаты разработки с помощью метода [`with_dev_cert()`](https://docs.rs/volga/latest/volga/tls/struct.TlsConfig.html#method.with_dev_cert).
+Он принимает перечисление [`DevCertMode`](https://docs.rs/volga/latest/volga/tls/enum.DevCertMode.html), в котором, доступны два режима:
+
+* [`DevCertMode::Ask`](https://docs.rs/volga/latest/volga/tls/enum.DevCertMode.html) — проверяет наличие существующих сертификатов и спрашивает, нужно ли их генерировать, если они отсутствуют.
+* [`DevCertMode::Auto`](https://docs.rs/volga/latest/volga/tls/enum.DevCertMode.html) — автоматически генерирует сертификаты без запроса.
+
+::: info
+В релизных сборках этот метод не выполняется.
+:::
+
+```rust
+use volga::{App, tls::DevCertMode};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new()
+        .with_tls(|tls| tls
+            .with_dev_cert(DevCertMode::Ask));
+
+    app.map_get("/hello", || async {
+        "Hello, World!"
+    });
+
+    app.run().await
+}
+```
+
+При запуске веб-сервера он будет искать папку `cert`, в корне проекта, с файлами сертификатов: `dev-cert.pem` и `dev-key.pem`.
+Если они отсутствуют и вы используете [`DevCertMode::Ask`](https://docs.rs/volga/latest/volga/tls/enum.DevCertMode.html), сервер предложит вам сгенерировать их. Если вы согласитесь, сертификаты будут созданы и использованы автоматически.
+
+Если вы хотите избежать запроса на создание и всегда генерировать отсутствующие сертификаты, используйте [`DevCertMode::Auto`](https://docs.rs/volga/latest/volga/tls/enum.DevCertMode.html):
+
+```rust
+use volga::{App, tls::DevCertMode};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new()
+        .with_tls(|tls| tls
+            .with_dev_cert(DevCertMode::Auto));
+
+    app.map_get("/hello", || async {
+        "Hello, World!"
+    });
+
+    app.run().await
+}
+```
+
+### Генерация Self-Signed сертификатов в ручную
 Прежде всего, вам необходимо сгенерировать сертификат и закрытый ключ. Для тестирования вы можете использовать следующую команду:
 ```bash
 openssl req -x509 -newkey rsa:4096 -nodes -keyout key.pem -out cert.pem -days 365 -subj '/CN=localhost'`

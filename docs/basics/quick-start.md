@@ -20,7 +20,7 @@ Add the following dependencies in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = "0.6.1"
+volga = "0.6.6"
 tokio = { version = "1", features = ["full"] }
 ```
 ## Setup
