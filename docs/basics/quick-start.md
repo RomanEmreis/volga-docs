@@ -7,7 +7,7 @@ Build a basic "Hello, World" Web API using Volga.
 ### Install Rust
 If you haven't installed Rust yet, it is recommended to use the `rustup`. [Here](https://doc.rust-lang.org/book/ch01-01-installation.html) is the official guide where you can find how to do it.
 
-Volga currently has a minimum supported Rust version (MSRV) of 1.80. Running `rustup update` will ensure you have the latest Rust version available.
+Volga currently has a minimum supported Rust version (MSRV) of 1.90. Running `rustup update` will ensure you have the latest Rust version available.
 
 ### Create an app
 Create a new binary-based app:
@@ -20,7 +20,7 @@ Add the following dependencies in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = "0.6.6"
+volga = "0.7.0"
 tokio = { version = "1", features = ["full"] }
 ```
 ## Setup

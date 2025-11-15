@@ -6,7 +6,7 @@ If you're not using the `full` feature set, ensure you enable the `di` feature i
 
 ```toml
 [dependencies]
-volga = { version = "0.4.5", features = ["di"] }
+volga = { version = "0.7.0", features = ["di"] }
 ```
 
 ## Dependency Lifetimes
@@ -59,7 +59,7 @@ In this example:
 - The [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) behaves similarly to other Volga extractors, such as [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html) or [`Query<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/query/struct.Query.html).
 
 ::: info
-`T` must be [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html), [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html) and either [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) or [`Singleton`](https://docs.rs/volga/latest/volga/di/derive.Singleton.html) if it doesn't depend on anything or if we're using an already created instance.
+`T` must be [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html) and [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html).
 :::
 
 ### Scoped
@@ -68,15 +68,21 @@ A **Scoped** dependency creates a new instance for each HTTP request. The instan
 #### Example: Scoped Dependency
 
 ```rust
-use volga::{App, di::Dc, ok, not_found};
+use volga::{App, di::{Container, Dc, Error, Inject}, ok, not_found};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 struct InMemoryCache {
     inner: Arc<Mutex<HashMap<String, String>>>,
+}
+
+impl Inject for InMemoryCache {
+    fn inject(_container: Container) -> Result<Self, Error> {
+        Ok(Self { inner: Default::default() })
+    }
 }
 
 #[tokio::main]
@@ -108,12 +114,47 @@ Key differences from Singleton:
 - The [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped) method registers a dependency that is instantiated lazily for each request.
 - Each request gets its own, unique instance of `InMemoryCache`.
 
-### Transient
-A **Transient** dependency creates a new instance whenever requested, regardless of the request or context. You can register a transient service using the [`add_transient::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient) method. The behavior is similar to Scoped, but a new instance is created on every injection request.
+#### Registering with `Default` or a Factory
 
+To use the [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped) method, the type must implement the [`Inject`](https://docs.rs/volga/latest/volga/di/inject/trait.Inject.html) trait. This is a convenient and powerful approach when your type depends on other services registered in the DI container.
+
+However, if the type has **no dependencies**, you can register it more directly using a factory:
+
+```rust
+#[derive(Clone)]
+struct InMemoryCache {
+    inner: Arc<Mutex<HashMap<String, String>>>,
+}
+
+// Register a scoped service using a factory
+app.add_scoped_factory(|| InMemoryCache {
+    inner: Default::default(),
+});
+```
 ::: tip
-By implementing [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) manually, you can control the instantiation behavior for **Scoped** and **Transient** services. For the more advanced scenarios, especially when you need to construct your service by injecting other dependencies you need to use the [`Inject`](https://docs.rs/volga/latest/volga/di/inject/trait.Inject.html) trait.
+You may use the [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) or [`Container`](https://docs.rs/volga/latest/volga/di/struct.Container.html) as a factory arguments for better control on dependency resolution.
 :::
+
+If the type implements [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html), you can simplify this further by using [`add_scoped_default::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped_default):
+
+```rust
+#[derive(Default, Clone)]
+struct InMemoryCache {
+    inner: Arc<Mutex<HashMap<String, String>>>,
+}
+
+app.add_scoped_default::<InMemoryCache>();
+```
+
+### Transient
+
+A **Transient** dependency creates a **new instance every time it is resolved**, regardless of the request scope or context. You can register a transient service using one of:
+
+* [`add_transient::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient)
+* [`add_transient_factory::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_factory)
+* [`add_transient_default::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_default)
+
+The behavior is similar to **Scoped**, with the key difference that **a new instance is created for every injection**, not once per request or scope.
 
 ## DI in middleware
 If you need to request/inject a dependency in middleware, if you're using method [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), you may leverage the [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) extractor similarly to request handlers. For the [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) use either [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) or [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) methods of [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).

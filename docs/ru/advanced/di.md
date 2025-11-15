@@ -6,7 +6,7 @@
 
 ```toml
 [dependencies]
-volga = { version = "0.4.5", features = ["di"] }
+volga = { version = "0.7.0", features = ["di"] }
 ```
 
 ## Жизненные циклы зависимостей
@@ -23,7 +23,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 struct InMemoryCache {
     inner: Arc<Mutex<HashMap<String, String>>>,
 }
@@ -59,7 +59,7 @@ async fn main() -> std::io::Result<()> {
 - [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) работает аналогично другим экстракторам, таким как [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html) или [`Query<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/query/struct.Query.html).
 
 ::: info
-Тип `T` должен реализовывать типажи [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html), [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html) и либо [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) или [`Singleton`](https://docs.rs/volga/latest/volga/di/derive.Singleton.html), если он не зависит от других объектов или используется готовый экземпляр.
+Тип `T` должен реализовывать типажи [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html) и [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html).
 :::
 
 ### Scoped
@@ -68,7 +68,7 @@ async fn main() -> std::io::Result<()> {
 #### Пример: Scoped
 
 ```rust
-use volga::{App, di::Dc, ok, not_found};
+use volga::{App, di::{Container, Dc, Error, Inject}, ok, not_found};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
@@ -77,6 +77,12 @@ use std::{
 #[derive(Clone, Default)]
 struct InMemoryCache {
     inner: Arc<Mutex<HashMap<String, String>>>,
+}
+
+impl Inject for InMemoryCache {
+    fn inject(_container: Container) -> Result<Self, Error> {
+        Ok(Self { inner: Default::default() })
+    }
 }
 
 #[tokio::main]
@@ -108,12 +114,47 @@ async fn main() -> std::io::Result<()> {
 - Метод [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped) регистрирует зависимость, которая создается для каждого HTTP-запроса.
 - Каждый запрос имеет свой уникальный экземпляр `InMemoryCache`.
 
-### Transient
-**Transient** зависимость создает новый экземпляр при каждом запросе к контейнеру, независимо от контекста или запроса. Регистрация осуществляется с помощью метода [`add_transient::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient). Поведение похоже на Scoped, но экземпляр создается при каждом внедрении зависимости.
+#### Регистрация с помощью `Default` или фабрики
 
+Чтобы использовать метод [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped), тип должен реализовывать типаж [`Inject`](https://docs.rs/volga/latest/volga/di/inject/trait.Inject.html). Это удобный и мощный подход, когда ваш тип зависит от других сервисов, зарегистрированных в контейнере зависимостей.
+
+Однако, если у типа нет зависимостей, вы можете зарегистрировать его напрямую, используя фабрику:
+
+```rust
+#[derive(Clone)]
+struct InMemoryCache {
+    inner: Arc<Mutex<HashMap<String, String>>>,
+}
+
+// Регистрация Scoped-сервиса с помощью фабрики
+app.add_scoped_factory(|| InMemoryCache {
+    inner: Default::default(),
+});
+```
 ::: tip
-Реализуя [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) вручную, вы можете управлять поведением создания экземпляров для **Scoped** и **Transient** зависимостей, а для более сложных сценариев используйте типаж [`Inject`](https://docs.rs/volga/latest/volga/di/inject/trait.Inject.html).
+Вы так же можете использовать [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) или [`Container`](https://docs.rs/volga/latest/volga/di/struct.Container.html) в качестве аргументов фабрики для гибкости и лучшего контроля над разрешением зависимостей.
 :::
+
+Если тип реализует [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html), вы можете упростить это ещё больше, используя [`add_scoped_default::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped_default):
+
+```rust
+#[derive(Default, Clone)]
+struct InMemoryCache {
+    inner: Arc<Mutex<HashMap<String, String>>>,
+}
+
+app.add_scoped_default::<InMemoryCache>();
+```
+
+### Transient
+
+**Transient** зависимость создаёт **новый экземпляр каждый раз при её разрешении**, независимо от области действия или контекста запроса. Вы можете зарегистрировать такую службу одним из следующих способов:
+
+* [`add_transient::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient)
+* [`add_transient_factory::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_factory)
+* [`add_transient_default::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_default)
+
+Поведение аналогично **Scoped**, с ключевым отличием: **новый экземпляр создаётся для каждого внедрения**, а не один раз для каждого запроса или области действия.
 
 ## Использование DI в middleware
 Чтобы внедрить зависимость в middleware, в случае использования [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) можно воспользоваться структурой [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) аналогично использованию в обработчиках запросов. Для [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) используйте метод [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve), либо [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) структуры [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).

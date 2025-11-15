@@ -5,7 +5,7 @@
 ## Начало работы
 ```toml
 [dependencies]
-volga = "0.6.6"
+volga = "0.7.0"
 tokio = { version = "1", features = ["full"] }
 ```
 ```rust
