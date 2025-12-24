@@ -21,7 +21,7 @@ cd hello-world
 
 ```toml
 [dependencies]
-volga = "0.7.2"
+volga = "0.7.3"
 tokio = { verion = "1", features = ["full"] }
 ```
 
@@ -115,7 +115,7 @@ Hello World!
 
 ```toml
 [dependencies]
-volga = "0.7.2"
+volga = "0.7.3"
 ```
 
 Тогда `main.rs` может выглядеть так:

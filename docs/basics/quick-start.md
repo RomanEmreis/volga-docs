@@ -20,7 +20,7 @@ Add the following dependencies in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = "0.7.2"
+volga = "0.7.3"
 tokio = { version = "1", features = ["full"] }
 ```
 ## Setup
@@ -99,7 +99,7 @@ This allows you to simplify your `Cargo.toml` dependencies:
 
 ```toml
 [dependencies]
-volga = "0.7.2"
+volga = "0.7.3"
 ```
 
 Your `main.rs` might then look like this:

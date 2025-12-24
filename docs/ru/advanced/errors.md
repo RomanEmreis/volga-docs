@@ -41,27 +41,81 @@ status!(error.status.as_u16(), "{:?}", error)
 [dependencies]
 volga = { version = "0.5.0", features = ["problem-details"] }
 ```
-Затем вы можете воспользоваться макросом [`problem!`](https://docs.rs/volga/latest/volga/macro.problem.html) в связке с [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err):
+Затем вы можете вернуть структуру [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) из обработчика запроса:
 ```rust
-use volga::{App, error::Error, problem};
+use volga::{App, error::Promlem};
+use serde::Serialize;
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_get("/problem", || async {
+        // Всегда выдает Problem Details
+
+        Problem::new(400)
+            .with_detail("Missing Parameter")
+            .with_instance("/problem")
+            .with_extensions(ValidationError {
+                invalid_params: vec![InvalidParam { 
+                    name: "id".into(), 
+                    reason: "The ID must be provided".into()
+                }]
+            })
+    }); 
+
+    app.run().await
+}
+
+#[derive(Default, Serialize)]
+struct ValidationError {
+    #[serde(rename = "invalid-params")]
+    invalid_params: Vec<InvalidParam>,
+}
+
+#[derive(Default, Serialize)]
+struct InvalidParam {
+    name: String,
+    reason: String,
+}
+```
+### Пример ответа:
+```json
+HTTP/1.1 400 Bad Request
+Content-Type: application/problem+json
+
+{
+    "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+    "title": "Internal Server Error",
+    "status": 400,
+    "detail": "Missing Parameter",
+    "instance": "/problem",
+    "invalid-params": [
+        { "name": "id", "reason": "The ID must be provided" }
+    ]
+}
+```
+
+## Центральная обработка ошибок с Problem Details
+
+Кроме того, вы можете комбинировать [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) с [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err), используя метод [`use_problem_details()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_problem_details):
+```rust
+use volga::{App, error::Error};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
     
     app.map_get("/error", || async {
-        std::io::IoError::other("some error")
+        // Всегда выдает ошибку, которая будет преобразована
+        // в Problem Details
+
+        std::io::Error::other("some error")
     });
 
-    // Регистрируем централизованный обработчик ошибок
-    app.map_err(|error: Error| async move {
-        let (status, instance, err) = error.into_parts();
-        problem! {
-            "status": status.as_u16(),
-            "detail": (err.to_string()),
-            "instance": instance
-        }
-    });
+    // Регистрируем централизованный обработчик ошибок, который выдает
+    // ответы в формате Problem Details
+    app.use_problem_details();  
 
     app.run().await
 }
@@ -79,28 +133,34 @@ Content-Type: application/problem+json
     "instance": "/error"
 }
 ```
-Значения полей `type` и `title` вычисляются автоматически на основе статус код, однако их можно переопределить:
+
+
+Поля `type` и `title` определяются из кода состояния, но могут быть переопределены:
 ```rust
-problem! {
-    "type": "https://tools.ietf.org/html/rfc9110#section-15.6.1",
-    "title": "Server Error",
-    "status": status.as_u16(),
-    "detail": (err.to_string()),
-    "instance": instance
-}
+Problem::new(400)
+    .with_type("https://tools.ietf.org/html/rfc9110#section-15.6.1")
+    .with_title("Server Error");
 ```
-Кроме того, при необходимости вы можете добавить в тело ответа любую дополнительную информацию:
+А так же, при необходимости можно добавить дополнительные сведения: 
 ```rust
-problem! {
-    "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-    "title": "Bad Request",
-    "status": 400,
-    "details": "Your request parameters didn't validate.",
-    "instance": "/some/resource/path",
-    "invalid-params": [
-        { "name": "id", "reason": "Must be a positive integer" }
-    ]
-};
+Problem::new(400)
+    .with_detail("Missing Parameter")
+    .with_instance("/problem")
+    .with_extensions(ValidationError {
+        invalid_params: vec![InvalidParam { 
+            name: "id".into(), 
+            reason: "The ID must be provided".into()
+        }]
+    })
+```
+или
+```rust
+Problem::new(400)
+    .with_detail("Missing Parameter")
+    .with_instance("/problem")
+    .add_param("reason", "The ID must be provided");
 ```
 
-Итоговый пример вы можете найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/global_error_handler/src/main.rs).
+Готовые примеры можно найти по следующим ссылкам:
+- [Центральная обработка ошибок](https://github.com/RomanEmreis/volga/blob/main/examples/global_error_handler/src/main.rs).
+- [Problem Details](https://github.com/RomanEmreis/volga/blob/main/examples/problem_details/src/main.rs)
