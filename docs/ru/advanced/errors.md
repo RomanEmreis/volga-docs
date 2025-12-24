@@ -39,7 +39,7 @@ status!(error.status.as_u16(), "{:?}", error)
 Чтобы включить эту возможность, убедитесь, что функция `problem-details` активирована в `Cargo.toml` вашего приложения:
 ```toml
 [dependencies]
-volga = { version = "0.5.0", features = ["problem-details"] }
+volga = { version = "0.7.3", features = ["problem-details"] }
 ```
 Затем вы можете вернуть структуру [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) из обработчика запроса:
 ```rust
