@@ -5,7 +5,7 @@ heroText: Volga
 tagline: Fast, async-first web framework for Rust built on Tokio + Hyper.
 actions:
   - text: Get Started
-    link: /basics/quick-start.html
+    link: /volga-docs/getting-started/quick-start.html
     type: primary
   - text: View API Docs
     link: https://docs.rs/volga/latest/volga/
@@ -97,7 +97,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Explore the docs
 
-- [Quick Start](/volga-docs/basics/quick-start.html)
-- [Dependency Injection](/volga-docs/advanced/di.html)
-- [Rate Limiting](/volga-docs/advanced/rate-limiting.html)
-- [Handling JSON](/volga-docs/data/json-payload.html)
+- [Quick Start](/volga-docs/getting-started/quick-start.html)
+- [Dependency Injection](/volga-docs/advanced-patterns/di.html)
+- [Rate Limiting](/volga-docs/middleware-infrastructure/rate-limiting.html)
+- [Handling JSON](/volga-docs/requests-responses/json-payload.html)

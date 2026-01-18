@@ -47,7 +47,7 @@ export default defineUserConfig({
           },
           {
             text: 'Getting Started',
-            prefix: '/basics/',
+            prefix: '/getting-started/',
             children: [
               'quick-start',
               'route-params',
@@ -57,35 +57,18 @@ export default defineUserConfig({
           },
           {
             text: 'Requests & Responses',
+            prefix: '/requests-responses/',
             children: [
-              {
-                text: 'Basics',
-                prefix: '/basics/',
-                children: [
-                  'headers'
-                ]
-              },
-              {
-                text: 'Data Formats',
-                prefix: '/data/',
-                children: [
-                  'json-payload',
-                  'form',
-                  'files'
-                ]
-              },
-              {
-                text: 'Advanced',
-                prefix: '/advanced/',
-                children: [
-                  'cookie'
-                ]
-              }
+              'headers',
+              'json-payload',
+              'form',
+              'files',
+              'cookie'
             ]
           },
           {
             text: 'Middleware & Infrastructure',
-            prefix: '/advanced/',
+            prefix: '/middleware-infrastructure/',
             children: [
               'middleware',
               'middlewares',
@@ -98,14 +81,14 @@ export default defineUserConfig({
           },
           {
             text: 'Security & Access',
-            prefix: '/advanced/',
+            prefix: '/security-access/',
             children: [
               'auth'
             ]
           },
           {
             text: 'Reliability & Observability',
-            prefix: '/advanced/',
+            prefix: '/reliability-observability/',
             children: [
               'errors',
               'tracing',
@@ -114,28 +97,17 @@ export default defineUserConfig({
           },
           {
             text: 'Protocols & Realtime',
+            prefix: '/protocols-realtime/',
             children: [
-              {
-                text: 'Protocols',
-                prefix: '/protocols/',
-                children: [
-                  'http',
-                  'https',
-                  'ws'
-                ]
-              },
-              {
-                text: 'Data Formats',
-                prefix: '/data/',
-                children: [
-                  'sse'
-                ]
-              }
+              'http',
+              'https',
+              'ws',
+              'sse'
             ]
           },
           {
             text: 'Advanced Patterns',
-            prefix: '/advanced/',
+            prefix: '/advanced-patterns/',
             children: [
               'di',
               'custom-trace-opt-head'
@@ -166,7 +138,7 @@ export default defineUserConfig({
           },
           {
             text: 'Старт',
-            prefix: '/ru/basics/',
+            prefix: '/ru/getting-started/',
             children: [
               'quick-start',
               'route-params',
@@ -176,35 +148,18 @@ export default defineUserConfig({
           },
           {
             text: 'Запросы и ответы',
+            prefix: '/ru/requests-responses/',
             children: [
-              {
-                text: 'Основы',
-                prefix: '/ru/basics/',
-                children: [
-                  'headers'
-                ]
-              },
-              {
-                text: 'Форматы данных',
-                prefix: '/ru/data/',
-                children: [
-                  'json-payload',
-                  'form',
-                  'files'
-                ]
-              },
-              {
-                text: 'Продвинутые сценарии',
-                prefix: '/ru/advanced/',
-                children: [
-                  'cookie'
-                ]
-              }
+              'headers',
+              'json-payload',
+              'form',
+              'files',
+              'cookie'
             ]
           },
           {
             text: 'Middleware и инфраструктура',
-            prefix: '/ru/advanced/',
+            prefix: '/ru/middleware-infrastructure/',
             children: [
               'middleware',
               'middlewares',
@@ -217,14 +172,14 @@ export default defineUserConfig({
           },
           {
             text: 'Безопасность и доступ',
-            prefix: '/ru/advanced/',
+            prefix: '/ru/security-access/',
             children: [
               'auth'
             ]
           },
           {
             text: 'Надежность и наблюдаемость',
-            prefix: '/ru/advanced/',
+            prefix: '/ru/reliability-observability/',
             children: [
               'errors',
               'tracing',
@@ -233,28 +188,17 @@ export default defineUserConfig({
           },
           {
             text: 'Протоколы и realtime',
+            prefix: '/ru/protocols-realtime/',
             children: [
-              {
-                text: 'Протоколы',
-                prefix: '/ru/protocols/',
-                children: [
-                  'http',
-                  'https',
-                  'ws'
-                ]
-              },
-              {
-                text: 'Форматы данных',
-                prefix: '/ru/data/',
-                children: [
-                  'sse'
-                ]
-              }
+              'http',
+              'https',
+              'ws',
+              'sse'
             ]
           },
           {
             text: 'Продвинутые паттерны',
-            prefix: '/ru/advanced/',
+            prefix: '/ru/advanced-patterns/',
             children: [
               'di',
               'custom-trace-opt-head'
