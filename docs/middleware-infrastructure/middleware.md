@@ -81,13 +81,12 @@ headers! {
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
-    app
-        .map_group("/positive")
-        .map_ok(group_response)
-        .map_get("/sum/{x}/{y}", sum);
+    app.group("/positive", |g| {
+        g.map_ok(group_response);
+        g.map_get("/sum/{x}/{y}", sum);
+    });
 
-    app
-        .map_get("/negative/sum/{x}/{y}", sum)
+    app.map_get("/negative/sum/{x}/{y}", sum)
         .map_ok(route_response);
 
     app.run().await
