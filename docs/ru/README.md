@@ -5,7 +5,7 @@ heroText: Волга
 tagline: Быстрый async-first веб-фреймворк для Rust на базе Tokio + Hyper.
 actions:
   - text: Быстрый старт
-    link: /volga-docs/ru/getting-started/quick-start.html
+    link: /ru/getting-started/quick-start.html
     type: primary
   - text: API Docs
     link: https://docs.rs/volga/latest/volga/

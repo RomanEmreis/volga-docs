@@ -5,7 +5,7 @@ heroText: Volga
 tagline: Fast, async-first web framework for Rust built on Tokio + Hyper.
 actions:
   - text: Get Started
-    link: /volga-docs/getting-started/quick-start.html
+    link: /getting-started/quick-start.html
     type: primary
   - text: View API Docs
     link: https://docs.rs/volga/latest/volga/
