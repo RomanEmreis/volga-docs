@@ -21,6 +21,8 @@ export default defineUserConfig({
   theme: defaultTheme({
     contributors: false,
     smoothScroll: true,
+    colorMode: 'auto',
+    colorModeSwitch: true,
     locales: {
       '/': {
         selectLanguageName: 'English',
