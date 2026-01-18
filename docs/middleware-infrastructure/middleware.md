@@ -16,22 +16,21 @@ volga = { version = "...", features = ["middleware"] }
 The [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter) method allows you to define conditional logic (such as validation or access control) for a specific route or a group of routes.
 
 ```rust
-use volga::App;
+use volga::{App, Path};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // Allow only positive numbers
-    app
-        .map_group("/positive")
-        .filter(|x: i32, y: i32| async move { x >= 0 && y >= 0 })
-        .map_get("/sum/{x}/{y}", sum);
+    app.group("/positive", |g| {
+        g.filter(|Path((x, y)): Path<(i32, i32)>| async move { x >= 0 && y >= 0 });
+        g.map_get("/sum/{x}/{y}", sum);
+    })
     
     // Allow only negative numbers
-    app
-        .map_get("/negative/sum/{x}/{y}", sum)
-        .filter(|x: i32, y: i32| async move { x < 0 && y < 0 });
+    app.map_get("/negative/sum/{x}/{y}", sum)
+        .filter(|Path((x, y)): Path<(i32, i32)>| async move { x < 0 && y < 0 });
 
     app.run().await
 }

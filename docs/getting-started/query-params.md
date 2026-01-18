@@ -1,7 +1,7 @@
 # Query Parameters
 
 Volga supports extraction of query parameters into dedicated struct by using [`Query<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/query/struct.Query.html). Where `T` should be either deserializable struct or [`HashMap`](https://doc.rust-lang.org/std/collections/struct.HashMap.html). 
-If you'd like to use a struct, similarly to [`Path<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.Path.html) for route params, make sure that you also have [serde](https://crates.io/crates/serde) installed.
+If you'd like to use a struct, similarly to [`NamedPath<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.NamedPath.html) for route params, make sure that you also have [serde](https://crates.io/crates/serde) installed.
 
 ## Access Query Parameters
 
