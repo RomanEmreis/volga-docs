@@ -7,7 +7,7 @@
 
 ```toml
 [dependencies]
-volga = { version = "0.4.9", features = ["tracing"] }
+volga = { version = "0.8.0", features = ["tracing"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 ```
@@ -50,8 +50,9 @@ async fn main() -> std::io::Result<()> {
 ```
 
 ## Подключение трассировочного middleware
-Однако в приведенном выше примере, если вы проверите заголовки ответа, вы не найдете ничего, связанного со span id. Чтобы исправить это, вы можете использовать метод [`use_tracing()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_tracing), который включает middleware, добавляющее этот заголовок.
-```rust{12-14,19-20}
+Однако в приведенном выше примере, если вы проверите заголовки ответа, вы не найдете ничего, связанного со span id. Чтобы исправить это, вы можете использовать методы [`with_tracing()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_tracing) или [`set_tracing`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_tracing), которые включают низкоуровневое middleware, добавляющее этот заголовок.
+
+```rust
 use volga::{App, tracing::TracingConfig};
 use tracing::trace;
 use tracing_subscriber::prelude::*;
@@ -69,9 +70,6 @@ async fn main() -> std::io::Result<()> {v
     
     let mut app = App::new()
         .set_tracing(tracing);
-
-    // Подключаем трассировочное middleware
-    app.use_tracing();
 
     app.map_get("/tracing", || async {
         trace!("handling the request!");

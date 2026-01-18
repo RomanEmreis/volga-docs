@@ -58,10 +58,10 @@ It is important to strictly keep the order of the arguments for the handler func
 So for the `hello/{descr}/{name}` it is supposed to be `|descr: String, name: String|`.
 :::
 
-## Using `Path<T>`
-Alternatively, use the [`Path<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.Path.html) to wrap the route parameters into a dedicated struct. Where `T` should be either deserializable struct or `HashMap`. Make sure that you also have [serde](https://crates.io/crates/serde) installed:
+## Using `NamedPath<T>`
+Alternatively, use the [`NamedPath<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.NamedPath.html) to wrap the route parameters into a dedicated struct. Where `T` should be either deserializable struct or `HashMap`. Make sure that you also have [serde](https://crates.io/crates/serde) installed:
 ```rust
-use volga::{App, Path, ok};
+use volga::{App, NamedPath, ok};
 use serde::Deserialize;
  
 #[derive(Deserialize)]
@@ -75,7 +75,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // GET /hello/John/35
-    app.map_get("/hello/{name}/{age}", |user: Path<User>| async move {
+    app.map_get("/hello/{name}/{age}", |user: NamedPath<User>| async move {
         // Here you can directly access the user struct fields
         ok!("Hello {}! You're age is: {}!", user.name, user.age)
     });

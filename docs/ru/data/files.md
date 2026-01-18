@@ -3,34 +3,10 @@
 Волга предоставляет мощные возможности для работы с файлами, включая скачивание и загрузку файлов в ваших веб-приложениях.
 
 ## Скачивание
-Функция [`Results::file()`](https://docs.rs/volga/latest/volga/http/response/struct.Results.html#method.file) позволяет скачивать файлы, отправляя их клиентам. Эта функция требует указания имени файла и открытого потока файла.
+Макрос [`file!`](https://docs.rs/volga/latest/volga/macro.file.html) позволяет скачивать файлы, отправляя их клиентам. Эта функция требует указания имени файла и открытого потока файла.
 
-### Использование `Results::file()`
-
-Пример настройки маршрута для скачивания файлов:
-```rust
-use volga::{App, Results};
-use tokio::fs::File;
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let mut app = App::new();
-
-    // GET /download
-    app.map_get("/download", || async {
-        let file_name = "path/to/example.txt";
-        let file = File::open(file_name).await?;
-        
-        Results::file(file_name, file).await
-    });
-
-    app.run().await
-}
-```
-
-### Упрощение с помощью макроса `file!`
-Волга также предоставляет макрос [`file!`](https://docs.rs/volga/latest/volga/macro.file.html), который немного упрощает процесс.  
-Макрос `file!` предлагает чуть более читаемый синтаксис для отправки файла:
+### Использование `file!`
+Макрос `file!` предлагает удобный синтаксис для отправки файла:
 ```rust
 use volga::{App, file};
 use tokio::fs::File;

@@ -4,7 +4,7 @@ Volga makes it possible to easily manage HTTP headers, both for reading from req
 
 ## Reading Request Headers
 
-To read headers from an incoming request, you can use [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) to extract a specific header from the request or [`Headers`](https://docs.rs/volga/latest/volga/headers/header/struct.Headers.html) to get the full [`HeadersMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html).
+To read headers from an incoming request, you can use [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) to extract a specific header from the request or [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) to get the full [`HeadersMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html) readonly snapshot.
 
 ### Using `Header<T>`
 ```rust
@@ -16,7 +16,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/hello", |content_type: Header<ContentType>| async move {
-        ok!("Content-Type: {content_type}")
+        ok!("{content_type}")
     });
 
     app.run().await
@@ -39,14 +39,11 @@ struct ApiKey;
 
 // FromHeaders trait implementation for ApiKey header
 impl FromHeaders for ApiKey {
+    const NAME: HeaderName = HeaderName::from_static("x-api-key");
+
     // Reading the header from request's HeaderMap 
     fn from_headers(headers: &HeaderMap) -> Option<&HeaderValue> {
         headers.get(Self::header_type())
-    }
-    
-    // String representation of the header
-    fn header_type() -> &'static str {
-        "x-api-key"
     }
 }
 
@@ -55,7 +52,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/hello", |api_key: Header<ApiKey>| async move {
-        ok!("Received x-api-key: {api_key}")
+        ok!("Received {api_key}")
     });
 
     app.run().await
@@ -66,17 +63,17 @@ Now you can test this by running `curl` command:
 > curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321"
 Received x-api-key: 123-321
 ```
-### Simplifying custom headers handling with `custom_headers!` macro
-The code above can be a way simplified by using the [`custom_headers!`](https://docs.rs/volga/latest/volga/macro.custom_headers.html) macro, expecially if you need to add multiple headers:
+### Simplifying custom headers handling with `headers!` macro
+The code above can be a way simplified by using the [`headers!`](https://docs.rs/volga/latest/volga/macro.headers.html) macro, expecially if you need to add multiple headers:
 ```rust
 use volga::{App, ok};
 use volga::headers::{
     Header,
-    cuctom_headers
+    headers
 };
 
 // Custom headers
-custom_headers! {
+headers! {
     (ApiKey, "x-api-key"),
     (CorrelationId, "x-corr-id")
 }
@@ -86,7 +83,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/hello", |api_key: Header<ApiKey>, corr_id: Header<CorrelationId>| async move {
-        ok!("Received x-api-key: {api_key}; correlation-id: {corr_id}")
+        ok!("Received {api_key}; {corr_id}")
     });
 
     app.run().await
@@ -109,7 +106,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/hello", |headers: HttpHeaders| async move {
-        let api_key = headers.get("x-api-key")
+        let api_key = headers.get_raw("x-api-key")
             .unwrap()
             .to_str()
             .unwrap();
@@ -132,7 +129,7 @@ It’s especially useful when you want to define strongly-typed header wrappers 
 Here’s an example of how to create and use a custom header:
 ```rust
 use volga::{App, ok};
-use volga::headers::{Header, http_header};
+use volga::headers::{Header, HttpHeaders, http_header};
 
 // Define a custom header type
 #[http_header("x-api-key")]
@@ -142,8 +139,9 @@ struct ApiKey;
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
-    app.map_get("/hello", |api_key: Header<ApiKey>| async move {
-        ok!("Received x-api-key: {api_key}")
+    app.map_get("/hello", |headers: HttpHeaders| async move {
+        let api_key: Header<ApiKey> = headrs.try_get()?;
+        ok!("Received {api_key}")
     });
 
     app.run().await
@@ -160,41 +158,31 @@ The [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.
 Make sure to enable it in your `Cargo.toml`:
 ```toml
 volga = { version = "...", features = ["macros"] }
+```
 :::
 
 ## Writing Response Headers
-To add custom headers to your response, create a new [`HashMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html), populate it with your headers, and then wrap it into a [`ResponseContext`](https://docs.rs/volga/latest/volga/http/response/struct.ResponseContext.html):
+
+The easiest way to respond with HTTP headers using the [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html) macro:
 ```rust
-use std::collections::HashMap;
-use volga::{App, ResponseContext};
+use volga::{App, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
    let mut app = App::new();
 
    app.map_get("/hello", || async {
-       let mut headers = HashMap::new();
-
-       // Insert custom headers
-       headers.insert(String::from("x-api-key"), String::from("some api key"));
-       headers.insert(String::from("Content-Type"), String::from("text/plain"));
-       
-       ResponseContext {
-           status: 200,
-           content: "Hello World!",
-           headers
-       }
+       ok!("Hello World!", [
+           ("Content-Type", "text/plain"),
+           ("x-api-key", "some api key")
+       ])
    });
 
    app.run().await
 }
 ```
-Here we need to use the [`ResponseContext`](https://docs.rs/volga/latest/volga/http/response/struct.ResponseContext.html) struct that allows us to customize the response with specific headers or status.
+This approach combines response content and headers succinctly, making your code more readable and maintainable.
 
-Both `headers` and `status` fields are required. If the **Content-Type** header is not persisted in the `headers` the `application/json` content type will be used by default. To use the specific one, you can just add it explicitly:
-```rust
-headers.insert(String::from("Content-Type"), String::from("text/plain"));
-```
 Execute the following `curl` command to see the headers in action:
 ```bash
 > curl -v "http://127.0.0.1:7878/hello"
@@ -222,49 +210,5 @@ The response will include your custom headers:
 * Connection #0 to host localhost left intact
 Hello World!
 ```
-## Simplifying Header Handling with `headers!` and `ok!`
-Volga also provides macros, such as [`headers!`](https://docs.rs/volga/latest/volga/macro.headers.html) and [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html), which streamline the process of setting headers:
-```rust
-use volga::{App, ResponseContext, headers};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-   let mut app = App::new();
-
-   app.map_get("/hello", || async {
-       let mut headers = headers![
-           ("x-api-key", "some api key"),
-           ("Content-Type", "text/plain")
-       ];
-
-       ResponseContext {
-           status: 200
-           content: "Hello World!",
-           headers
-       }
-   });
-
-   app.run().await
-}
-```
-Or we can combine them with the [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html) macro to make this even simpler:
-```rust
-use volga::{App, ok};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-   let mut app = App::new();
-
-   app.map_get("/hello", || async {
-       ok!("Hello World!", [
-           ("Content-Type", "text/plain"),
-           ("x-api-key", "some api key")
-       ])
-   });
-
-   app.run().await
-}
-```
-This approach combines response content and headers succinctly, making your code more readable and maintainable.
 
 Check out the full examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/headers/src/main.rs) and [here](https://github.com/RomanEmreis/volga/blob/main/examples/custom_request_headers/src/main.rs)

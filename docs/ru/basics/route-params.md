@@ -69,12 +69,12 @@ Hello beautiful world!
 Например, для маршрута `hello/{descr}/{name}` аргументы должны быть `|descr: String, name: String|`.
 :::
 
-## Использование `Path<T>`
+## Использование `NamedPath<T>`
 
-Кроме того, вы можете использовать [`Path<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.Path.html), чтобы обернуть параметры маршрута в специализированную структуру. Где `T` — это либо десериализуемая структура, либо `HashMap`. Убедитесь, что у вас установлена библиотека [serde](https://crates.io/crates/serde):
+Кроме того, вы можете использовать [`NamedPath<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.NamedPath.html), чтобы обернуть параметры маршрута в специализированную структуру. Где `T` — это либо десериализуемая структура, либо `HashMap`. Убедитесь, что у вас установлена библиотека [serde](https://crates.io/crates/serde):
 
 ```rust
-use volga::{App, Path, ok};
+use volga::{App, NamedPath, ok};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -88,7 +88,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // GET /hello/John/35
-    app.map_get("/hello/{name}/{age}", |user: Path<User>| async move {
+    app.map_get("/hello/{name}/{age}", |user: NamedPath<User>| async move {
         // Здесь вы можете напрямую обращаться к полям структуры
         ok!("Hello {}! You're age is: {}!", user.name, user.age)
     });

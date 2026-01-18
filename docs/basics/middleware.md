@@ -43,10 +43,14 @@ async fn sum(x: i32, y: i32) -> i32 {
 
 ## Handling Incoming Requests
 
-The [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) method gives you access to the [`HttpRequest`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequest.html), allowing you to inspect or mutate it before request processing.
+The [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) method gives you access to the [`HttpRequestMut`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html), allowing you to inspect or mutate request before request processing.
 
 ```rust
-use volga::{App, HttpRequest, headers::HeaderValue};
+use volga::{App, HttpRequestMut, headers};
+
+headers! {
+    (CustomHeader, "x-custom-header")
+}
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -54,10 +58,9 @@ async fn main() -> std::io::Result<()> {
 
     app
         .map_get("/sum", |x: i32, y: i32| async move { x + y })
-        .tap_req(|mut req: HttpRequest| async move { 
-            req.headers_mut()
-                .insert("X-Custom-Header", HeaderValue::from_static("Custom Value"));
-            req
+        .tap_req(|mut req: HttpRequestMut| async move { 
+            req.try_insert_header::<CustomHeader>("Custom Value")?;
+            Ok(req)
         });
 
     app.run().await
@@ -69,7 +72,11 @@ async fn main() -> std::io::Result<()> {
 Use the [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok) method to transform or augment successful HTTP responses.
 
 ```rust
-use volga::{App, HttpResponse, headers::HeaderValue};
+use volga::{App, HttpResponse, HttpResult, headers};
+
+headers! {
+    (CustomHeader, "x-custom-header")
+}
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -87,16 +94,14 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 
-async fn group_response(mut resp: HttpResponse) -> HttpResponse {
-    resp.headers_mut()
-        .insert("x-custom-header", HeaderValue::from_static("for-group"));
-    resp
+async fn group_response(mut resp: HttpResponse) -> HttpResult {
+    resp.try_insert_header::<CustomHeader>("for-group")?;
+    Ok(resp)
 }
 
-async fn route_response(mut resp: HttpResponse) -> HttpResponse {
-    resp.headers_mut()
-        .insert("x-custom-header", HeaderValue::from_static("for-route"));
-    resp
+async fn route_response(mut resp: HttpResponse) -> HttpResult {
+    resp.try_insert_header::<CustomHeader>("for-route")?;
+    Ok(resp)
 }
 
 async fn sum(x: i32, y: i32) -> i32 {
@@ -109,7 +114,7 @@ async fn sum(x: i32, y: i32) -> i32 {
 The [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) method lets you define custom error handlers - globally, per route, or for route groups.
 
 ```rust
-use volga::{App, HttpResult, error::Error, problem};
+use volga::{App, HttpResult, error::{Error, Problem}};
 use std::io::Error as IoError;
 
 #[tokio::main]
@@ -124,12 +129,7 @@ async fn main() -> std::io::Result<()> {
 }
 
 async fn handle_err(error: Error) -> HttpResult {
-    let (status, instance, err) = error.into_parts();
-    problem! {
-        "status": status.as_u16(),
-        "detail": err.to_string(),
-        "instance": instance,
-    }
+    Problem::from(error)
 }
 
 async fn produce_err() -> IoError {

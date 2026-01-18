@@ -4,7 +4,7 @@
 
 ## Чтение заголовков запроса
 
-Вы можете извлечь определённый заголовок из запроса с помощью [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) или получить все заголовки в виде хеш-таблицы [`Headers`](https://docs.rs/volga/latest/volga/headers/header/struct.Headers.html).
+Вы можете извлечь определённый заголовок из запроса с помощью [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) или получить все заголовки в виде [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) - слепка доступного только для чтения.
 
 ### Использование `Header<T>`
 ```rust
@@ -16,7 +16,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/hello", |content_type: Header<ContentType>| async move {
-        ok!("Content-Type: {content_type}")
+        ok!("{content_type}")
     });
 
     app.run().await
@@ -39,12 +39,10 @@ struct ApiKey;
 
 // Реализация FromHeaders для ApiKey
 impl FromHeaders for ApiKey {
+    const NAME: HeaderName = HeaderName::from_static("x-api-key");
+
     fn from_headers(headers: &HeaderMap) -> Option<&HeaderValue> {
         headers.get(Self::header_type())
-    }
-
-    fn header_type() -> &'static str {
-        "x-api-key"
     }
 }
 
@@ -53,7 +51,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/hello", |api_key: Header<ApiKey>| async move {
-        ok!("Received x-api-key: {api_key}")
+        ok!("Received {api_key}")
     });
 
     app.run().await
@@ -65,17 +63,17 @@ async fn main() -> std::io::Result<()> {
 Received x-api-key: 123-321
 ```
 
-### Упрощение работы с кастомными заголовками с помощью макроса `custom_headers!`
-Вместо реализации типажа вручную, вы можете использовать макрос [`custom_headers!`](https://docs.rs/volga/latest/volga/macro.custom_headers.html):
+### Упрощение работы с кастомными заголовками с помощью макроса `headers!`
+Вместо реализации типажа вручную, вы можете использовать макрос [`headers!`](https://docs.rs/volga/latest/volga/macro.headers.html):
 ```rust
 use volga::{App, ok};
 use volga::headers::{
     Header,
-    custom_headers
+    headers
 };
 
 // Кастомные заголовки
-custom_headers! {
+headers! {
     (ApiKey, "x-api-key"),
     (CorrelationId, "x-corr-id")
 }
@@ -85,7 +83,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/hello", |api_key: Header<ApiKey>, corr_id: Header<CorrelationId>| async move {
-        ok!("Received x-api-key: {api_key}; correlation-id: {corr_id}")
+        ok!("Received {api_key}; {corr_id}")
     });
 
     app.run().await
@@ -108,7 +106,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/hello", |headers: HttpHeaders| async move {
-        let api_key = headers.get("x-api-key")
+        let api_key = headers.get_raw("x-api-key")
             .unwrap()
             .to_str()
             .unwrap();
@@ -132,7 +130,8 @@ Received x-api-key: 123-321
 ```rust
 use volga::{App, ok};
 use volga::headers::{
-    Header, 
+    Header,
+    HttpHeaders,
     http_header
 };
 
@@ -144,8 +143,9 @@ struct ApiKey;
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
-    app.map_get("/hello", |api_key: Header<ApiKey>| async move {
-        ok!("Received x-api-key: {api_key}")
+    app.map_get("/hello", |headers: HttpHeaders| async move {
+        let api_key: Header<ApiKey> = headers.try_get()?;
+        ok!("Received {api_key}")
     });
 
     app.run().await
@@ -162,72 +162,11 @@ Received x-api-key: 123-321
 Убедитесь, что она включен в вашем `Cargo.toml`:
 ```toml
 volga = { version = "...", features = ["macro"] }
+```
 :::
 
 ## Запись заголовков в ответ
-Для добавления своих заголовков в ответ создайте [`HeaderMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html), добавьте заголовки, а затем оберните результат в [`ResponseContext`](https://docs.rs/volga/latest/volga/http/response/struct.ResponseContext.html):
-```rust
-use std::collections::HashMap;
-use volga::{App, ResponseContext};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-   let mut app = App::new();
-
-   app.map_get("/hello", || async {
-       let mut headers = HashMap::new();
-
-       headers.insert(String::from("x-api-key"), String::from("some api key"));
-       headers.insert(String::from("Content-Type"), String::from("text/plain"));
-       
-       ResponseContext {
-           status: 200,
-           content: "Hello World!",
-           headers
-       }
-   });
-
-   app.run().await
-}
-```
-Пример запроса:
-```bash
-> curl -v "http://127.0.0.1:7878/hello"
-```
-Ответ:
-```bash
-< HTTP/1.1 200 OK
-< content-type: text/plain
-< x-api-key: some api key
-Hello World!
-```
-
-## Упрощение при помощи макросов `headers!` и `ok!`
-Волга предоставляет такие макросы как [`headers!`](https://docs.rs/volga/latest/volga/macro.headers.html) и [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html), которые так же помогают упростить работу с заголовками:
-```rust
-use volga::{App, ResponseContext, headers};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-   let mut app = App::new();
-
-   app.map_get("/hello", || async {
-       let mut headers = headers![
-           ("x-api-key", "some api key"),
-           ("Content-Type", "text/plain")
-       ];
-
-       ResponseContext {
-           status: 200
-           content: "Hello World!",
-           headers
-       }
-   });
-
-   app.run().await
-}
-```
-При помощи макроса [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html) мы можем еще больше упростить код приведенный выше:
+Для добавления своих заголовков в ответ можно воспользоваться макросом [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html):
 ```rust
 use volga::{App, ok};
 
@@ -245,4 +184,17 @@ async fn main() -> std::io::Result<()> {
    app.run().await
 }
 ```
+
+Пример запроса:
+```bash
+> curl -v "http://127.0.0.1:7878/hello"
+```
+Ответ:
+```bash
+< HTTP/1.1 200 OK
+< content-type: text/plain
+< x-api-key: some api key
+Hello World!
+```
+
 Полные примеры доступны [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/headers/src/main.rs) и [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/custom_request_headers/src/main.rs).

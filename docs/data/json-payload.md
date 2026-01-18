@@ -37,46 +37,7 @@ You can wrap your struct fields into [`Option<T>`](https://doc.rust-lang.org/std
 :::
 
 ## Sending JSON Responses
-To send responses as JSON, Volga provides a couple of convenient methods:
-
-### Using `Results::from()`
-The [`Results::from()`](https://docs.rs/volga/latest/volga/http/response/struct.Results.html#method.from) method can be used, which has been described earlier, and the struct instance passed will be automatically serialized to JSON.
-
-### Using `Results::json()`
-The [`Results::json()`](https://docs.rs/volga/latest/volga/http/response/struct.Results.html#method.json) method directly serializes Rust structs into JSON output. Ensure your struct implements [`Serialize`](https://docs.rs/serde/latest/serde/trait.Serialize.html):
-```rust
-use volga::{App, Results};
-use serde::Serialize;
- 
-#[derive(Serialize)]
-struct User {
-    name: String,
-    age: i32
-}
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let mut app = App::new();
-
-    app.map_get("/hello", || async {
-        let user: User = User {
-            name: "John".into(),
-            age: 35
-        };
-
-        Results::json(user)
-    });
-
-    app.run().await
-}
-```
-To see the JSON response in action:
-```bash
-> curl http://127.0.0.1:7878/hello
-{"name":"John","age":35}
-```
-### Simplified Version with `ok!` Macro
-For a more streamlined approach, the [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html) macro automatically compiles into [`Results::json()`](https://docs.rs/volga/latest/volga/http/response/struct.Results.html#method.json) under the hood when passing a serializable object:
+To send responses as JSON, Volga provides the [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html) macro
 ```rust
 use volga::{App, ok};
 use serde::Serialize;
@@ -103,6 +64,12 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
+To see the JSON response in action:
+```bash
+> curl http://127.0.0.1:7878/hello
+{"name":"John","age":35}
+```
+
 Moreover, with the [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html) macro you can also use the untyped JSON:
 ```rust
 use volga::{App, ok};

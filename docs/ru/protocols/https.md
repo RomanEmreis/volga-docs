@@ -183,14 +183,17 @@ HTTP Strict Transport Security (HSTS) — это дополнительное у
 * HSTS требует как минимум одного успешного запроса HTTPS для установки политики HSTS.
 * Приложение должно проверять каждый запрос HTTP и перенаправлять или отклонять запрос HTTP.
 
-Вы можете включить HSTS, используя метод [`use_hsts()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_hsts):
+HSTS всегда включен по-умолчанию, однако вы можете настроить его используя метод [`with_hsts()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_hsts):
 ```rust
 use volga::{App, tls::TlsConfig};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new()
-        .with_tls(|tls| tls.with_https_redirection());
+        .with_tls(|tls| tls
+            .with_https_redirection()
+            .with_hsts(|hsts| hsts.with_preload(true))
+        );
 
     // Включает HSTS middleware
     app.use_hsts();

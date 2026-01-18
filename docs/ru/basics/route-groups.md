@@ -1,6 +1,6 @@
 # Группировка маршрутов
 
-Волга предоставляет удобный механизм для группировки маршрутов с использованием префиксов. Это помогает более эффективно организовывать и управлять связанными конечными точками. Этого можно добиться с помощью метода [`map_group`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_group). 
+Волга предоставляет удобный механизм для группировки маршрутов с использованием префиксов. Это помогает более эффективно организовывать и управлять связанными конечными точками. Этого можно добиться с помощью метода [`group`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.group). 
 
 После определения группы можно применять те же методы сопоставления (например, [`map_get`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_get) или [`map_post`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_post)), что и в основном приложении.
 
@@ -16,9 +16,10 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // Группирует маршруты по префиксу "/user"
-    app.map_group("/user")
-        .map_get("/{id}", get_user)               // GET /user/{id}
-        .map_post("/create/{name}", create_user); // POST /user/create/{name}
+    app.group("/user", |g| {
+      g.map_get("/{id}", get_user);              // GET /user/{id}
+      g.map_post("/create/{name}", create_user); // POST /user/create/{name}
+    });
 
     app.run().await
 }
@@ -37,7 +38,7 @@ async fn create_user(name: String) -> HttpResult {
 ### Пояснения
 
 - **Группировка**:  
-  Метод [`map_group`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_group) создает [`RouteGroup`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html), с префиксом `/user`.  
+  Метод [`group`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.group) создает [`RouteGroup`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html), с префиксом `/user`.  
 - **Сопоставление методов**:  
   Внутри группы маршруты определяются с помощью таких методов, как [`map_get`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_get) и [`map_post`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_post). Они работают так же, как и в основном объекте приложения, но наследуют префикс, определенный для группы.
 

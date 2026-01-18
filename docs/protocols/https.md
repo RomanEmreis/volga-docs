@@ -6,7 +6,7 @@ If you're not using the `full` feature set, ensure you enable the `tls` feature 
 
 ```toml
 [dependencies]
-volga = { version = "0.6.6", features = ["tls"] }
+volga = { version = "0.8.0", features = ["tls"] }
 ```
 
 ## Simple HTTPS server
@@ -18,7 +18,7 @@ First, enable the `dev-cert` feature in `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = { version = "0.6.6", features = ["tls", "dev-cert"] }
+volga = { version = "0.8.0", features = ["tls", "dev-cert"] }
 ```
 
 Next, in `main.rs` you can enable development certificates using the [`with_dev_cert()`](https://docs.rs/volga/latest/volga/tls/struct.TlsConfig.html#method.with_dev_cert) method.
@@ -183,17 +183,17 @@ Because HSTS is enforced by the client, it has some limitations:
 * HSTS requires at least one successful HTTPS request to establish the HSTS policy.
 * The application must check every HTTP request and redirect or reject the HTTP request.
 
-You can enable HSTS in Volga by leveraging [`use_hsts()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_hsts) method:
+HSTS in Volga is enabled by default, however you may configure it by leveraging [`with_hsts()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_hsts) method:
 ```rust
 use volga::{App, tls::TlsConfig};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new()
-        .with_tls(|tls| tls.with_https_redirection());
-
-    // Enables HSTS middleware
-    app.use_hsts();
+        .with_tls(|tls| tls
+            .with_https_redirection()
+            .with_hsts(|hsts| hsts.with_preload(true))
+        );
 
     app.map_get("/hello", || async {
         "Hello, World!"

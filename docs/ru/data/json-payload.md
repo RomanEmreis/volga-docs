@@ -37,46 +37,7 @@ curl -X POST "http://127.0.0.1:7878/hello" -H "Content-Type: application/json" -
 :::
 
 ## Отправка JSON
-Для отправки ответов в формате JSON Волга предоставляет несколько удобных методов:
-
-### Использование `Results::from()`
-Метод [`Results::from()`](https://docs.rs/volga/latest/volga/http/response/struct.Results.html#method.from), который был описан ранее, автоматически сериализует переданную структуру в JSON.
-
-### Использование `Results::json()`
-Метод [`Results::json()`](https://docs.rs/volga/latest/volga/http/response/struct.Results.html#method.json) напрямую сериализует структуры Rust в JSON. Убедитесь, что ваша структура реализует trait [`Serialize`](https://docs.rs/serde/latest/serde/trait.Serialize.html):
-```rust
-use volga::{App, Results};
-use serde::Serialize;
-
-#[derive(Serialize)]
-struct User {
-    name: String,
-    age: i32
-}
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let mut app = App::new();
-
-    app.map_get("/hello", || async {
-        let user: User = User {
-            name: "John".into(),
-            age: 35
-        };
-
-        Results::json(user)
-    });
-
-    app.run().await
-}
-```
-Проверяем:
-```bash
-> curl http://127.0.0.1:7878/hello
-{"name":"John","age":35}
-```
-### Упрощенная версия с макросом `ok!`
-Для более компактного подхода используйте макрос [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html), который автоматически компилируется в [`Results::json()`](https://docs.rs/volga/latest/volga/http/response/struct.Results.html#method.json), если передать сериализуемый объект:
+Для отправки ответов в формате JSON Волга предоставляет макрос [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html):
 ```rust
 use volga::{App, ok};
 use serde::Serialize;
@@ -103,6 +64,12 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
+Проверяем:
+```bash
+> curl http://127.0.0.1:7878/hello
+{"name":"John","age":35}
+```
+
 Кроме того, с помощью макроса [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html) можно использовать и неструктурированные JSON-данные:
 ```rust
 use volga::{App, ok};

@@ -7,7 +7,7 @@ If you're not using the `full` feature set, ensure you enable the `tracing` feat
 
 ```toml
 [dependencies]
-volga = { version = "0.4.9", features = ["tracing"] }
+volga = { version = "0.8.0", features = ["tracing"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 ```
@@ -51,14 +51,14 @@ Then, if you'll hit the `GET http://127.0.0.1:7878/tracing` endpoint multiple ti
 
 ## Enabling tracing middleware
 With the above example, however, if you check the response headers, you won't find anything related to span id, etc.
-To include it you may want to leverage the [`use_tracing()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_tracing) method that enabled the middleware that adds this header.
-```rust{12-14,19-20}
+To include it you may want to leverage the [`with_tracing()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_tracing) or [`set_tracing`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_tracing) methods that enable the low-level middleware that adds this header.
+```rust
 use volga::{App, tracing::TracingConfig};
 use tracing::trace;
 use tracing_subscriber::prelude::*;
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {v
+async fn main() -> std::io::Result<()> {
     // Configuring tracing output to the stdout
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
@@ -70,9 +70,6 @@ async fn main() -> std::io::Result<()> {v
     
     let mut app = App::new()
         .set_tracing(tracing);
-
-    // Enable tracing middleware
-    app.use_tracing();
 
     app.map_get("/tracing", || async {
         trace!("handling the request!");
