@@ -97,7 +97,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Explore the docs
 
-- [Quick Start](/basics/quick-start.html)
-- [Dependency Injection](/advanced/di.html)
-- [Rate Limiting](/advanced/rate-limiting.html)
-- [Handling JSON](/data/json-payload.html)
+- [Quick Start](/volga-docs/basics/quick-start.html)
+- [Dependency Injection](/volga-docs/advanced/di.html)
+- [Rate Limiting](/volga-docs/advanced/rate-limiting.html)
+- [Handling JSON](/volga-docs/data/json-payload.html)
