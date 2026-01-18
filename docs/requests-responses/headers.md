@@ -4,7 +4,7 @@ Volga makes it possible to easily manage HTTP headers, both for reading from req
 
 ## Reading Request Headers
 
-To read headers from an incoming request, you can use [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) to extract a specific header from the request or [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) to get the full [`HeadersMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html) read-only snapshot.
+To read headers from an incoming request, you can use [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) to extract a specific header from the request or [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) to get the full [`HeaderMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html) read-only snapshot.
 
 ### Using `Header<T>`
 ```rust
