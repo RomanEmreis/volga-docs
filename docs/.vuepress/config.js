@@ -46,53 +46,99 @@ export default defineUserConfig({
             link: '/',
           },
           {
-            text: 'Basics',
+            text: 'Getting Started',
             prefix: '/basics/',
             children: [
               'quick-start',
               'route-params',
               'query-params',
-              `route-groups`,
-              'headers',
-              'middleware'
+              'route-groups'
             ]
           },
           {
-            text: 'Data Formats',
-            prefix: '/data/',
+            text: 'Requests & Responses',
             children: [
-              'json-payload',
-              'form',
-              'files',
-              'sse'
+              {
+                text: 'Basics',
+                prefix: '/basics/',
+                children: [
+                  'headers'
+                ]
+              },
+              {
+                text: 'Data Formats',
+                prefix: '/data/',
+                children: [
+                  'json-payload',
+                  'form',
+                  'files'
+                ]
+              },
+              {
+                text: 'Advanced',
+                prefix: '/advanced/',
+                children: [
+                  'cookie'
+                ]
+              }
             ]
           },
           {
-            text: 'Protocols',
-            prefix: '/protocols/',
-            children: [
-              'http',
-              'https',
-              'ws'
-            ]
-          },
-          {
-            text: 'Advanced',
+            text: 'Middleware & Infrastructure',
             prefix: '/advanced/',
             children: [
+              'middleware',
               'middlewares',
-              `compression`,
-              `decompression`,
-              'rate-limiting',
-              'errors',
-              'di',
-              'tracing',
-              'static-files',
+              'compression',
+              'decompression',
               'cors',
-              'cookie',
-              'auth',
-              'cancellation',
-              'custom-trace-opt-head',
+              'static-files',
+              'rate-limiting'
+            ]
+          },
+          {
+            text: 'Security & Access',
+            prefix: '/advanced/',
+            children: [
+              'auth'
+            ]
+          },
+          {
+            text: 'Reliability & Observability',
+            prefix: '/advanced/',
+            children: [
+              'errors',
+              'tracing',
+              'cancellation'
+            ]
+          },
+          {
+            text: 'Protocols & Realtime',
+            children: [
+              {
+                text: 'Protocols',
+                prefix: '/protocols/',
+                children: [
+                  'http',
+                  'https',
+                  'ws'
+                ]
+              },
+              {
+                text: 'Data Formats',
+                prefix: '/data/',
+                children: [
+                  'sse'
+                ]
+              }
+            ]
+          },
+          {
+            text: 'Advanced Patterns',
+            prefix: '/advanced/',
+            children: [
+              'di',
+              'custom-trace-opt-head'
             ]
           }
         ]
@@ -119,53 +165,99 @@ export default defineUserConfig({
             link: '/ru/',
           },
           {
-            text: 'Основы',
+            text: 'Старт',
             prefix: '/ru/basics/',
             children: [
               'quick-start',
               'route-params',
               'query-params',
-              `route-groups`,
-              'headers',
-              'middleware'
+              'route-groups'
             ]
           },
           {
-            text: 'Форматы данных',
-            prefix: '/ru/data/',
+            text: 'Запросы и ответы',
             children: [
-              'json-payload',
-              'form',
-              'files',
-              'sse'
+              {
+                text: 'Основы',
+                prefix: '/ru/basics/',
+                children: [
+                  'headers'
+                ]
+              },
+              {
+                text: 'Форматы данных',
+                prefix: '/ru/data/',
+                children: [
+                  'json-payload',
+                  'form',
+                  'files'
+                ]
+              },
+              {
+                text: 'Продвинутые сценарии',
+                prefix: '/ru/advanced/',
+                children: [
+                  'cookie'
+                ]
+              }
             ]
           },
           {
-            text: 'Протоколы',
-            prefix: '/ru/protocols/',
-            children: [
-              'http',
-              'https',
-              'ws'
-            ]
-          },
-          {
-            text: 'Продвинутые сценарии',
+            text: 'Middleware и инфраструктура',
             prefix: '/ru/advanced/',
             children: [
+              'middleware',
               'middlewares',
-              `compression`,
-              `decompression`,
-              'rate-limiting',
-              'errors',
-              'di',
-              'tracing',
+              'compression',
+              'decompression',
+              'cors',
               'static-files',
-              `cors`,
-              'cookie',
-              'auth',
-              'cancellation',
-              'custom-trace-opt-head',
+              'rate-limiting'
+            ]
+          },
+          {
+            text: 'Безопасность и доступ',
+            prefix: '/ru/advanced/',
+            children: [
+              'auth'
+            ]
+          },
+          {
+            text: 'Надежность и наблюдаемость',
+            prefix: '/ru/advanced/',
+            children: [
+              'errors',
+              'tracing',
+              'cancellation'
+            ]
+          },
+          {
+            text: 'Протоколы и realtime',
+            children: [
+              {
+                text: 'Протоколы',
+                prefix: '/ru/protocols/',
+                children: [
+                  'http',
+                  'https',
+                  'ws'
+                ]
+              },
+              {
+                text: 'Форматы данных',
+                prefix: '/ru/data/',
+                children: [
+                  'sse'
+                ]
+              }
+            ]
+          },
+          {
+            text: 'Продвинутые паттерны',
+            prefix: '/ru/advanced/',
+            children: [
+              'di',
+              'custom-trace-opt-head'
             ]
           }
         ]
