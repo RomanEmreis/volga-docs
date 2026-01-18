@@ -6,7 +6,7 @@
 
 ```toml
 [dependencies]
-volga = { version = "0.6.6", features = ["tls"] }
+volga = { version = "...", features = ["tls"] }
 ```
 
 ## Простой HTTPS сервер
@@ -18,7 +18,7 @@ volga = { version = "0.6.6", features = ["tls"] }
 
 ```toml
 [dependencies]
-volga = { version = "0.6.6", features = ["tls", "dev-cert"] }
+volga = { version = "...", features = ["tls", "dev-cert"] }
 ```
 
 Затем, в файле `main.rs` вы можете включить сертификаты разработки с помощью метода [`with_dev_cert()`](https://docs.rs/volga/latest/volga/tls/struct.TlsConfig.html#method.with_dev_cert).

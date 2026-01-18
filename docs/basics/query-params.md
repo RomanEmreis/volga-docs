@@ -74,7 +74,7 @@ For the example above if we run the `curl` command by ignoring some parameter, e
 > curl "http://localhost:7878/hello?name=John&age=33"
 
 < HTTP/1.1 400 BAD REQUEST
-Query parsing error: missing field `name`
+Query parsing error: missing field `email`
 ```
 However, if we want to keep some of the parameters as optional, we can wrap them in [`Option<T>`](https://doc.rust-lang.org/std/option/) as follows:
 ```rust
@@ -93,8 +93,8 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/hello", |params: Query<Params>| async move {
-        if let Some(email) = params.email {
-            ok!("Hello {} (email: {})! Your age is: {}", params.name, params.email, params.age)
+        if let Some(email) = params.email.as_deref() {
+            ok!("Hello {} (email: {})! Your age is: {}", params.name, email, params.age)
         } else {
             ok!("Hello {}! Your age is: {}", params.name, params.age)
         }

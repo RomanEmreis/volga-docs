@@ -1,8 +1,8 @@
 # Центральный обработчик ошибок
 
-Волга предоставляет централизованный механизм обработки ошибок, который перехватывает всё ошибки, которые реализуют типаж [`Errors`](https://doc.rust-lang.org/std/error/trait.Error.html), возникающие в обработчиках запросов и middleware. Для этого можно воспользоваться методом [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) типа [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) для регистрации функции, обрабатывающей ошибки.
+Волга предоставляет централизованный механизм обработки ошибок, который перехватывает все ошибки, реализующие типаж [`Error`](https://doc.rust-lang.org/std/error/trait.Error.html), возникающие в обработчиках запросов и middleware. Для этого можно воспользоваться методом [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) типа [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) для регистрации функции, обрабатывающей ошибки.
 
-Функция принимает объект тип [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) и должна вернуть ответ, реализующий типаж [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html).
+Функция принимает объект типа [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) и должна вернуть ответ, реализующий типаж [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html).
 
 ### Пример:
 ```rust
@@ -13,7 +13,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
     
     app.map_get("/error", || async {
-        std::io::IoError::other("some error")
+        std::io::Error::other("some error")
     });
 
     // Регистрируем централизованный обработчик ошибок
@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
 ```rust
 status!(error.status.as_u16(), "{:?}", error)
 ```
-Фактически, именно так реализован обработчик ошибок по-умолчанию. Если мы удалим метод [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err), ответ останется неизменным. Однако переопределение пользовательского обработчика ошибок обеспечивает большую гибкость для логгирования и трассировки.
+Фактически, именно так реализован обработчик ошибок по умолчанию. Если мы удалим метод [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err), ответ останется неизменным. Однако переопределение пользовательского обработчика ошибок обеспечивает большую гибкость для логирования и трассировки.
 
 ## Problem Details
 
@@ -39,11 +39,11 @@ status!(error.status.as_u16(), "{:?}", error)
 Чтобы включить эту возможность, убедитесь, что функция `problem-details` активирована в `Cargo.toml` вашего приложения:
 ```toml
 [dependencies]
-volga = { version = "0.7.3", features = ["problem-details"] }
+volga = { version = "...", features = ["problem-details"] }
 ```
 Затем вы можете вернуть структуру [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) из обработчика запроса:
 ```rust
-use volga::{App, error::Promlem};
+use volga::{App, error::Problem};
 use serde::Serialize;
 
 #[tokio::main]
@@ -86,7 +86,7 @@ Content-Type: application/problem+json
 
 {
     "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-    "title": "Internal Server Error",
+    "title": "Bad Request",
     "status": 400,
     "detail": "Missing Parameter",
     "instance": "/problem",
@@ -141,7 +141,7 @@ Problem::new(400)
     .with_type("https://tools.ietf.org/html/rfc9110#section-15.6.1")
     .with_title("Server Error");
 ```
-А так же, при необходимости можно добавить дополнительные сведения: 
+А также при необходимости можно добавить дополнительные сведения: 
 ```rust
 Problem::new(400)
     .with_detail("Missing Parameter")

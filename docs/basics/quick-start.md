@@ -1,6 +1,6 @@
 # Quick Start
 
-Build a basic "Hello, World" Web API using Volga.
+Build a basic "Hello, World" HTTP API using Volga.
 
 ## Prerequisites
 
@@ -20,8 +20,8 @@ Add the following dependencies in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = "0.8.0"
-tokio = { version = "1", features = ["full"] }
+volga = { version = "..." }
+tokio = { version = "...", features = ["full"] }
 ```
 ## Setup
 Create your main application in `main.rs`:
@@ -93,13 +93,13 @@ Hello, World!
 ```
 
 ### Blocking Example
-Volga also supports building a Web API without explicitly depending on `tokio`, using the [`run_blocking()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run_blocking) method.
+Volga also supports building an HTTP API without explicitly depending on `tokio`, using the [`run_blocking()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run_blocking) method.
 
 This allows you to simplify your `Cargo.toml` dependencies:
 
 ```toml
 [dependencies]
-volga = "0.8.0"
+volga = { version = "..." }
 ```
 
 Your `main.rs` might then look like this:

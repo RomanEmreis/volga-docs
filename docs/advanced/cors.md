@@ -6,7 +6,7 @@ It is included in the `full` feature set. However, if you are not using it, you 
 
 ```toml
 [dependencies]
-volga = { version = "0.5.5", features = ["middleware"] }
+volga = { version = "...", features = ["middleware"] }
 ```
 
 ## Basic Setup

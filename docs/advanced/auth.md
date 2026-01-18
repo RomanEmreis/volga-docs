@@ -10,7 +10,7 @@ Basic authentication is a simple mechanism for verifying user credentials (usern
 
 ```toml
 [dependencies]
-volga = { version = "0.6.1", features = ["basic-auth"] }
+volga = { version = "...", features = ["basic-auth"] }
 ```
 
 ### Example
@@ -57,7 +57,7 @@ JWT (JSON Web Tokens) are more robust and support structured claims. This allows
 
 ```toml
 [dependencies]
-volga = { version = "0.6.1", features = ["jwt-auth-full"] }
+volga = { version = "...", features = ["jwt-auth-full"] }
 ```
 
 ### Token Generation

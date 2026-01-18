@@ -9,7 +9,7 @@
 
 ```toml
 [dependencies]
-volga = { version = "0.5.8", features = ["cookie"] }
+volga = { version = "...", features = ["cookie"] }
 
 # Необязательно: явно добавить библиотеку cookie
 cookie = "0.18.1"
@@ -109,13 +109,13 @@ if let Some(cookie) = cookies.get("session-id") {
 
 ```toml
 # Для signed cookies
-volga = { version = "0.5.8", features = ["signed-cookie", "di"] }
+volga = { version = "...", features = ["signed-cookie", "di"] }
 
 # Для private cookies
-volga = { version = "0.5.8", features = ["private-cookie", "di"] }
+volga = { version = "...", features = ["private-cookie", "di"] }
 
 # Для всех cookies
-volga = { version = "0.5.8", features = ["cookie-full", "di"] }
+volga = { version = "...", features = ["cookie-full", "di"] }
 ```
 
 ### Регистрация секретных ключей

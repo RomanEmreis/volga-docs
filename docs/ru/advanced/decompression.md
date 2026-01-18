@@ -8,13 +8,13 @@
 
 ```toml
 [dependencies]
-volga = { version = "0.4.6", features = ["decompression-full"] }
+volga = { version = "...", features = ["decompression-full"] }
 ```
 Если вам нужны определенные алгоритмы, вы можете указать их явно:
 
 ```toml
 [dependencies]
-volga = { version = "0.4.6", features = ["decompression-brotli", "decompression-gzip"] }
+volga = { version = "...", features = ["decompression-brotli", "decompression-gzip"] }
 ```
 
 ## Пример использования

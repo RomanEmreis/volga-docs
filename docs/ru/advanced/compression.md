@@ -8,13 +8,13 @@
 
 ```toml
 [dependencies]
-volga = { version = "0.4.6", features = ["compression-full"] }
+volga = { version = "...", features = ["compression-full"] }
 ```
 Если вам нужны определенные алгоритмы сжатия, вы можете указать их явно:
 
 ```toml
 [dependencies]
-volga = { version = "0.4.6", features = ["compression-brotli", "compression-gzip"] }
+volga = { version = "...", features = ["compression-brotli", "compression-gzip"] }
 ```
 
 ## Пример использования

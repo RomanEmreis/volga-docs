@@ -9,13 +9,13 @@
 ### WebSockets
 ```toml
 [dependencies]
-volga = { version = "0.5.3", features = ["ws"] }
+volga = { version = "...", features = ["ws"] }
 ```
 
 ### WebTransport
 ```toml
 [dependencies]
-volga = { version = "0.5.3", features = ["http2", "ws"] }
+volga = { version = "...", features = ["http2", "ws"] }
 ```
 
 ## Простой сервер

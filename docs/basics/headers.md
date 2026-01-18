@@ -4,7 +4,7 @@ Volga makes it possible to easily manage HTTP headers, both for reading from req
 
 ## Reading Request Headers
 
-To read headers from an incoming request, you can use [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) to extract a specific header from the request or [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) to get the full [`HeadersMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html) readonly snapshot.
+To read headers from an incoming request, you can use [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) to extract a specific header from the request or [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) to get the full [`HeadersMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html) read-only snapshot.
 
 ### Using `Header<T>`
 ```rust
@@ -32,7 +32,7 @@ Content-Type: text/plain
 If you need to read some custom HTTP header, you can specify a **unit struct** that describes your header and then implement the [`FromHeaders`](https://docs.rs/volga/latest/volga/headers/trait.FromHeaders.html) trait for it, here is the example of how you can do it:
 ```rust
 use volga::{App, ok};
-use volga::headers::{Header, FromHeaders, HeaderMap, HeaderValue};
+use volga::headers::{Header, FromHeaders, HeaderMap, HeaderName, HeaderValue};
 
 // The `x-api-key` header
 struct ApiKey;
@@ -64,7 +64,7 @@ Now you can test this by running `curl` command:
 Received x-api-key: 123-321
 ```
 ### Simplifying custom headers handling with `headers!` macro
-The code above can be a way simplified by using the [`headers!`](https://docs.rs/volga/latest/volga/macro.headers.html) macro, expecially if you need to add multiple headers:
+The code above can be simplified by using the [`headers!`](https://docs.rs/volga/latest/volga/macro.headers.html) macro, especially if you need to add multiple headers:
 ```rust
 use volga::{App, ok};
 use volga::headers::{
@@ -91,7 +91,7 @@ async fn main() -> std::io::Result<()> {
 ```
 And then you can test this by running `curl` command:
 ```bash
-> curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321" -H "correlation-id: 456-654"
+> curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321" -H "x-corr-id: 456-654"
 Received x-api-key: 123-321; correlation-id: 456-654
 ```
 
@@ -140,7 +140,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/hello", |headers: HttpHeaders| async move {
-        let api_key: Header<ApiKey> = headrs.try_get()?;
+        let api_key: Header<ApiKey> = headers.try_get()?;
         ok!("Received {api_key}")
     });
 
