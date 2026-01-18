@@ -26,7 +26,7 @@ async fn main() -> std::io::Result<()> {
     app.group("/positive", |g| {
         g.filter(|Path((x, y)): Path<(i32, i32)>| async move { x >= 0 && y >= 0 });
         g.map_get("/sum/{x}/{y}", sum);
-    })
+    });
     
     // Разрешаем только отрицательные числа
     app.map_get("/negative/sum/{x}/{y}", sum)
