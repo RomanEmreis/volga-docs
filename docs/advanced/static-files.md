@@ -10,7 +10,7 @@ If you're not using the `full` feature set, you need to enable the `static-files
 
 ```toml
 [dependencies]
-volga = { version = "0.5.2", features = ["static-files"] }
+volga = { version = "...", features = ["static-files"] }
 ```
 
 ### Folder Structure

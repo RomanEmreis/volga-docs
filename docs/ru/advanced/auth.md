@@ -10,7 +10,7 @@
 
 ```toml
 [dependencies]
-volga = { version = "0.6.1", features = ["basic-auth"] }
+volga = { version = "...", features = ["basic-auth"] }
 ```
 
 ### Пример
@@ -57,7 +57,7 @@ JWT (JSON Web Token) предоставляет расширенные возм�
 
 ```toml
 [dependencies]
-volga = { version = "0.6.1", features = ["jwt-auth-full"] }
+volga = { version = "...", features = ["jwt-auth-full"] }
 ```
 
 ### Генерация токена

@@ -8,7 +8,7 @@ Volga предоставляет инструменты для построен�
 
 ```toml
 [dependencies]
-volga = { version = "0.6.0", features = ["middleware"] }
+volga = { version = "...", features = ["middleware"] }
 ```
 
 ## Фильтры

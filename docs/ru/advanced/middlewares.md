@@ -12,7 +12,7 @@
 Прежде всего, если вы не используете функцию `full`, то либо необходимо добавить функцию `middleware`, либо переключиться на `full` в вашем `Cargo.toml`:
 ```toml
 [dependencies]
-volga = { version = "0.6.0", features = ["middleware"] }
+volga = { version = "...", features = ["middleware"] }
 ```
 
 ### Пример: Последовательное выполнение Middleware

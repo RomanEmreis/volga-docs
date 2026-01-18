@@ -9,13 +9,13 @@ If running under HTTP/2, Volga uses WebTransport by default and falls back to We
 ### WebSockets
 ```toml
 [dependencies]
-volga = { version = "0.5.3", features = ["ws"] }
+volga = { version = "...", features = ["ws"] }
 ```
 
 ### WebTransport
 ```toml
 [dependencies]
-volga = { version = "0.5.3", features = ["http2", "ws"] }
+volga = { version = "...", features = ["http2", "ws"] }
 ```
 
 ## Simple Server

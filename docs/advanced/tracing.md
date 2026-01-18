@@ -7,7 +7,7 @@ If you're not using the `full` feature set, ensure you enable the `tracing` feat
 
 ```toml
 [dependencies]
-volga = { version = "0.8.0", features = ["tracing"] }
+volga = { version = "...", features = ["tracing"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 ```

@@ -6,7 +6,7 @@
 
 ```toml
 [dependencies]
-volga = { version = "0.5.5", features = ["middleware"] }
+volga = { version = "...", features = ["middleware"] }
 ```
 
 ## Базовая настройка  

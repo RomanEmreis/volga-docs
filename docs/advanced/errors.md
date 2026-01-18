@@ -1,6 +1,6 @@
 # Global Error Handling
 
-Volga provides a global error handling mechanism that catches all [`Errors`](https://doc.rust-lang.org/std/error/trait.Error.html) that may occur in request handlers and middleware. This can be easily achieved using the [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) method of the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) to register a function that handles errors.  
+Volga provides a global error handling mechanism that catches all [`Error`](https://doc.rust-lang.org/std/error/trait.Error.html) values that may occur in request handlers and middleware. This can be easily achieved using the [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) method of the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) to register a function that handles errors.  
 
 The function receives an [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) object and should return a response that implements the [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) trait.  
 
@@ -13,7 +13,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
     
     app.map_get("/error", || async {
-        std::io::IoError::other("some error")
+        std::io::Error::other("some error")
     });
 
     // Enabling global error handler
@@ -39,11 +39,11 @@ Volga fully supports the [Problem Details](https://www.rfc-editor.org/rfc/rfc945
 To enable this functionality, ensure that the `problem-details` feature is activated in your app's `Cargo.toml`:
 ```toml
 [dependencies]
-volga = { version = "0.7.3", features = ["problem-details"] }
+volga = { version = "...", features = ["problem-details"] }
 ```
 Then, you may return the [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) from request handler:
 ```rust
-use volga::{App, error::Promlem};
+use volga::{App, error::Problem};
 use serde::Serialize;
 
 #[tokio::main]
@@ -86,7 +86,7 @@ Content-Type: application/problem+json
 
 {
     "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-    "title": "Internal Server Error",
+    "title": "Bad Request",
     "status": 400,
     "detail": "Missing Parameter",
     "instance": "/problem",

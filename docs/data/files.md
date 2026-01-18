@@ -56,7 +56,7 @@ Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/exampl
 In case, if you need to upload multiple files, you can leverage a multipart file uploading. It's a separate feature  and if you're not using the `full` feature set it can be explicitly enabled in your `Cargo.toml`:
 ```toml
 [dependencies]
-volga = { version = "0.4.5", features = ["multipart"] }
+volga = { version = "...", features = ["multipart"] }
 ```
 ### Example of Multipart file uploading
 This example demonstrates how to upload multiple files:
@@ -79,7 +79,8 @@ async fn main() -> std::io::Result<()> {
 
 If you need more control or do some job per each file you can use the [`next_field()`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html#method.next_field) method:
 ```rust
-use volga::{App, Multipart};
+use std::path::Path;
+use volga::{App, Multipart, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

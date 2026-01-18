@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
 Вы можете посмотреть полный пример скачивания файлов [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/file_download/src/main.rs).
 
 ## Загрузка файлов
-Для загрузки файлов Волга предоставляет методы [`save()`](https://docs.rs/volga/latest/volga/http/endpoints/args/file/struct.FileStream.html#method.save) и [`save_as()`](https://docs.rs/volga/latest/volga/http/endpoints/args/file/struct.FileStream.html#method.save_as), которые является частью [`volga::File`](https://docs.rs/volga/latest/volga/http/endpoints/args/file/struct.FileStream.html). Эти методы позволяет передавать входящий поток байт непосредственно в файл на сервере, обеспечивая высокую производительность.
+Для загрузки файлов Волга предоставляет методы [`save()`](https://docs.rs/volga/latest/volga/http/endpoints/args/file/struct.FileStream.html#method.save) и [`save_as()`](https://docs.rs/volga/latest/volga/http/endpoints/args/file/struct.FileStream.html#method.save_as), которые являются частью [`volga::File`](https://docs.rs/volga/latest/volga/http/endpoints/args/file/struct.FileStream.html). Эти методы позволяют передавать входящий поток байт непосредственно в файл на сервере, обеспечивая высокую производительность.
 
 ### Пример загрузки файла
 Пример настройки маршрута для обработки загрузки файлов:
@@ -53,13 +53,13 @@ async fn main() -> std::io::Result<()> {
 Полный пример можно посмотреть [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/file_upload/src/main.rs).
 
 ## Загрузка нескольких файлов
-В случае, если вам нужно загрузить несколько файлов, вы можете использовать многокомпонентную загрузку файлов. Это отдельная функция, и если вы не используете набор функций `full`, ее можно явно включить в `Cargo.toml`:
+В случае если вам нужно загрузить несколько файлов, вы можете использовать многокомпонентную загрузку файлов. Это отдельная функция, и если вы не используете набор функций `full`, её можно явно включить в `Cargo.toml`:
 ```toml
 [dependencies]
-volga = { version = "0.4.5", features = ["multipart"] }
+volga = { version = "...", features = ["multipart"] }
 ```
 ### Пример загрузки нескольких файлов
-Пример демонстрирующий многокомпонентную загрузку файлов:
+Пример, демонстрирующий многокомпонентную загрузку файлов:
 ```rust
 use volga::{App, Multipart};
 
@@ -79,7 +79,8 @@ async fn main() -> std::io::Result<()> {
 
 Если вам нужен больший контроль или нужно выполнить какую-то работу для каждого файла, вы можете использовать метод [`next_field()`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html#method.next_field):
 ```rust
-use volga::{App, Multipart};
+use std::path::Path;
+use volga::{App, Multipart, ok};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

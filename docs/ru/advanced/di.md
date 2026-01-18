@@ -6,7 +6,7 @@
 
 ```toml
 [dependencies]
-volga = { version = "0.7.0", features = ["di"] }
+volga = { version = "...", features = ["di"] }
 ```
 
 ## Жизненные циклы зависимостей

@@ -8,14 +8,14 @@ To enable response compression, ensure you include the necessary feature in your
 
 ```toml
 [dependencies]
-volga = { version = "0.4.6", features = ["compression-full"] }
+volga = { version = "...", features = ["compression-full"] }
 ```
 
 If you only need specific compression algorithms, specify them explicitly:
 
 ```toml
 [dependencies]
-volga = { version = "0.4.6", features = ["compression-brotli", "compression-gzip"] }
+volga = { version = "...", features = ["compression-brotli", "compression-gzip"] }
 ```
 
 ## Example of usage

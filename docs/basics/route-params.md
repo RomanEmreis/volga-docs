@@ -19,7 +19,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 ## Testing the Route
-In the curly brackets, we described the `GET` route with a `name` parameter, so if we run requests over the Web API, it will call the desired handler and pass an appropriate `name` value as a function argument.
+In the curly brackets, we described the `GET` route with a `name` parameter, so if we run requests over the HTTP API, it will call the desired handler and pass an appropriate `name` value as a function argument.
 
 Using the `curl` command, you can test the above configuration:
 ```bash
@@ -77,7 +77,7 @@ async fn main() -> std::io::Result<()> {
     // GET /hello/John/35
     app.map_get("/hello/{name}/{age}", |user: NamedPath<User>| async move {
         // Here you can directly access the user struct fields
-        ok!("Hello {}! You're age is: {}!", user.name, user.age)
+        ok!("Hello {}! Your age is: {}!", user.name, user.age)
     });
 
     app.run().await

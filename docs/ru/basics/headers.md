@@ -4,7 +4,7 @@
 
 ## Чтение заголовков запроса
 
-Вы можете извлечь определённый заголовок из запроса с помощью [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) или получить все заголовки в виде [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) - слепка доступного только для чтения.
+Вы можете извлечь определённый заголовок из запроса с помощью [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) или получить все заголовки в виде [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) — снимка, доступного только для чтения.
 
 ### Использование `Header<T>`
 ```rust
@@ -32,7 +32,7 @@ Content-Type: text/plain
 Если вам нужно прочитать свой HTTP-заголовок, создайте структуру и реализуйте для неё типаж [`FromHeaders`](https://docs.rs/volga/latest/volga/headers/trait.FromHeaders.html):
 ```rust
 use volga::{App, ok};
-use volga::headers::{Header, FromHeaders, HeaderMap, HeaderValue};
+use volga::headers::{Header, FromHeaders, HeaderMap, HeaderName, HeaderValue};
 
 // Заголовок `x-api-key`
 struct ApiKey;
@@ -91,7 +91,7 @@ async fn main() -> std::io::Result<()> {
 ```
 Пример запроса:
 ```bash
-> curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321" -H "correlation-id: 456-654"
+> curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321" -H "x-corr-id: 456-654"
 Received x-api-key: 123-321; correlation-id: 456-654
 ```
 
@@ -122,8 +122,8 @@ async fn main() -> std::io::Result<()> {
 Received x-api-key: 123-321
 ```
 
-### Using `http_header`
-Ещё один удобный способ работы с кастомными HTTP-заголовками - это аттрибут [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html).
+### Использование `http_header`
+Ещё один удобный способ работы с кастомными HTTP-заголовками — это атрибут [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html).
 Он особенно полезен, когда вы хотите определить строго типизированные заголовки с чёткой семантикой.
 
 Вот пример создания и использования такого заголовка:
@@ -158,10 +158,10 @@ Received x-api-key: 123-321
 ```
 
 :::info
-Аттрибут [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html) является частью дополнительной функции `macros`.
-Убедитесь, что она включен в вашем `Cargo.toml`:
+Атрибут [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html) является частью дополнительной функции `macros`.
+Убедитесь, что она включена в вашем `Cargo.toml`:
 ```toml
-volga = { version = "...", features = ["macro"] }
+volga = { version = "...", features = ["macros"] }
 ```
 :::
 

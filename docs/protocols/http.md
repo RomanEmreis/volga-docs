@@ -1,13 +1,13 @@
 # HTTP/1 and HTTP/2
-Starting **v0.3.1**, a specific version of HTTP can be configured.
-By default, if Volga dependency added like this:
+Starting with **v0.3.1**, you can configure the HTTP version.
+If you add Volga like this, HTTP/1 is used by default:
 ```toml
 [dependencies]
-volga = "0.3.1"
+volga = { version = "..." }
 ```
-There HTTP/1 will be used, and if we need HTTP/2, it can be enabled if we explicitly add the `http2` feature or use the `full`.
+To enable HTTP/2, add the `http2` feature or use `full`:
 ```toml
 [dependencies]
-volga = { version = "0.3.1", features = ["full"] }
+volga = { version = "...", features = ["full"] }
 ```
-With the `full` the HTTP/2 will be used if it is possible, otherwise it will be switched to HTTP/1 automatically.
+With `full`, HTTP/2 is used when possible, and it falls back to HTTP/1 automatically.

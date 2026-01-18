@@ -1,12 +1,12 @@
 # Volga
 
-Fast, Easy, and very flexible Web Framework for Rust based on [Tokio](https://tokio.rs/) runtime and [hyper](https://hyper.rs/) for fun and painless microservices crafting.
+Fast, easy, and flexible web framework for Rust, built on the [Tokio](https://tokio.rs/) runtime and [hyper](https://hyper.rs/) for building HTTP APIs and microservices.
 
 ## Getting Started
 ```toml
 [dependencies]
-volga = "0.8.0"
-tokio = { version = "1", features = ["full"] }
+volga = { version = "..." }
+tokio = { version = "...", features = ["full"] }
 ```
 ```rust
 use volga::*;
@@ -21,7 +21,7 @@ async fn main() -> std::io::Result<()> {
         ok!("Hello {}!", name)
     });
     
-    // Run it
+    // Run the server
     app.run().await
 }
 ```
@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
 <div align="center">
 
 <a href="https://romanemreis.github.io/volga-docs/basics/quick-start.html" style="display: inline-block; padding: 10px 20px; background-color: #299764; color: #fff; text-decoration: none; border-radius: 25px; font-family: Arial, sans-serif; font-size: 16px; text-align: center;">
-  <p3>Learn More</p3>
+  <span>Learn More</span>
 </a>
 
 </div>

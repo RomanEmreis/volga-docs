@@ -6,7 +6,7 @@ If you're not using the `full` feature set, ensure you enable the `tls` feature 
 
 ```toml
 [dependencies]
-volga = { version = "0.8.0", features = ["tls"] }
+volga = { version = "...", features = ["tls"] }
 ```
 
 ## Simple HTTPS server
@@ -18,7 +18,7 @@ First, enable the `dev-cert` feature in `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = { version = "0.8.0", features = ["tls", "dev-cert"] }
+volga = { version = "...", features = ["tls", "dev-cert"] }
 ```
 
 Next, in `main.rs` you can enable development certificates using the [`with_dev_cert()`](https://docs.rs/volga/latest/volga/tls/struct.TlsConfig.html#method.with_dev_cert) method.

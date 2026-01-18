@@ -10,7 +10,7 @@
 
 ```toml
 [dependencies]
-volga = { version = "0.5.2", features = ["static-files"] }
+volga = { version = "...", features = ["static-files"] }
 ```
 
 ### Структура папок

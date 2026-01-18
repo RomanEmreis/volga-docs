@@ -29,11 +29,11 @@ async fn main() -> std::io::Result<()> {
 ```
 To test this endpoint, you can use the `curl` command like this:
 ```bash
-curl -X POST "http://127.0.0.1:7878/hello" -H "Content-Type: application/json" -d "{ "name": "John", "age": 35 }"
+curl -X POST "http://127.0.0.1:7878/hello" -H "Content-Type: application/json" -d '{ "name": "John", "age": 35 }'
 Hello John!
 ```
 ::: tip
-You can wrap your struct fields into [`Option<T>`](https://doc.rust-lang.org/std/option/) as similar as described for [Optional Query Params](/volga-docs/basics/query-params.html#handle-optional-params)
+You can wrap your struct fields into [`Option<T>`](https://doc.rust-lang.org/std/option/) as described in [Optional Query Params](/volga-docs/basics/query-params.html#handle-optional-params)
 :::
 
 ## Sending JSON Responses
