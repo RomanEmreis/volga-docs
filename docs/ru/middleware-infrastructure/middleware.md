@@ -16,22 +16,21 @@ volga = { version = "...", features = ["middleware"] }
 Метод [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter) позволяет задать условную логику (например, проверку прав или валидацию) для конкретного маршрута или группы маршрутов.
 
 ```rust
-use volga::App;
+use volga::{App, Path};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // Разрешаем только положительные числа
-    app
-        .map_group("/positive")
-        .filter(|x: i32, y: i32| async move { x >= 0 && y >= 0 })
-        .map_get("/sum/{x}/{y}", sum);
+    app.group("/positive", |g| {
+        g.filter(|Path((x, y)): Path<(i32, i32)>| async move { x >= 0 && y >= 0 });
+        g.map_get("/sum/{x}/{y}", sum);
+    })
     
     // Разрешаем только отрицательные числа
-    app
-        .map_get("/negative/sum/{x}/{y}", sum)
-        .filter(|x: i32, y: i32| async move { x < 0 && y < 0 });
+    app.map_get("/negative/sum/{x}/{y}", sum)
+        .filter(|Path((x, y)): Path<(i32, i32)>| async move { x < 0 && y < 0 });
 
     app.run().await
 }
