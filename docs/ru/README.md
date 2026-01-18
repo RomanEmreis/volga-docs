@@ -5,7 +5,7 @@ heroText: Волга
 tagline: Быстрый async-first веб-фреймворк для Rust на базе Tokio + Hyper.
 actions:
   - text: Быстрый старт
-    link: /ru/basics/quick-start.html
+    link: /volga-docs/ru/getting-started/quick-start.html
     type: primary
   - text: API Docs
     link: https://docs.rs/volga/latest/volga/
@@ -97,7 +97,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Изучайте документацию дальше
 
-- [Быстрый старт](/ru/basics/quick-start.html)
-- [Dependency Injection](/ru/advanced/di.html)
-- [Rate Limiting](/ru/advanced/rate-limiting.html)
-- [Handling JSON](/ru/data/json-payload.html)
+- [Быстрый старт](/volga-docs/ru/getting-started/quick-start.html)
+- [Dependency Injection](/volga-docs/ru/advanced-patterns/di.html)
+- [Rate Limiting](/volga-docs/ru/middleware-infrastructure/rate-limiting.html)
+- [Handling JSON](/volga-docs/ru/requests-responses/json-payload.html)

@@ -46,53 +46,71 @@ export default defineUserConfig({
             link: '/',
           },
           {
-            text: 'Basics',
-            prefix: '/basics/',
+            text: 'Getting Started',
+            prefix: '/getting-started/',
             children: [
               'quick-start',
               'route-params',
               'query-params',
-              `route-groups`,
-              'headers',
-              'middleware'
+              'route-groups'
             ]
           },
           {
-            text: 'Data Formats',
-            prefix: '/data/',
+            text: 'Requests & Responses',
+            prefix: '/requests-responses/',
             children: [
+              'headers',
               'json-payload',
               'form',
               'files',
+              'cookie'
+            ]
+          },
+          {
+            text: 'Middleware & Infrastructure',
+            prefix: '/middleware-infrastructure/',
+            children: [
+              'middleware',
+              'middlewares',
+              'compression',
+              'decompression',
+              'cors',
+              'static-files',
+              'rate-limiting'
+            ]
+          },
+          {
+            text: 'Security & Access',
+            prefix: '/security-access/',
+            children: [
+              'auth'
+            ]
+          },
+          {
+            text: 'Reliability & Observability',
+            prefix: '/reliability-observability/',
+            children: [
+              'errors',
+              'tracing',
+              'cancellation'
+            ]
+          },
+          {
+            text: 'Protocols & Realtime',
+            prefix: '/protocols-realtime/',
+            children: [
+              'http',
+              'https',
+              'ws',
               'sse'
             ]
           },
           {
-            text: 'Protocols',
-            prefix: '/protocols/',
+            text: 'Advanced Patterns',
+            prefix: '/advanced-patterns/',
             children: [
-              'http',
-              'https',
-              'ws'
-            ]
-          },
-          {
-            text: 'Advanced',
-            prefix: '/advanced/',
-            children: [
-              'middlewares',
-              `compression`,
-              `decompression`,
-              'rate-limiting',
-              'errors',
               'di',
-              'tracing',
-              'static-files',
-              'cors',
-              'cookie',
-              'auth',
-              'cancellation',
-              'custom-trace-opt-head',
+              'custom-trace-opt-head'
             ]
           }
         ]
@@ -119,53 +137,71 @@ export default defineUserConfig({
             link: '/ru/',
           },
           {
-            text: 'Основы',
-            prefix: '/ru/basics/',
+            text: 'Старт',
+            prefix: '/ru/getting-started/',
             children: [
               'quick-start',
               'route-params',
               'query-params',
-              `route-groups`,
-              'headers',
-              'middleware'
+              'route-groups'
             ]
           },
           {
-            text: 'Форматы данных',
-            prefix: '/ru/data/',
+            text: 'Запросы и ответы',
+            prefix: '/ru/requests-responses/',
             children: [
+              'headers',
               'json-payload',
               'form',
               'files',
+              'cookie'
+            ]
+          },
+          {
+            text: 'Middleware и инфраструктура',
+            prefix: '/ru/middleware-infrastructure/',
+            children: [
+              'middleware',
+              'middlewares',
+              'compression',
+              'decompression',
+              'cors',
+              'static-files',
+              'rate-limiting'
+            ]
+          },
+          {
+            text: 'Безопасность и доступ',
+            prefix: '/ru/security-access/',
+            children: [
+              'auth'
+            ]
+          },
+          {
+            text: 'Надежность и наблюдаемость',
+            prefix: '/ru/reliability-observability/',
+            children: [
+              'errors',
+              'tracing',
+              'cancellation'
+            ]
+          },
+          {
+            text: 'Протоколы и realtime',
+            prefix: '/ru/protocols-realtime/',
+            children: [
+              'http',
+              'https',
+              'ws',
               'sse'
             ]
           },
           {
-            text: 'Протоколы',
-            prefix: '/ru/protocols/',
+            text: 'Продвинутые паттерны',
+            prefix: '/ru/advanced-patterns/',
             children: [
-              'http',
-              'https',
-              'ws'
-            ]
-          },
-          {
-            text: 'Продвинутые сценарии',
-            prefix: '/ru/advanced/',
-            children: [
-              'middlewares',
-              `compression`,
-              `decompression`,
-              'rate-limiting',
-              'errors',
               'di',
-              'tracing',
-              'static-files',
-              `cors`,
-              'cookie',
-              'auth',
-              'cancellation',
-              'custom-trace-opt-head',
+              'custom-trace-opt-head'
             ]
           }
         ]
