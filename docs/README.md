@@ -26,6 +26,30 @@ Volga ships with performance-friendly primitives and modern developer ergonomics
 
 ## Examples that hook developers fast
 
+### Extractors that keep handlers clean
+
+```rust
+use volga::{App, Json, ok};
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct User {
+    name: String,
+    age: i32,
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_post("/hello", |user: Json<User>| async move {
+        ok!("Hello {}!", user.name)
+    });
+
+    app.run().await
+}
+```
+
 ### Dependency Injection that feels native
 
 ```rust
@@ -57,42 +81,17 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-### Rate limiting with named policies
+### Rate Limiting with named policies
 
 ```rust
-use std::time::Duration;
-use volga::{App, rate_limiting::{by, FixedWindow}};
+use volga::{App, rate_limiting::{by, TokenBucket}};
 
-let burst = FixedWindow::new(100, Duration::from_secs(30)).with_name("burst");
-
-let mut app = App::new().with_fixed_window(burst);
+let burst = TokenBucket::new(2, 0.5).with_name("burst");
+let mut app = App::new()
+  .with_token_bucket(burst);
 
 app.map_get("/upload", upload_handler)
-    .fixed_window(by::ip().using("burst"));
-```
-
-### Extractors that keep handlers clean
-
-```rust
-use volga::{App, Json, ok};
-use serde::Deserialize;
-
-#[derive(Deserialize)]
-struct User {
-    name: String,
-    age: i32,
-}
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let mut app = App::new();
-
-    app.map_post("/hello", |user: Json<User>| async move {
-        ok!("Hello {}!", user.name)
-    });
-
-    app.run().await
-}
+    .token_bucket(by::ip().using("burst"));
 ```
 
 ## Explore the docs
