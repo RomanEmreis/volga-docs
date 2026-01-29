@@ -1,10 +1,10 @@
-# WebSockets & WebTransport
+# WebSockets
 
-Volga provides built-in support for both WebSockets and WebTransport using a single, flexible API. This allows seamless connection handling at all levels, from establishing a connection to processing individual messages, with the ability to inject dependencies or access HTTP metadata.
+Volga provides built-in support for WebSockets using a single, flexible API. This allows seamless connection handling at all levels, from establishing a connection to processing individual messages, with the ability to inject dependencies or access HTTP metadata.
 
-## Switching Between WebSockets and WebTransport
+## Switching Between WebSockets and WebSocket-over-HTTP/2
 
-If running under HTTP/2, Volga uses WebTransport by default and falls back to WebSockets when only an HTTP/1 connection is available. This behavior can be configured using feature flags.
+If running under HTTP/2, Volga uses WebSocket-over-HTTP/2 by default and falls back to WebSockets when only an HTTP/1 connection is available. This behavior can be configured using feature flags.
 
 ### WebSockets
 ```toml
@@ -12,7 +12,7 @@ If running under HTTP/2, Volga uses WebTransport by default and falls back to We
 volga = { version = "...", features = ["ws"] }
 ```
 
-### WebTransport
+### WebSocket-over-HTTP/2
 ```toml
 [dependencies]
 volga = { version = "...", features = ["http2", "ws"] }
@@ -47,7 +47,7 @@ use volga::{App, ws::WebSocket};
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
-    // Simple WebSocket/WebTransport handler
+    // Simple WebSocket handler
     app.map_ws("/ws", |mut ws: WebSocket| async move {
         // Do something when a connection established
 
@@ -74,7 +74,7 @@ use futures_util::{SinkExt, StreamExt};
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
-    // Simple WebSocket/WebTransport handler
+    // Simple WebSocket handler
     app.map_ws("/ws", |ws: WebSocket| async move {
         // Split socket into sender and receiver that can be used separately
         let (mut sender, mut receiver) = ws.split();
