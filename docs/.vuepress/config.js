@@ -29,64 +29,6 @@ export default defineUserConfig({
     colorMode: 'auto',
     colorModeSwitch: true,
     locales: {
-      '/': {
-        selectLanguageName: 'English',
-        navbar: [
-          {
-            text: 'Home',
-            link: '/en/',
-          },
-          {
-            text: 'API Docs',
-            link: 'https://docs.rs/volga/latest/volga/',
-          },
-          {
-            text: 'GitHub',
-            link: 'https://github.com/RomanEmreis/volga',
-          },
-        ],
-        sidebar: [
-          {
-            text: 'Home',
-            link: '/en/',
-          },
-          {
-            text: 'Getting Started',
-            prefix: '/en/getting-started/',
-            children: ['quick-start', 'route-params', 'query-params', 'route-groups'],
-          },
-          {
-            text: 'Requests & Responses',
-            prefix: '/en/requests-responses/',
-            children: ['headers', 'json-payload', 'form', 'files', 'cookie'],
-          },
-          {
-            text: 'Middleware & Infrastructure',
-            prefix: '/en/middleware-infrastructure/',
-            children: ['middleware', 'middlewares', 'compression', 'decompression', 'cors', 'static-files', 'rate-limiting'],
-          },
-          {
-            text: 'Security & Access',
-            prefix: '/en/security-access/',
-            children: ['auth'],
-          },
-          {
-            text: 'Reliability & Observability',
-            prefix: '/en/reliability-observability/',
-            children: ['errors', 'tracing', 'cancellation'],
-          },
-          {
-            text: 'Protocols & Realtime',
-            prefix: '/en/protocols-realtime/',
-            children: ['http', 'https', 'ws', 'sse'],
-          },
-          {
-            text: 'Advanced Patterns',
-            prefix: '/en/advanced-patterns/',
-            children: ['di', 'custom-trace-opt-head'],
-          },
-        ],
-      },
       '/en/': {
         selectLanguageName: 'English',
         navbar: [
