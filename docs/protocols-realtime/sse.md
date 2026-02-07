@@ -7,10 +7,8 @@ Volga includes built-in support for [Server-Sent Events (SSE)](https://developer
 The example below demonstrates how to create a simple SSE endpoint. It maps a `GET` request to `/events`, sets the `text/event-stream` content type, and continuously sends the message `"Hello, world!"` once per second until the client disconnects:
 
 ```rust
-use volga::{App, error::Error, http::sse::Message, sse};
-use futures_util::stream::repeat_with;
+use volga::{App, http::sse::Message, sse_stream};
 use std::time::Duration;
-use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -18,11 +16,13 @@ async fn main() -> std::io::Result<()> {
 
     app.map_get("/events", || async {
         // Create a stream of messages sent every second
-        let stream = repeat_with(|| Message::new().data("Hello, world!"))
-            .map(Ok::<_, Error>)
-            .throttle(Duration::from_secs(1));
-
-        sse!(stream)
+        sse_stream! {
+            loop {
+                yield Message::new().data("Hello, world!");
+            
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+        }
     });
 
     app.run().await

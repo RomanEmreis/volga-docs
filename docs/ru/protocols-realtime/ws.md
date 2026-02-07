@@ -67,8 +67,7 @@ async fn main() -> std::io::Result<()> {
 Для продвинутых вариантов использования вы можете разделить WebSocket на отдельные компоненты отправителя и получателя с помощью функции [`split()`](https://docs.rs/volga/latest/volga/ws/websocket/struct.WebSocket.html#method.split):
 
 ```rust
-use volga::{App, ws::WebSocket};
-use futures_util::{SinkExt, StreamExt};
+use volga::{App, ws::WebSocket, WsEvent};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -84,8 +83,11 @@ async fn main() -> std::io::Result<()> {
         });
         
         tokio::spawn(async move {
-            while let Some(Ok(msg)) = receiver.next().await {
-                println!("Received: {}", msg);
+            while let Some(Ok(msg)) = receiver.recv::<String>().await {
+                match msg { 
+                    WsEvent::Data(msg) => println!("received: {msg}; msg #{value}"),
+                    WsEvent::Close(frame) => println!("close: {frame:?}"),
+                }
             }
         });
     });

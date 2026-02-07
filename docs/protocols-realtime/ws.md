@@ -67,8 +67,7 @@ This example functions similarly to the first but offers greater control over th
 For advanced use cases, you can split the WebSocket into separate sender and receiver components using [`split()`](https://docs.rs/volga/latest/volga/ws/websocket/struct.WebSocket.html#method.split):
 
 ```rust
-use volga::{App, ws::WebSocket};
-use futures_util::{SinkExt, StreamExt};
+use volga::{App, ws::WebSocket, WsEvent};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -84,8 +83,11 @@ async fn main() -> std::io::Result<()> {
         });
         
         tokio::spawn(async move {
-            while let Some(Ok(msg)) = receiver.next().await {
-                println!("Received: {}", msg);
+            while let Some(Ok(msg)) = receiver.recv::<String>().await {
+                match msg { 
+                    WsEvent::Data(msg) => println!("received: {msg}; msg #{value}"),
+                    WsEvent::Close(frame) => println!("close: {frame:?}"),
+                }
             }
         });
     });
@@ -96,7 +98,7 @@ async fn main() -> std::io::Result<()> {
 
 This example sends a single message upon connection and logs incoming messages.
 
-For the full control, for instance, to configure a connection or specify some sub-protocols there is another one method - [`map_conn()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_conn), you may use it like this:
+For full control, for instance, to configure a connection or specify some sub-protocols, there is another method - [`map_conn()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_conn), you may use it like this:
 
 ```rust
 use volga::{App, ws::{WebSocketConnection, WebSocket}};
@@ -111,7 +113,7 @@ async fn main() -> std::io::Result<()> {
 }
 
 async fn handle(conn: WebSocketConnection) -> HttpResult {
-    // Here can be configured a connection and extracted something from DI or HTTP metadata
+    // Here can be configured a connection and extract something from DI or HTTP metadata
     conn.with_protocols(["foo-ws"]).on(handle_socket)
 }
 
@@ -126,7 +128,7 @@ async fn handle_message(msg: String) -> String {
 
 ## Dependency Injection
 
-You can inject any dependency from DI container by using the [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) at any layer in a regular way described [here](/volga-docs/advanced-patterns/di.html).
+You can inject any dependency from the DI container by using the [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) at any layer in a regular way described [here](/volga-docs/advanced-patterns/di.html).
 
 ```rust
 use volga::{App, ws::{WebSocketConnection, WebSocket}};
