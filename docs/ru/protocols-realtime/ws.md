@@ -128,7 +128,7 @@ async fn handle_message(msg: String) -> String {
 
 ## Внедрение зависимостей
 
-Вы можете внедрить любую зависимость из контейнера DI, на любом уровне, используя [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) стандартным способом, описанным [здесь](/volga-docs/advanced-patterns/di.html).
+Вы можете внедрить любую зависимость из контейнера DI, на любом уровне, используя [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) стандартным способом, описанным [здесь](/volga-docs/en/advanced-patterns/di.html).
 
 ```rust
 use volga::{App, ws::{WebSocketConnection, WebSocket}};

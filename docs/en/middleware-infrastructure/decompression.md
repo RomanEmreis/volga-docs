@@ -46,7 +46,7 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-Then you can test it with `curl` command after creating and packing the `users.json.gz` file which you can make from the response of the Response Compressions topic's [example](/volga-docs/getting-started/compression.html#example-of-usage):
+Then you can test it with `curl` command after creating and packing the `users.json.gz` file which you can make from the response of the Response Compressions topic's [example](/volga-docs/en/getting-started/compression.html#example-of-usage):
 ```bash
 curl -v -X POST --location 'http://127.0.0.1:7878/users' \
     -H "Content-Type: application/json" \
