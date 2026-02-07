@@ -15,7 +15,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/events", || async {
-        // Create a stream of messages sent every second
+        // Создаем поток сообщений с отправкой раз в секунду
         sse_stream! {
             loop {
                 yield Message::new().data("Hello, world!");
