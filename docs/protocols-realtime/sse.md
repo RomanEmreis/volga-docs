@@ -7,7 +7,7 @@ Volga includes built-in support for [Server-Sent Events (SSE)](https://developer
 The example below demonstrates how to create a simple SSE endpoint. It maps a `GET` request to `/events`, sets the `text/event-stream` content type, and continuously sends the message `"Hello, world!"` once per second until the client disconnects:
 
 ```rust
-use volga::{App, error::Error, http::sse::Message, sse_stream};
+use volga::{App, http::sse::Message, sse_stream};
 use std::time::Duration;
 
 #[tokio::main]
