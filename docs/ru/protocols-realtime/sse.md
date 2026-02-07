@@ -7,7 +7,7 @@
 В примере ниже показано, как создать простую конечную точку SSE. Она сопоставляет запрос `GET` с маршрутом `/events`, устанавливает Content Type как `text/event-stream` и непрерывно отправляет сообщение `"Hello, world!"` раз в секунду, пока клиент не отключится:
 
 ```rust
-use volga::{App, error::Error, http::sse::Message, sse_stream};
+use volga::{App, http::sse::Message, sse_stream};
 use std::time::Duration;
 
 #[tokio::main]
