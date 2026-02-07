@@ -5,8 +5,11 @@ import { searchPlugin } from '@vuepress/plugin-search'
 import { prismjsPlugin } from '@vuepress/plugin-prismjs'
 
 export default defineUserConfig({
+  lang: 'en-US',
+  title: 'Volga',
+  description: 'Easy & Fast Web Framework for Rust',
   locales: {
-    '/': {
+    '/en/': {
       lang: 'en-US',
       title: 'Volga',
       description: 'Easy & Fast Web Framework for Rust',
