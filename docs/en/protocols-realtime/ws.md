@@ -128,7 +128,7 @@ async fn handle_message(msg: String) -> String {
 
 ## Dependency Injection
 
-You can inject any dependency from the DI container by using the [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) at any layer in a regular way described [here](/volga-docs/advanced-patterns/di.html).
+You can inject any dependency from the DI container by using the [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) at any layer in a regular way described [here](/volga-docs/en/advanced-patterns/di.html).
 
 ```rust
 use volga::{App, ws::{WebSocketConnection, WebSocket}};

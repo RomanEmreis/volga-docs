@@ -11,6 +11,11 @@ export default defineUserConfig({
       title: 'Volga',
       description: 'Easy & Fast Web Framework for Rust',
     },
+    '/en/': {
+      lang: 'en-US',
+      title: 'Volga',
+      description: 'Easy & Fast Web Framework for Rust',
+    },
     '/ru/': {
       lang: 'ru-RU',
       title: 'Волга',
@@ -29,7 +34,7 @@ export default defineUserConfig({
         navbar: [
           {
             text: 'Home',
-            link: '/',
+            link: '/en/',
           },
           {
             text: 'API Docs',
@@ -43,77 +48,102 @@ export default defineUserConfig({
         sidebar: [
           {
             text: 'Home',
-            link: '/',
+            link: '/en/',
           },
           {
             text: 'Getting Started',
-            prefix: '/getting-started/',
-            children: [
-              'quick-start',
-              'route-params',
-              'query-params',
-              'route-groups'
-            ]
+            prefix: '/en/getting-started/',
+            children: ['quick-start', 'route-params', 'query-params', 'route-groups'],
           },
           {
             text: 'Requests & Responses',
-            prefix: '/requests-responses/',
-            children: [
-              'headers',
-              'json-payload',
-              'form',
-              'files',
-              'cookie'
-            ]
+            prefix: '/en/requests-responses/',
+            children: ['headers', 'json-payload', 'form', 'files', 'cookie'],
           },
           {
             text: 'Middleware & Infrastructure',
-            prefix: '/middleware-infrastructure/',
-            children: [
-              'middleware',
-              'middlewares',
-              'compression',
-              'decompression',
-              'cors',
-              'static-files',
-              'rate-limiting'
-            ]
+            prefix: '/en/middleware-infrastructure/',
+            children: ['middleware', 'middlewares', 'compression', 'decompression', 'cors', 'static-files', 'rate-limiting'],
           },
           {
             text: 'Security & Access',
-            prefix: '/security-access/',
-            children: [
-              'auth'
-            ]
+            prefix: '/en/security-access/',
+            children: ['auth'],
           },
           {
             text: 'Reliability & Observability',
-            prefix: '/reliability-observability/',
-            children: [
-              'errors',
-              'tracing',
-              'cancellation'
-            ]
+            prefix: '/en/reliability-observability/',
+            children: ['errors', 'tracing', 'cancellation'],
           },
           {
             text: 'Protocols & Realtime',
-            prefix: '/protocols-realtime/',
-            children: [
-              'http',
-              'https',
-              'ws',
-              'sse'
-            ]
+            prefix: '/en/protocols-realtime/',
+            children: ['http', 'https', 'ws', 'sse'],
           },
           {
             text: 'Advanced Patterns',
-            prefix: '/advanced-patterns/',
-            children: [
-              'di',
-              'custom-trace-opt-head'
-            ]
-          }
-        ]
+            prefix: '/en/advanced-patterns/',
+            children: ['di', 'custom-trace-opt-head'],
+          },
+        ],
+      },
+      '/en/': {
+        selectLanguageName: 'English',
+        navbar: [
+          {
+            text: 'Home',
+            link: '/en/',
+          },
+          {
+            text: 'API Docs',
+            link: 'https://docs.rs/volga/latest/volga/',
+          },
+          {
+            text: 'GitHub',
+            link: 'https://github.com/RomanEmreis/volga',
+          },
+        ],
+        sidebar: [
+          {
+            text: 'Home',
+            link: '/en/',
+          },
+          {
+            text: 'Getting Started',
+            prefix: '/en/getting-started/',
+            children: ['quick-start', 'route-params', 'query-params', 'route-groups'],
+          },
+          {
+            text: 'Requests & Responses',
+            prefix: '/en/requests-responses/',
+            children: ['headers', 'json-payload', 'form', 'files', 'cookie'],
+          },
+          {
+            text: 'Middleware & Infrastructure',
+            prefix: '/en/middleware-infrastructure/',
+            children: ['middleware', 'middlewares', 'compression', 'decompression', 'cors', 'static-files', 'rate-limiting'],
+          },
+          {
+            text: 'Security & Access',
+            prefix: '/en/security-access/',
+            children: ['auth'],
+          },
+          {
+            text: 'Reliability & Observability',
+            prefix: '/en/reliability-observability/',
+            children: ['errors', 'tracing', 'cancellation'],
+          },
+          {
+            text: 'Protocols & Realtime',
+            prefix: '/en/protocols-realtime/',
+            children: ['http', 'https', 'ws', 'sse'],
+          },
+          {
+            text: 'Advanced Patterns',
+            prefix: '/en/advanced-patterns/',
+            children: ['di', 'custom-trace-opt-head'],
+          },
+        ],
       },
       '/ru/': {
         selectLanguageName: 'Русский',
@@ -139,73 +169,40 @@ export default defineUserConfig({
           {
             text: 'Старт',
             prefix: '/ru/getting-started/',
-            children: [
-              'quick-start',
-              'route-params',
-              'query-params',
-              'route-groups'
-            ]
+            children: ['quick-start', 'route-params', 'query-params', 'route-groups'],
           },
           {
             text: 'Запросы и ответы',
             prefix: '/ru/requests-responses/',
-            children: [
-              'headers',
-              'json-payload',
-              'form',
-              'files',
-              'cookie'
-            ]
+            children: ['headers', 'json-payload', 'form', 'files', 'cookie'],
           },
           {
             text: 'Middleware и инфраструктура',
             prefix: '/ru/middleware-infrastructure/',
-            children: [
-              'middleware',
-              'middlewares',
-              'compression',
-              'decompression',
-              'cors',
-              'static-files',
-              'rate-limiting'
-            ]
+            children: ['middleware', 'middlewares', 'compression', 'decompression', 'cors', 'static-files', 'rate-limiting'],
           },
           {
             text: 'Безопасность и доступ',
             prefix: '/ru/security-access/',
-            children: [
-              'auth'
-            ]
+            children: ['auth'],
           },
           {
             text: 'Надежность и наблюдаемость',
             prefix: '/ru/reliability-observability/',
-            children: [
-              'errors',
-              'tracing',
-              'cancellation'
-            ]
+            children: ['errors', 'tracing', 'cancellation'],
           },
           {
             text: 'Протоколы и realtime',
             prefix: '/ru/protocols-realtime/',
-            children: [
-              'http',
-              'https',
-              'ws',
-              'sse'
-            ]
+            children: ['http', 'https', 'ws', 'sse'],
           },
           {
             text: 'Продвинутые паттерны',
             prefix: '/ru/advanced-patterns/',
-            children: [
-              'di',
-              'custom-trace-opt-head'
-            ]
-          }
-        ]
-      }
+            children: ['di', 'custom-trace-opt-head'],
+          },
+        ],
+      },
     },
   }),
 
@@ -218,8 +215,8 @@ export default defineUserConfig({
     prismjsPlugin({
       themes: {
         dark: 'one-dark',
-        light: 'one-light'
-      }
-    }) 
+        light: 'one-light',
+      },
+    }),
   ],
 })
