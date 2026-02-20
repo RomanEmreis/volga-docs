@@ -2,7 +2,7 @@
 home: true
 title: Volga
 heroText: Volga
-tagline: Fast, async-first web framework for Rust built on Tokio + Hyper.
+tagline: Fast, async-first web framework for Rust built on tokio + hyper.
 actions:
   - text: Get Started
     link: /en/getting-started/quick-start.html
