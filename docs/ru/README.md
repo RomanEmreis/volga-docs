@@ -2,7 +2,7 @@
 home: true
 title: Волга
 heroText: Волга
-tagline: Быстрый async-first веб-фреймворк для Rust на базе Tokio + Hyper.
+tagline: Быстрый async-first веб-фреймворк для Rust на базе tokio + hyper.
 actions:
   - text: Быстрый старт
     link: /ru/getting-started/quick-start.html
