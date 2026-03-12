@@ -66,12 +66,11 @@ function highlightRust(code) {
   return html
 }
 
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+    // Namespace separators (::)
+    html = html.replace(/::/g, '<span class="token punctuation">::</span>')
+
+    return '<span class="line">' + html + '</span>'
+  }).join('\n')
 }
 
 const highlighted = computed(() =>
