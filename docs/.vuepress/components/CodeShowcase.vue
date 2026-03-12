@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const props = defineProps({
   tabs: {
@@ -35,49 +35,36 @@ const props = defineProps({
 })
 
 const activeTab = ref(0)
+const usePrism = ref(false)
 
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+onMounted(() => {
+  // Use PrismJS if available (loaded by VuePress plugin)
+  if (typeof window !== 'undefined' && window.Prism && window.Prism.languages.rust) {
+    usePrism.value = true
+  }
+})
+
+function highlightWithPrism(code) {
+  if (typeof window !== 'undefined' && window.Prism && window.Prism.languages.rust) {
+    return window.Prism.highlight(code, window.Prism.languages.rust, 'rust')
+  }
+  return escapeHtml(code)
 }
 
-// Rust highlighter that produces PrismJS-compatible token classes
-// so the globally loaded one-dark / one-light theme CSS applies.
+// Fallback simple Rust highlighter for SSR
 function highlightRust(code) {
-  const lines = code.split('\n')
-  return lines.map(line => {
-    let html = escapeHtml(line)
-
-    // Comments (// ...)
-    html = html.replace(/(\/\/.*)/, '<span class="token comment">$1</span>')
-
-    // Strings ("...")
-    html = html.replace(/(&quot;(?:[^&]|&(?!quot;))*?&quot;)/g, '<span class="token string">$1</span>')
-
-    // Attributes (#[...])
-    html = html.replace(/(#\[[^\]]*\])/g, '<span class="token attribute attr-name">$1</span>')
-
-    // Macros (word!)
-    html = html.replace(/\b([a-z_]+!)(?=\()/g, '<span class="token macro property">$1</span>')
-    // Macros without parens (like ok!, not_found! at end)
-    html = html.replace(/\b([a-z_]+!)(?=[^<])/g, '<span class="token macro property">$1</span>')
-
-    // Keywords
-    const keywords = ['use','fn','let','mut','async','move','await','struct','match','pub','mod','impl','self','Self','return','if','else','for','in','while','loop','break','continue','where','type','trait','enum','const','static','ref','as','crate','super','extern','unsafe']
-    const kwPattern = new RegExp('\\b(' + keywords.join('|') + ')\\b', 'g')
-    html = html.replace(kwPattern, '<span class="token keyword">$1</span>')
-
-    // Types / PascalCase (Some, None, Ok, Err, Result, String, etc.)
-    html = html.replace(/\b([A-Z][A-Za-z0-9]*)\b/g, '<span class="token class-name">$1</span>')
-
-    // Function calls (word followed by ()
-    html = html.replace(/\b([a-z_][a-z_0-9]*)\s*(?=\()/g, '<span class="token function">$1</span>')
-
-    // Numbers
-    html = html.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="token number">$1</span>')
+  let html = escapeHtml(code)
+  html = html.replace(/(\/\/.*)/g, '<span class="token comment">$1</span>')
+  html = html.replace(/(&quot;(?:[^&]|&(?!quot;))*?&quot;)/g, '<span class="token string">$1</span>')
+  html = html.replace(/(#\[[\w:,\s()]*\])/g, '<span class="token attribute">$1</span>')
+  html = html.replace(/\b([a-z_]+!)/g, '<span class="token macro">$1</span>')
+  const keywords = ['use','fn','let','mut','async','move','await','struct','match','Some','None','Ok','Err','pub','mod','impl','self','Self','return','if','else','for','in','while','loop','break','continue','where','type','trait','enum','const','static','ref','as','crate','super','extern','unsafe']
+  const kwPattern = new RegExp('\\b(' + keywords.join('|') + ')\\b', 'g')
+  html = html.replace(kwPattern, '<span class="token keyword">$1</span>')
+  html = html.replace(/\b([A-Z][A-Za-z0-9]*)\b/g, '<span class="token class-name">$1</span>')
+  html = html.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="token number">$1</span>')
+  return html
+}
 
     // Namespace separators (::)
     html = html.replace(/::/g, '<span class="token punctuation">::</span>')
@@ -88,8 +75,8 @@ function highlightRust(code) {
 
 const highlighted = computed(() =>
   props.tabs.map(tab => {
-    const html = highlightRust(tab.code)
-    return '<pre class="language-rust"><code class="language-rust">' + html + '</code></pre>'
+    const html = usePrism.value ? highlightWithPrism(tab.code) : highlightRust(tab.code)
+    return '<pre class="language-rust"><code>' + html + '</code></pre>'
   })
 )
 </script>
