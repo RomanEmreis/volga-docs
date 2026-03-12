@@ -1,0 +1,253 @@
+/* ===== Homepage Redesign ===== */
+
+/* ---------- Hero Section ---------- */
+.vp-home {
+  .vp-hero {
+    padding: 3rem 2rem 2rem !important;
+
+    h1 {
+      font-size: 4rem !important;
+      font-weight: 800 !important;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 2px 4px rgba(58, 123, 213, 0.15));
+    }
+
+    .vp-hero-description {
+      font-size: 1.25rem !important;
+      color: var(--c-text-lightest);
+      max-width: 600px;
+      margin: 0.5rem auto 0;
+      line-height: 1.7;
+    }
+
+    .vp-hero-actions {
+      .vp-hero-action-button {
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        padding: 0.75rem 1.75rem !important;
+        font-size: 1rem !important;
+        transition: all 0.3s ease !important;
+
+        &.primary {
+          background: linear-gradient(135deg, #3a7bd5 0%, #2563eb 100%) !important;
+          border-color: transparent !important;
+          box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45) !important;
+          }
+        }
+
+        &.secondary {
+          border: 2px solid #3a7bd5 !important;
+          color: #3a7bd5 !important;
+          background: transparent !important;
+
+          &:hover {
+            background: rgba(58, 123, 213, 0.08) !important;
+            transform: translateY(-2px);
+          }
+        }
+      }
+    }
+  }
+}
+
+/* ---------- Feature Cards ---------- */
+.vp-features {
+  border-top: none !important;
+  padding: 1.5rem 0 2rem !important;
+  max-width: 960px;
+  margin: 0 auto !important;
+}
+
+.vp-feature {
+  border: 1px solid transparent !important;
+  border-radius: 16px !important;
+  padding: 2rem !important;
+  background: var(--c-bg) !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.06),
+    0 10px 25px -5px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3a7bd5, #00d2ff);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 12px 24px -8px rgba(0, 0, 0, 0.12),
+      0 20px 40px -12px rgba(0, 0, 0, 0.1) !important;
+    border-color: rgba(58, 123, 213, 0.15) !important;
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  h2 {
+    font-size: 1.2rem !important;
+    font-weight: 700 !important;
+    color: var(--c-text) !important;
+    margin-bottom: 0.5rem;
+    border: none !important;
+  }
+
+  p {
+    color: var(--c-text-lighter) !important;
+    line-height: 1.65;
+    font-size: 0.95rem;
+  }
+}
+
+/* ---------- Homepage Content Area ---------- */
+/* Content is in a wrapper div after .vp-features */
+.vp-home > div:not(.vp-hero):not(.vp-features):not(.vp-footer) {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 2rem 2rem;
+
+  /* Section headings */
+  h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    text-align: center;
+    margin-top: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--c-text);
+    border: none;
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+  }
+
+  /* Subtitle paragraphs */
+  > div > p {
+    text-align: center;
+    color: var(--c-text-lighter);
+    max-width: 640px;
+    margin: 0 auto 2rem;
+    line-height: 1.7;
+  }
+
+  /* Explore-the-docs links section */
+  ul {
+    list-style: none;
+    padding: 0 !important;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.75rem;
+    max-width: 700px;
+    margin: 1.5rem auto 2rem;
+
+    li {
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      border-radius: 10px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: #3a7bd5;
+        box-shadow: 0 4px 12px rgba(58, 123, 213, 0.12);
+        transform: translateY(-2px);
+      }
+
+      a {
+        display: block;
+        padding: 0.85rem 1.15rem;
+        font-weight: 500;
+        color: #3a7bd5 !important;
+        text-decoration: none;
+
+        &::before {
+          content: '\2192\00a0';
+          opacity: 0.5;
+        }
+      }
+    }
+  }
+}
+
+/* ---------- Footer ---------- */
+.vp-home .vp-footer {
+  border-top: 1px solid var(--c-border);
+}
+
+/* ---------- Dark mode overrides ---------- */
+[data-theme='dark'] {
+  .vp-home .vp-hero h1 {
+    background: linear-gradient(135deg, #60a5fa 0%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: drop-shadow(0 2px 8px rgba(96, 165, 250, 0.2));
+  }
+
+  .vp-home .vp-hero .vp-hero-actions .vp-hero-action-button {
+    &.primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+
+      &:hover {
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45) !important;
+      }
+    }
+
+    &.secondary {
+      border-color: #60a5fa !important;
+      color: #60a5fa !important;
+
+      &:hover {
+        background: rgba(96, 165, 250, 0.1) !important;
+      }
+    }
+  }
+
+  .vp-feature {
+    background: var(--c-bg-light) !important;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.2),
+      0 10px 25px -5px rgba(0, 0, 0, 0.25) !important;
+
+    &:hover {
+      box-shadow:
+        0 12px 24px -8px rgba(0, 0, 0, 0.35),
+        0 20px 40px -12px rgba(0, 0, 0, 0.3) !important;
+      border-color: rgba(96, 165, 250, 0.25) !important;
+    }
+  }
+
+  .vp-home > div:not(.vp-hero):not(.vp-features):not(.vp-footer) {
+    ul li {
+      background: var(--c-bg-light);
+      border-color: var(--c-border);
+
+      &:hover {
+        border-color: #60a5fa;
+        box-shadow: 0 4px 12px rgba(96, 165, 250, 0.15);
+      }
+
+      a {
+        color: #60a5fa !important;
+      }
+    }
+  }
+}
