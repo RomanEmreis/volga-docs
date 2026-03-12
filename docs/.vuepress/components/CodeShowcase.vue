@@ -11,9 +11,6 @@
       </button>
     </div>
     <div class="code-showcase__card">
-      <div class="code-showcase__window-dots">
-        <span></span><span></span><span></span>
-      </div>
       <div class="code-showcase__content">
         <div
           v-for="(tab, i) in tabs"
@@ -28,50 +25,44 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const props = defineProps({
   tabs: {
     type: Array,
     required: true,
-    // Each tab: { title: string, code: string }
   }
 })
 
 const activeTab = ref(0)
+const usePrism = ref(false)
 
-// Simple Rust syntax highlighter that produces styled spans
+onMounted(() => {
+  // Use PrismJS if available (loaded by VuePress plugin)
+  if (typeof window !== 'undefined' && window.Prism && window.Prism.languages.rust) {
+    usePrism.value = true
+  }
+})
+
+function highlightWithPrism(code) {
+  if (typeof window !== 'undefined' && window.Prism && window.Prism.languages.rust) {
+    return window.Prism.highlight(code, window.Prism.languages.rust, 'rust')
+  }
+  return escapeHtml(code)
+}
+
+// Fallback simple Rust highlighter for SSR
 function highlightRust(code) {
   let html = escapeHtml(code)
-
-  // Comments (// ...)
-  html = html.replace(/(\/\/.*)/g, '<span class="hl-comment">$1</span>')
-
-  // Strings ("...")
-  html = html.replace(/(&quot;(?:[^&]|&(?!quot;))*?&quot;)/g, '<span class="hl-string">$1</span>')
-
-  // Attributes (#[...])
-  html = html.replace(/(#\[[\w:,\s()]*\])/g, '<span class="hl-attr">$1</span>')
-
-  // Macros (word!)
-  html = html.replace(/\b([a-z_]+!)/g, '<span class="hl-macro">$1</span>')
-
-  // Keywords
+  html = html.replace(/(\/\/.*)/g, '<span class="token comment">$1</span>')
+  html = html.replace(/(&quot;(?:[^&]|&(?!quot;))*?&quot;)/g, '<span class="token string">$1</span>')
+  html = html.replace(/(#\[[\w:,\s()]*\])/g, '<span class="token attribute">$1</span>')
+  html = html.replace(/\b([a-z_]+!)/g, '<span class="token macro">$1</span>')
   const keywords = ['use','fn','let','mut','async','move','await','struct','match','Some','None','Ok','Err','pub','mod','impl','self','Self','return','if','else','for','in','while','loop','break','continue','where','type','trait','enum','const','static','ref','as','crate','super','extern','unsafe']
   const kwPattern = new RegExp('\\b(' + keywords.join('|') + ')\\b', 'g')
-  html = html.replace(kwPattern, (m) => {
-    // Don't re-highlight if already inside a span
-    return '<span class="hl-keyword">' + m + '</span>'
-  })
-
-  // Types (PascalCase words)
-  html = html.replace(/\b([A-Z][A-Za-z0-9]*)\b/g, (m) => {
-    return '<span class="hl-type">' + m + '</span>'
-  })
-
-  // Numbers
-  html = html.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="hl-number">$1</span>')
-
+  html = html.replace(kwPattern, '<span class="token keyword">$1</span>')
+  html = html.replace(/\b([A-Z][A-Za-z0-9]*)\b/g, '<span class="token class-name">$1</span>')
+  html = html.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="token number">$1</span>')
   return html
 }
 
@@ -85,8 +76,8 @@ function escapeHtml(str) {
 
 const highlighted = computed(() =>
   props.tabs.map(tab => {
-    const lines = highlightRust(tab.code).split('\n')
-    return '<pre class="hl-pre"><code>' + lines.join('\n') + '</code></pre>'
+    const html = usePrism.value ? highlightWithPrism(tab.code) : highlightRust(tab.code)
+    return '<pre class="language-rust"><code>' + html + '</code></pre>'
   })
 )
 </script>
@@ -101,140 +92,62 @@ const highlighted = computed(() =>
 .code-showcase__tabs {
   display: flex;
   gap: 0;
-  border-bottom: none;
-  margin-bottom: -1px;
+  margin-bottom: 0;
   position: relative;
   z-index: 2;
-  padding-left: 8px;
+  padding-left: 4px;
 }
 
 .code-showcase__tab {
-  padding: 0.6rem 1.25rem;
+  padding: 0.5rem 1.15rem;
   border: none;
   background: transparent;
-  color: var(--c-text-lighter, #888);
+  color: var(--vp-c-text-mute, #888);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  border-radius: 10px 10px 0 0;
-  transition: all 0.25s ease;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.2s ease;
   font-family: inherit;
-  letter-spacing: 0.01em;
 }
 
 .code-showcase__tab:hover {
-  color: var(--c-text, #333);
-  background: rgba(58, 123, 213, 0.06);
+  color: var(--vp-c-text, #333);
 }
 
 .code-showcase__tab.active {
-  background: #1e1e2e;
-  color: #cdd6f4;
+  background: var(--code-c-bg, #ecf4fa);
+  color: var(--vp-c-text, #383a42);
 }
 
-/* Card */
+/* Card — matches native VuePress code blocks */
 .code-showcase__card {
-  background: #1e1e2e;
-  border-radius: 16px;
+  background: var(--code-c-bg, #ecf4fa);
+  border-radius: var(--code-border-radius, 6px);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.18),
-    0 2px 8px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  position: relative;
-}
-
-/* Window dots */
-.code-showcase__window-dots {
-  display: flex;
-  gap: 7px;
-  padding: 14px 18px 0;
-}
-
-.code-showcase__window-dots span {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: block;
-}
-
-.code-showcase__window-dots span:nth-child(1) {
-  background: #f38ba8;
-}
-
-.code-showcase__window-dots span:nth-child(2) {
-  background: #f9e2af;
-}
-
-.code-showcase__window-dots span:nth-child(3) {
-  background: #a6e3a1;
 }
 
 /* Content */
 .code-showcase__content {
-  padding: 0.75rem 0;
-}
-
-.code-showcase__panel :deep(.hl-pre) {
-  margin: 0;
-  padding: 0.75rem 1.5rem 1.25rem;
-  background: transparent;
-  overflow-x: auto;
-  font-size: 0.875rem;
-  line-height: 1.7;
-}
-
-.code-showcase__panel :deep(.hl-pre code) {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
-  color: #cdd6f4;
-  background: none;
   padding: 0;
 }
 
-/* Syntax tokens – Catppuccin Mocha inspired */
-.code-showcase__panel :deep(.hl-keyword) {
-  color: #cba6f7;
-  font-weight: 600;
+.code-showcase__panel :deep(pre) {
+  margin: 0;
+  padding: var(--code-padding-y, 1rem) var(--code-padding-x, 1.25rem);
+  background: transparent;
+  overflow-x: auto;
+  font-size: var(--code-font-size, 0.875em);
+  line-height: var(--code-line-height, 1.6);
 }
 
-.code-showcase__panel :deep(.hl-type) {
-  color: #f9e2af;
-}
-
-.code-showcase__panel :deep(.hl-string) {
-  color: #a6e3a1;
-}
-
-.code-showcase__panel :deep(.hl-macro) {
-  color: #89b4fa;
-  font-weight: 600;
-}
-
-.code-showcase__panel :deep(.hl-comment) {
-  color: #6c7086;
-  font-style: italic;
-}
-
-.code-showcase__panel :deep(.hl-number) {
-  color: #fab387;
-}
-
-.code-showcase__panel :deep(.hl-attr) {
-  color: #f38ba8;
-}
-
-/* Subtle glow effect */
-.code-showcase__card::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: 16px;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(58, 123, 213, 0.2), rgba(0, 210, 255, 0.1), transparent 60%);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+.code-showcase__panel :deep(pre code) {
+  font-family: var(--code-font-family, consolas, monaco, "Andale Mono", "Ubuntu Mono", monospace);
+  color: var(--code-c-text, #383a42);
+  background: none;
+  padding: 0;
 }
 </style>
