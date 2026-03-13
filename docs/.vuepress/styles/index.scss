@@ -5,44 +5,24 @@
   .vp-hero {
     padding: 3rem 2rem 2rem !important;
 
-    /* Logo + title on same line, rest below */
-    display: grid !important;
-    grid-template-columns: auto auto !important;
-    justify-content: center !important;
-    align-items: center !important;
-    text-align: center !important;
-    column-gap: 1rem !important;
-
+    /* Logo above title, centered */
     .vp-hero-image {
-      max-height: 5rem !important;
-      max-width: 5rem !important;
-      margin: 0 !important;
+      max-height: 6rem !important;
+      margin: 0 auto 0.5rem !important;
       display: block !important;
-      grid-column: 1 !important;
-      grid-row: 1 !important;
-      justify-self: end !important;
     }
 
     h1 {
       font-size: 4rem !important;
       font-weight: 800 !important;
       letter-spacing: -0.02em;
-      margin: 1.8rem 0 !important;
-      grid-column: 2 !important;
-      grid-row: 1 !important;
-      justify-self: start !important;
     }
 
     .vp-hero-description {
-      grid-column: 1 / -1 !important;
       font-size: 1.25rem !important;
       max-width: 600px;
       margin: 0.5rem auto 0;
       line-height: 1.7;
-    }
-
-    .vp-hero-actions {
-      grid-column: 1 / -1 !important;
     }
 
     .vp-hero-actions {
