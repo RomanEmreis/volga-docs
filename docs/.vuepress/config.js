@@ -157,6 +157,7 @@ export default defineUserConfig({
         dark: 'one-dark',
         light: 'one-light',
       },
+      lineNumbers: true,
     }),
   ],
 })

@@ -175,6 +175,23 @@
   }
 }
 
+/* ---------- Code Blocks ---------- */
+div[class*='language-'] {
+  border: 1px solid var(--vp-c-border, var(--c-border, #e2e2e3)) !important;
+  border-radius: 12px !important;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.06) !important;
+  overflow: hidden;
+}
+
+[data-theme='dark'] div[class*='language-'] {
+  border-color: var(--vp-c-border, #2e2e32) !important;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    0 4px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
 /* ---------- Footer ---------- */
 .vp-home .vp-footer {
   border-top: 1px solid var(--vp-c-border, var(--c-border, #e2e2e3));
