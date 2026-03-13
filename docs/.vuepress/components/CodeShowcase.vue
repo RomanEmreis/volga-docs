@@ -48,7 +48,7 @@ function escapeHtml(str) {
 // so the globally loaded one-dark / one-light theme CSS applies.
 function highlightRust(code) {
   const lines = code.split('\n')
-  return lines.map(line => {
+  return lines.map((line, idx) => {
     let html = escapeHtml(line)
 
     // Comments
@@ -81,7 +81,7 @@ function highlightRust(code) {
     // Namespace separators
     html = html.replace(/::/g, '<span class="token punctuation">::</span>')
 
-    return '<span class="line">' + html + '</span>'
+    return '<span class="line"><span class="line-number">' + (idx + 1) + '</span>' + html + '</span>'
   }).join('\n')
 }
 
@@ -131,13 +131,14 @@ const highlighted = computed(() =>
   color: var(--vp-c-text, #383a42);
 }
 
-/* Card — matches native VuePress code blocks */
+/* Card — matches feature card style */
 .code-showcase__card {
   background: var(--code-c-bg, #ecf4fa);
-  border-radius: var(--code-border-radius, 6px);
+  border: 1px solid var(--vp-c-border, var(--c-border, #e2e2e3));
+  border-radius: 12px;
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.08),
-    0 1px 4px rgba(0, 0, 0, 0.05);
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
 
@@ -160,5 +161,20 @@ const highlighted = computed(() =>
   color: var(--code-c-text, #383a42);
   background: none;
   padding: 0;
+}
+
+.code-showcase__panel :deep(.line) {
+  display: block;
+}
+
+.code-showcase__panel :deep(.line-number) {
+  display: inline-block;
+  width: 2em;
+  margin-right: 1.25em;
+  text-align: right;
+  color: var(--vp-c-text-mute, #aaa);
+  user-select: none;
+  font-size: 0.9em;
+  opacity: 0.5;
 }
 </style>
