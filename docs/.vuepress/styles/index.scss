@@ -5,6 +5,13 @@
   .vp-hero {
     padding: 3rem 2rem 2rem !important;
 
+    /* Logo above title, centered */
+    .vp-hero-image {
+      max-height: 6rem !important;
+      margin: 0 auto 0.5rem !important;
+      display: block !important;
+    }
+
     h1 {
       font-size: 4rem !important;
       font-weight: 800 !important;

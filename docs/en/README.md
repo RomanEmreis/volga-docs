@@ -2,6 +2,8 @@
 home: true
 title: Volga
 heroText: Volga
+heroImage: /volga-logo.png
+heroImageDark: /volga-logo.png
 tagline: Fast, async-first web framework for Rust built on tokio + hyper.
 actions:
   - text: Get Started
