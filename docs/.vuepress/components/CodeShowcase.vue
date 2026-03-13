@@ -104,28 +104,26 @@ const highlighted = computed(() =>
 <style scoped>
 .code-showcase {
   margin: 1.5rem auto 2.5rem;
-  max-width: 780px;
+  max-width: 960px;
 }
 
 /* Tabs */
 .code-showcase__tabs {
   display: flex;
-  gap: 0;
-  margin-bottom: 0;
-  position: relative;
-  z-index: 2;
-  padding-left: 4px;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  padding-left: 2px;
 }
 
 .code-showcase__tab {
-  padding: 0.5rem 1.15rem;
-  border: none;
+  padding: 0.4rem 1.1rem;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--vp-c-text-mute, #888);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  border-radius: 6px 6px 0 0;
+  border-radius: 8px;
   transition: all 0.2s ease;
   font-family: inherit;
 }
@@ -135,8 +133,12 @@ const highlighted = computed(() =>
 }
 
 .code-showcase__tab.active {
-  background: var(--code-c-bg, #ecf4fa);
+  background: var(--vp-c-bg, #fff);
   color: var(--vp-c-text, #383a42);
+  border-color: var(--vp-c-border, #e2e2e3);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 /* Card — matches feature card style */
