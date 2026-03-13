@@ -81,7 +81,7 @@ const codeTabs = [
   },
   {
     title: 'Rate Limiting',
-    description: 'Защитите эндпоинты с помощью token bucket rate limiting. Применяйте политики per-IP или кастомные политики для каждого маршрута одним fluent-вызовом.',
+    description: 'Защитите эндпоинты с помощью rate limiting. Применяйте политики per-IP или кастомные политики для каждого маршрута одним fluent-вызовом.',
     code: [
       'use volga::{App, rate_limiting::{by, TokenBucket}};',
       '',
