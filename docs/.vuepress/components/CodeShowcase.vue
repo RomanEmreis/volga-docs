@@ -48,7 +48,7 @@ function escapeHtml(str) {
 // so the globally loaded one-dark / one-light theme CSS applies.
 function highlightRust(code) {
   const lines = code.split('\n')
-  return lines.map((line, idx) => {
+  const highlighted = lines.map(line => {
     let html = escapeHtml(line)
 
     // Comments
@@ -81,15 +81,23 @@ function highlightRust(code) {
     // Namespace separators
     html = html.replace(/::/g, '<span class="token punctuation">::</span>')
 
-    return '<span class="line"><span class="line-number">' + (idx + 1) + '</span>' + html + '</span>'
-  }).join('\n')
+    return '<span class="line">' + html + '</span>'
+  })
+
+  const lineNumberDivs = lines.map(() => '<div class="line-number"></div>').join('')
+
+  return (
+    '<div class="language-rust line-numbers-mode" data-highlighter="prismjs" data-ext="rs">' +
+    '<pre><code class="language-rust">' + highlighted.join('\n') + '\n</code></pre>' +
+    '<div class="line-numbers" aria-hidden="true" style="counter-reset:line-number 0;">' +
+    lineNumberDivs +
+    '</div>' +
+    '</div>'
+  )
 }
 
 const highlighted = computed(() =>
-  props.tabs.map(tab => {
-    const html = highlightRust(tab.code)
-    return '<pre class="language-rust"><code class="language-rust">' + html + '</code></pre>'
-  })
+  props.tabs.map(tab => highlightRust(tab.code))
 )
 </script>
 
@@ -133,7 +141,6 @@ const highlighted = computed(() =>
 
 /* Card — matches feature card style */
 .code-showcase__card {
-  background: var(--code-c-bg, #ecf4fa);
   border: 1px solid var(--vp-c-border, var(--c-border, #e2e2e3));
   border-radius: 12px;
   box-shadow:
@@ -142,25 +149,12 @@ const highlighted = computed(() =>
   overflow: hidden;
 }
 
-/* Content */
-.code-showcase__content {
-  padding: 0;
-}
-
-.code-showcase__panel :deep(pre) {
-  margin: 0;
-  padding: var(--code-padding-y, 1rem) var(--code-padding-x, 1.25rem);
-  background: transparent;
-  overflow-x: auto;
-  font-size: var(--code-font-size, 0.875em);
-  line-height: var(--code-line-height, 1.6);
-}
-
-.code-showcase__panel :deep(pre code) {
-  font-family: var(--code-font-family, consolas, monaco, "Andale Mono", "Ubuntu Mono", monospace);
-  color: var(--code-c-text, #383a42);
-  background: none;
-  padding: 0;
+/* Neutralize global border/shadow on the inner language div */
+.code-showcase__card :deep(div[class*='language-']) {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
 }
 
 .code-showcase__panel :deep(.line) {
