@@ -24,6 +24,7 @@ footer: MIT Licensed • Built for performance
 const codeTabs = [
   {
     title: 'Extractors',
+    description: 'Deserialize request data directly into typed handler arguments. No manual parsing — Volga maps JSON, query params, headers, and more automatically.',
     code: [
       'use volga::{App, Json, ok};',
       'use serde::Deserialize;',
@@ -48,6 +49,7 @@ const codeTabs = [
   },
   {
     title: 'Dependency Injection',
+    description: 'Register services once, receive them anywhere. Volga\'s built-in DI resolves dependencies by type — no macros, no boilerplate, just native Rust.',
     code: [
       'use volga::{App, di::Dc, ok, not_found};',
       'use std::{',
@@ -79,15 +81,21 @@ const codeTabs = [
   },
   {
     title: 'Rate Limiting',
+    description: 'Protect your endpoints with token bucket rate limiting. Apply per-IP or custom policies per route with a single fluent call.',
     code: [
       'use volga::{App, rate_limiting::{by, TokenBucket}};',
       '',
-      'let burst = TokenBucket::new(2, 0.5).with_name("burst");',
-      'let mut app = App::new()',
-      '  .with_token_bucket(burst);',
+      '#[tokio::main]',
+      'async fn main() -> std::io::Result<()> {',
+      '    let burst = TokenBucket::new(2, 0.5).with_name("burst");',
+      '    let mut app = App::new()',
+      '        .with_token_bucket(burst);',
       '',
-      'app.map_get("/upload", upload_handler)',
-      '    .token_bucket(by::ip().using("burst"));',
+      '    app.map_get("/upload", upload_handler)',
+      '        .token_bucket(by::ip().using("burst"));',
+      '',
+      '    app.run().await',
+      '}',
     ].join('\n')
   }
 ]
