@@ -157,18 +157,4 @@ const highlighted = computed(() =>
   margin: 0 !important;
 }
 
-.code-showcase__panel :deep(.line) {
-  display: block;
-}
-
-.code-showcase__panel :deep(.line-number) {
-  display: inline-block;
-  width: 2em;
-  margin-right: 1.25em;
-  text-align: right;
-  color: var(--vp-c-text-mute, #aaa);
-  user-select: none;
-  font-size: 0.9em;
-  opacity: 0.5;
-}
 </style>
