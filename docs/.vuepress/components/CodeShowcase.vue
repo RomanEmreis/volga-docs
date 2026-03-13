@@ -10,6 +10,9 @@
         {{ tab.title }}
       </button>
     </div>
+    <div v-if="tabs[activeTab].description" class="code-showcase__desc">
+      {{ tabs[activeTab].description }}
+    </div>
     <div class="code-showcase__card">
       <div class="code-showcase__content">
         <div
@@ -134,8 +137,22 @@ const highlighted = computed(() =>
 
 .code-showcase__tab.active {
   background: var(--vp-c-bg, #fff);
-  color: var(--vp-c-text, #383a42);
+  color: var(--vp-c-accent, #299764);
   border-color: var(--vp-c-border, #e2e2e3);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* Description box */
+.code-showcase__desc {
+  border: 1px solid var(--vp-c-border, #e2e2e3);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--vp-c-text-mute, #666);
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.04),
     0 4px 16px rgba(0, 0, 0, 0.06);
