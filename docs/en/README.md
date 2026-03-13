@@ -81,7 +81,7 @@ const codeTabs = [
   },
   {
     title: 'Rate Limiting',
-    description: 'Protect your endpoints with token bucket rate limiting. Apply per-IP or custom policies per route with a single fluent call.',
+    description: 'Protect your endpoints with rate limiting. Apply per-IP or custom policies per route with a single fluent call.',
     code: [
       'use volga::{App, rate_limiting::{by, TokenBucket}};',
       '',
