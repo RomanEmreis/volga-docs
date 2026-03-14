@@ -3,7 +3,7 @@ home: true
 title: Волга
 heroText: Волга
 heroImage: /volga-logo.png
-heroImageDark: /volga-logo-dark.png
+heroImageDark: /volga-logo.png
 tagline: Быстрый async-first веб-фреймворк для Rust на базе tokio + hyper.
 actions:
   - text: Быстрый старт
