@@ -9,7 +9,7 @@ actions:
   - text: Get Started
     link: /en/getting-started/quick-start.html
     type: primary
-  - text: View API Docs
+  - text: API Docs
     link: https://docs.rs/volga/latest/volga/
     type: secondary
 features:
