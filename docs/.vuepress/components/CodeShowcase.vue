@@ -152,7 +152,7 @@ const highlighted = computed(() =>
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
   line-height: 1.6;
-  color: var(--vp-c-text-mute, #666);
+  color: var(--vp-c-text, #333);
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.04),
     0 4px 16px rgba(0, 0, 0, 0.06);
