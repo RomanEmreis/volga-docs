@@ -26,6 +26,8 @@ export default defineUserConfig({
     smoothScroll: true,
     colorMode: 'auto',
     colorModeSwitch: true,
+    logo: '/volga-logo-light.png',
+    logoDark: '/volga-logo.png',
     locales: {
       '/en/': {
         selectLanguageName: 'English',
