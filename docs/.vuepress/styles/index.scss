@@ -1,3 +1,6 @@
+/* ===== Google Fonts ===== */
+@import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
+
 /* ===== Homepage Redesign ===== */
 
 /* ---------- Hero Section ---------- */
@@ -13,9 +16,11 @@
     }
 
     h1 {
+      font-family: 'Russo One', sans-serif !important;
       font-size: 4rem !important;
-      font-weight: 800 !important;
-      letter-spacing: -0.02em;
+      font-weight: 400 !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase;
     }
 
     .vp-hero-description {
@@ -206,6 +211,16 @@ div[class*='language-'] {
 /* ---------- Footer ---------- */
 .vp-home .vp-footer {
   border-top: 1px solid var(--vp-c-border, var(--c-border, #e2e2e3));
+}
+
+/* ---------- Light mode logo adaptation ---------- */
+:root:not([data-theme='dark']) .vp-hero-image {
+  filter:
+    drop-shadow(0 4px 16px rgba(0, 0, 0, 0.12))
+    brightness(1.04)
+    contrast(0.88)
+    saturate(1.1);
+  opacity: 0.92;
 }
 
 /* ---------- Dark mode overrides ---------- */
