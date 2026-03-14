@@ -213,15 +213,6 @@ div[class*='language-'] {
   border-top: 1px solid var(--vp-c-border, var(--c-border, #e2e2e3));
 }
 
-/* ---------- Light mode logo adaptation ---------- */
-/* drop-shadow follows the PNG alpha channel (not a box),          */
-/* giving the gear soft layered depth instead of cut-out edges.    */
-:root:not([data-theme='dark']) .vp-hero-image {
-  filter:
-    drop-shadow(0 2px 6px rgba(0, 0, 0, 0.18))
-    drop-shadow(0 8px 28px rgba(0, 0, 0, 0.14))
-    drop-shadow(0 16px 48px rgba(0, 0, 0, 0.08));
-}
 
 /* ---------- Dark mode overrides ---------- */
 [data-theme='dark'] {
