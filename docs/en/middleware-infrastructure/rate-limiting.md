@@ -1,22 +1,20 @@
 # Rate Limiting
 
-Volga provides a built-in, high-performance rate limiting system designed for HTTP APIs and microservices.
-It supports multiple algorithms, flexible partition keys, and can be applied globally, per route group, or per route.
+Volga ships with a high-performance rate limiting system for HTTP APIs and microservices.
+It offers four algorithms out of the box, flexible partition keys, pluggable storage backends, and can be scoped globally, per route group, or per individual route.
 
-This guide demonstrates basic usage using the **Fixed Window** algorithm.
+This guide walks through the basics using the **Token Bucket** algorithm — a good default choice that allows controlled bursts while enforcing a steady average rate.
 
 ## Enabling Rate Limiting
 
-Rate limiting is an optional feature.
-
-Enable it explicitly in `Cargo.toml`:
+Rate limiting is an optional feature. Enable it in `Cargo.toml`:
 
 ```toml
 [dependencies]
 volga = { version = "...", features = ["rate-limiting"] }
 ```
 
-Or enable all features:
+Or enable all features at once:
 
 ```toml
 [dependencies]
@@ -25,137 +23,140 @@ volga = { version = "...", features = ["full"] }
 
 ## Core Concepts
 
-Before diving into examples, it helps to understand the building blocks:
+### Policy
 
-### Rate Limiting Policy
+A **policy** describes the rate limiting behavior:
 
-A **policy** defines:
-
-* the rate limiting algorithm (e.g. fixed window)
-* the maximum number of requests
-* the window duration
-* optional eviction behavior
-* an optional name
+* Algorithm (e.g. token bucket, fixed window)
+* Limit parameters (capacity, refill rate, window size, etc.)
+* Optional eviction period for cleaning up inactive client state
+* Optional name — useful when different routes need different limits
 
 Policies are configured once at the application level.
 
 ### Partition Key
 
-A **partition key** determines how requests are grouped.
+A **partition key** determines how requests are grouped for counting purposes.
 
 Common examples:
 
-* Client IP
-* Authenticated user
-* API key
+* Client IP address
+* HTTP header (e.g. `x-api-key`)
+* Authenticated user identity
 * Query or path parameter
 
-Volga provides helpers under `volga::rate_limiting::by`.
+Volga provides ready-made helpers under `volga::rate_limiting::by`.
 
-### Where Rate Limiting Can Be Applied
+### Application Scope
 
-Rate limiting middleware can be attached to:
+Rate limiting middleware can be attached at three levels:
 
-* the entire application (global)
-* a route group
-* a single route
+* **Global** — all incoming requests
+* **Route group** — a set of routes sharing a prefix
+* **Individual route** — a single endpoint
 
-## Defining a Fixed Window Policy
+## Defining a Token Bucket Policy
 
-A fixed window rate limiter allows up to *N requests per time window*.
+A token bucket starts full (up to `capacity` tokens) and refills at a constant rate. Each request consumes one token. When the bucket is empty, requests are rejected until tokens are replenished.
 
 ```rust
-use std::time::Duration;
-use volga::rate_limiting::FixedWindow;
+use volga::rate_limiting::TokenBucket;
 
-let fixed_window = FixedWindow::new(100, Duration::from_secs(30));
+let bucket = TokenBucket::new(10, 5.0);
 ```
 
-This policy allows **100 requests per 30 seconds**.
+This creates a bucket with a **capacity of 10 tokens** and a **refill rate of 5 tokens per second** — allowing short bursts of up to 10 requests while sustaining an average of 5 req/s.
 
 ### Named Policies
 
-Policies can be named and reused:
+When different parts of your API need different limits, give each policy a name:
 
 ```rust
-let burst = FixedWindow::new(100, Duration::from_secs(30))
-    .with_name("burst");
+let standard = TokenBucket::new(10, 5.0)
+    .with_name("standard");
+
+let premium = TokenBucket::new(100, 50.0)
+    .with_name("premium");
 ```
 
-Named policies are useful when different routes require different limits.
+### Eviction
 
-## Registering the Policy
+By default, inactive client state is cleaned up after 60 seconds. You can adjust this:
 
-Policies are registered on the application:
+```rust
+use std::time::Duration;
+
+let bucket = TokenBucket::new(10, 5.0)
+    .with_eviction(Duration::from_secs(300));
+```
+
+## Registering Policies
+
+Register policies on the application before applying them:
 
 ```rust
 use volga::App;
 
 let mut app = App::new()
-    .with_fixed_window(burst);
+    .with_token_bucket(standard)
+    .with_token_bucket(premium);
 ```
 
-At this point, the policy exists but is not yet active.
+At this point, the policies exist but are **not yet active** — you still need to apply them to routes.
 
 ## Applying Rate Limiting
 
-### Global Rate Limiting
+### Global
 
 Apply rate limiting to all incoming requests:
 
 ```rust
 use volga::rate_limiting::by;
 
-app.use_fixed_window(by::ip());
+app.use_token_bucket(by::ip());
 ```
 
-This limits all requests based on the client IP.
+This limits every client by their IP address using the default (unnamed) token bucket policy.
 
 ### Using a Named Policy
 
-To use a specific named policy:
-
 ```rust
-app.use_fixed_window(by::ip().using("burst"));
+app.use_token_bucket(by::ip().using("standard"));
 ```
 
-### Route-Level Rate Limiting
-
-Rate limiting can be applied to individual routes:
+### Per Route
 
 ```rust
 app.map_get("/upload", upload_handler)
-    .fixed_window(by::ip());
+    .token_bucket(by::ip());
 ```
 
 Or with a named policy:
 
 ```rust
 app.map_get("/upload", upload_handler)
-    .fixed_window(by::ip().using("burst"));
+    .token_bucket(by::ip().using("premium"));
 ```
 
-### Route Group Rate Limiting
-
-Rate limiting can also be applied to a group of routes:
+### Per Route Group
 
 ```rust
 app.group("/api", |api| {
-    api.fixed_window(by::ip());
+    api.token_bucket(by::header("x-api-key").using("standard"));
 
     api.map_get("/status", status_handler);
     api.map_post("/upload", upload_handler);
 });
 ```
 
-## Partition Key Examples
+## Partition Key Helpers
 
-Volga provides built-in helpers:
+Volga provides built-in extractors for common partition keys:
 
 ```rust
 by::ip()                // Client IP address
-by::header("x-api-key") // Custom HTTP header
-by::query("tenant_id")  // Query parameter
+by::header("x-api-key") // Value of an HTTP header
+by::query("tenant_id")  // Query string parameter
 by::path("user_id")     // Path parameter
 ```
 
@@ -165,20 +166,73 @@ When authentication is enabled:
 by::user(|claims| claims.sub.as_str())
 ```
 
-You can also combine multiple keys by stacking middleware.
+You can also layer multiple rate limiters with different keys by stacking middleware.
 
 ## Other Algorithms
 
-In addition to **Fixed Window**, Volga supports:
+In addition to **Token Bucket**, Volga supports three other algorithms:
 
-* **Sliding Window** – smoother request distribution
-* (More algorithms planned)
+| Algorithm | Best for | Method pattern |
+|---|---|---|
+| **Fixed Window** | Simple request counting per time window | `.with_fixed_window()` / `.fixed_window()` |
+| **Sliding Window** | Smoother distribution without boundary spikes | `.with_sliding_window()` / `.sliding_window()` |
+| **GCRA** | Precise pacing with configurable burst tolerance | `.with_gcra()` / `.gcra()` |
 
-The usage pattern remains the same:
+Each algorithm follows the same registration and application pattern. For example, with Fixed Window:
 
 ```rust
-.with_sliding_window(...)
-.sliding_window(by::ip())
+use std::time::Duration;
+use volga::rate_limiting::FixedWindow;
+
+let mut app = App::new()
+    .with_fixed_window(FixedWindow::new(100, Duration::from_secs(30)));
+
+app.use_fixed_window(by::ip());
 ```
 
-Full example can be found [here](https://github.com/RomanEmreis/volga/blob/main/examples/rate_limiting/src/main.rs).
+## Pluggable Storage Backends
+
+By default, all algorithms use an in-memory store backed by a concurrent hash map (`DashMap`). This works great for single-instance deployments.
+
+For distributed scenarios (e.g. multiple instances behind a load balancer), you can implement a custom store — such as one backed by Redis — by implementing the corresponding store trait:
+
+| Algorithm | Store trait |
+|---|---|
+| Token Bucket | `TokenBucketStore` |
+| Fixed Window | `FixedWindowStore` |
+| Sliding Window | `SlidingWindowStore` |
+| GCRA | `GcraStore` |
+
+Store traits are defined in the `volga_rate_limiter` crate and each requires a single atomic operation:
+
+```rust
+use volga_rate_limiter::TokenBucketStore;
+use volga_rate_limiter::store::TokenBucketParams;
+
+struct MyRedisStore { /* ... */ }
+
+impl TokenBucketStore for MyRedisStore {
+    fn try_consume(&self, params: TokenBucketParams) -> bool {
+        let key = params.key;
+        let capacity = params.capacity_scaled;
+        // ... your Redis logic here
+        true
+    }
+}
+```
+
+Then create the rate limiter with your custom store:
+
+```rust
+use volga_rate_limiter::TokenBucketRateLimiter;
+
+let limiter = TokenBucketRateLimiter::with_store(10, 5.0, MyRedisStore::new());
+```
+
+:::tip
+Backends with built-in TTL support (like Redis) can skip the manual eviction step — the algorithm's eviction grace parameters are there for in-memory stores that do lazy cleanup.
+:::
+
+## Full Example
+
+A complete working example with all four algorithms can be found [here](https://github.com/RomanEmreis/volga/blob/main/examples/rate_limiting/src/main.rs).
