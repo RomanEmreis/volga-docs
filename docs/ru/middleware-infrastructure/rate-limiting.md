@@ -206,8 +206,8 @@ app.use_fixed_window(by::ip());
 Store trait'ы определены в крейте `volga_rate_limiter`, и каждый требует реализации одной атомарной операции:
 
 ```rust
-use volga_rate_limiter::TokenBucketStore;
-use volga_rate_limiter::store::TokenBucketParams;
+use volga::rate_limiting::TokenBucketStore;
+use volga::rate_limiting::TokenBucketParams;
 
 struct MyRedisStore { /* ... */ }
 
@@ -224,7 +224,7 @@ impl TokenBucketStore for MyRedisStore {
 Затем создайте rate limiter с вашим хранилищем:
 
 ```rust
-use volga_rate_limiter::TokenBucketRateLimiter;
+use volga::rate_limiting::TokenBucketRateLimiter;
 
 let limiter = TokenBucketRateLimiter::with_store(10, 5.0, MyRedisStore::new());
 ```
