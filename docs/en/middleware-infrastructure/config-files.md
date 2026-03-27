@@ -92,6 +92,15 @@ let app = App::new().with_config(|cfg| {
 });
 ```
 
+If you omit `with_file()`, the builder falls back to the same default file discovery as `with_default_config()` — it looks for `app_config.toml` or `app_config.json` in the current working directory. This is useful when you want the default file but also need to bind custom sections or enable hot-reload:
+
+```rust
+let app = App::new().with_config(|cfg| {
+    cfg.bind_section::<Database>("database")
+        .reload_on_change()
+});
+```
+
 ### Standalone Builder
 
 You can also create a `ConfigBuilder` separately and pass it via `set_config()`:
