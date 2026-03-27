@@ -1,6 +1,6 @@
 # Configuration Files
 
-Volga supports file-based application configuration. You can define settings in a TOML or JSON file, bind sections to strongly-typed Rust structs, and access them in request handlers via the [`Config<T>`](https://docs.rs/volga/latest/volga/struct.Config.html) extractor. Hot-reload is also supported.
+Volga supports file-based application configuration. You can define settings in a TOML or JSON file, bind sections to strongly-typed Rust structs, and access them in request handlers via the [`Config<T>`](https://docs.rs/volga/latest/volga/config/struct.Config.html) extractor. Hot-reload is also supported.
 
 ## Prerequisites
 
@@ -69,19 +69,19 @@ Volga provides three ways to load a config file:
 
 ### Default Config
 
-The simplest option — [`with_default_config()`](https://docs.rs/volga/latest/volga/struct.App.html#method.with_default_config) automatically discovers `app_config.toml` or `app_config.json` in the current working directory:
+The simplest option — [`with_default_config()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_default_config) automatically discovers `app_config.toml` or `app_config.json` in the current working directory:
 
 ```rust
 let app = App::new().with_default_config();
 ```
 
 ::: warning
-[`with_default_config()`](https://docs.rs/volga/latest/volga/struct.App.html#method.with_default_config) panics at startup if neither `app_config.toml` nor `app_config.json` is found.
+[`with_default_config()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_default_config) panics at startup if neither `app_config.toml` nor `app_config.json` is found.
 :::
 
 ### Builder Closure
 
-For full control, use [`with_config()`](https://docs.rs/volga/latest/volga/struct.App.html#method.with_config) which gives you a [`ConfigBuilder`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html):
+For full control, use [`with_config()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_config) which gives you a [`ConfigBuilder`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html):
 
 ```rust
 let app = App::new().with_config(|cfg| {
@@ -92,7 +92,7 @@ let app = App::new().with_config(|cfg| {
 });
 ```
 
-If you omit [`with_file()`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.with_file), the builder falls back to the same default file discovery as [`with_default_config()`](https://docs.rs/volga/latest/volga/struct.App.html#method.with_default_config) — it looks for `app_config.toml` or `app_config.json` in the current working directory. This is useful when you want the default file but also need to bind custom sections or enable hot-reload:
+If you omit [`with_file()`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html#method.with_file), the builder falls back to the same default file discovery as [`with_default_config()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_default_config) — it looks for `app_config.toml` or `app_config.json` in the current working directory. This is useful when you want the default file but also need to bind custom sections or enable hot-reload:
 
 ```rust
 let app = App::new().with_config(|cfg| {
@@ -103,7 +103,7 @@ let app = App::new().with_config(|cfg| {
 
 ### Standalone Builder
 
-You can also create a [`ConfigBuilder`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html) separately and pass it via [`set_config()`](https://docs.rs/volga/latest/volga/struct.App.html#method.set_config):
+You can also create a [`ConfigBuilder`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html) separately and pass it via [`set_config()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_config):
 
 ```rust
 use volga::{App, ConfigBuilder};
@@ -119,7 +119,7 @@ let app = App::new().set_config(config);
 
 ### Required Sections
 
-Use [`bind_section::<T>(key)`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.bind_section) to register a required section. If the section is missing or malformed, the application panics at startup:
+Use [`bind_section::<T>(key)`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html#method.bind_section) to register a required section. If the section is missing or malformed, the application panics at startup:
 
 ```rust
 #[derive(Deserialize)]
@@ -142,7 +142,7 @@ url = "postgres://localhost/mydb"
 
 ### Optional Sections
 
-Use [`bind_section_optional::<T>(key)`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.bind_section_optional) for sections that may be absent. If the section is missing, [`Config<T>`](https://docs.rs/volga/latest/volga/struct.Config.html) will not be available, but the app won't panic:
+Use [`bind_section_optional::<T>(key)`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html#method.bind_section_optional) for sections that may be absent. If the section is missing, [`Config<T>`](https://docs.rs/volga/latest/volga/config/struct.Config.html) will not be available, but the app won't panic:
 
 ```rust
 #[derive(Deserialize)]
@@ -158,7 +158,7 @@ let app = App::new().with_config(|cfg| {
 
 ## Accessing Config in Handlers
 
-Use the [`Config<T>`](https://docs.rs/volga/latest/volga/struct.Config.html) extractor to access a bound section in any request handler. It performs one atomic load + `Arc::clone` per request — no deserialization at runtime:
+Use the [`Config<T>`](https://docs.rs/volga/latest/volga/config/struct.Config.html) extractor to access a bound section in any request handler. It performs one atomic load + `Arc::clone` per request — no deserialization at runtime:
 
 ```rust
 use volga::{App, Config, ok};
@@ -186,7 +186,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Built-in Sections
 
-Volga automatically recognizes and applies certain reserved sections from the config file. These sections configure framework internals and do **not** require [`bind_section()`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.bind_section):
+Volga automatically recognizes and applies certain reserved sections from the config file. These sections configure framework internals and do **not** require [`bind_section()`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html#method.bind_section):
 
 | Section      | Feature Flag   | Fields                                                        |
 |--------------|----------------|---------------------------------------------------------------|
@@ -212,7 +212,7 @@ Built-in sections are applied at startup only. They are **not** affected by hot-
 
 ## Hot Reload
 
-Enable automatic config reloading with [`reload_on_change()`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.reload_on_change). Volga will poll the config file every 5 seconds and update all bound sections:
+Enable automatic config reloading with [`reload_on_change()`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html#method.reload_on_change). Volga will poll the config file every 5 seconds and update all bound sections:
 
 ```rust
 let app = App::new().with_config(|cfg| {
@@ -224,11 +224,11 @@ let app = App::new().with_config(|cfg| {
 
 Reload behavior:
 - **Required sections** — if a required section disappears from the file or becomes malformed during reload, the previous value is retained.
-- **Optional sections** — if an optional section disappears, [`Config<T>`](https://docs.rs/volga/latest/volga/struct.Config.html) becomes unavailable.
+- **Optional sections** — if an optional section disappears, [`Config<T>`](https://docs.rs/volga/latest/volga/config/struct.Config.html) becomes unavailable.
 - **Built-in sections** (server, tls, etc.) are **not** reloaded — they are startup-only.
 
 ::: warning
-[`reload_on_change()`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.reload_on_change) requires [`with_file()`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.with_file) to be called. The app will panic at startup if no file path is configured.
+[`reload_on_change()`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html#method.reload_on_change) requires [`with_file()`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html#method.with_file) to be called. The app will panic at startup if no file path is configured.
 :::
 
 ## JSON Format Example
