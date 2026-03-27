@@ -227,10 +227,6 @@ let app = App::new().with_config(|cfg| {
 - **Опциональные секции** — если опциональная секция исчезает, [`Config<T>`](https://docs.rs/volga/latest/volga/config/struct.Config.html) становится недоступным.
 - **Встроенные секции** (server, tls и т.д.) **не перезагружаются** — они применяются только при запуске.
 
-::: warning
-[`reload_on_change()`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html#method.reload_on_change) требует вызова [`with_file()`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html#method.with_file). Приложение вызовет панику при запуске, если путь к файлу не указан.
-:::
-
 ## Пример с JSON
 
 Вместо TOML можно использовать JSON. Создайте `app_config.json`:
