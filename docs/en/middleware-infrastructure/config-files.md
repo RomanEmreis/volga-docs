@@ -227,10 +227,6 @@ Reload behavior:
 - **Optional sections** — if an optional section disappears, [`Config<T>`](https://docs.rs/volga/latest/volga/config/struct.Config.html) becomes unavailable.
 - **Built-in sections** (server, tls, etc.) are **not** reloaded — they are startup-only.
 
-::: warning
-[`reload_on_change()`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html#method.reload_on_change) requires [`with_file()`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html#method.with_file) to be called. The app will panic at startup if no file path is configured.
-:::
-
 ## JSON Format Example
 
 You can use JSON instead of TOML. Create `app_config.json`:
