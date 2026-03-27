@@ -206,8 +206,8 @@ For distributed scenarios (e.g. multiple instances behind a load balancer), you 
 Store traits are defined in the `volga_rate_limiter` crate and each requires a single atomic operation:
 
 ```rust
-use volga_rate_limiter::TokenBucketStore;
-use volga_rate_limiter::store::TokenBucketParams;
+use volga::rate_limiting::TokenBucketStore;
+use volga::rate_limiting::TokenBucketParams;
 
 struct MyRedisStore { /* ... */ }
 
@@ -224,7 +224,7 @@ impl TokenBucketStore for MyRedisStore {
 Then create the rate limiter with your custom store:
 
 ```rust
-use volga_rate_limiter::TokenBucketRateLimiter;
+use volga::rate_limiting::TokenBucketRateLimiter;
 
 let limiter = TokenBucketRateLimiter::with_store(10, 5.0, MyRedisStore::new());
 ```
