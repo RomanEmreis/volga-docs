@@ -1,6 +1,6 @@
 # Файлы конфигурации
 
-Волга поддерживает файловую конфигурацию приложения. Вы можете описать настройки в TOML или JSON файле, привязать секции к строго типизированным Rust-структурам и получать к ним доступ в обработчиках запросов через экстрактор `Config<T>`. Также поддерживается горячая перезагрузка конфигурации.
+Волга поддерживает файловую конфигурацию приложения. Вы можете описать настройки в TOML или JSON файле, привязать секции к строго типизированным Rust-структурам и получать к ним доступ в обработчиках запросов через экстрактор [`Config<T>`](https://docs.rs/volga/latest/volga/struct.Config.html). Также поддерживается горячая перезагрузка конфигурации.
 
 ## Подготовка
 
@@ -69,19 +69,19 @@ async fn main() -> std::io::Result<()> {
 
 ### Конфигурация по умолчанию
 
-Самый простой вариант — автоматический поиск `app_config.toml` или `app_config.json` в текущей рабочей директории:
+Самый простой вариант — [`with_default_config()`](https://docs.rs/volga/latest/volga/struct.App.html#method.with_default_config) автоматически ищет `app_config.toml` или `app_config.json` в текущей рабочей директории:
 
 ```rust
 let app = App::new().with_default_config();
 ```
 
 ::: warning
-`with_default_config()` вызовет панику при запуске, если ни `app_config.toml`, ни `app_config.json` не найден.
+[`with_default_config()`](https://docs.rs/volga/latest/volga/struct.App.html#method.with_default_config) вызовет панику при запуске, если ни `app_config.toml`, ни `app_config.json` не найден.
 :::
 
 ### Замыкание с билдером
 
-Для полного контроля используйте `with_config()`, который предоставляет `ConfigBuilder`:
+Для полного контроля используйте [`with_config()`](https://docs.rs/volga/latest/volga/struct.App.html#method.with_config), который предоставляет [`ConfigBuilder`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html):
 
 ```rust
 let app = App::new().with_config(|cfg| {
@@ -92,7 +92,7 @@ let app = App::new().with_config(|cfg| {
 });
 ```
 
-Если не вызывать `with_file()`, билдер будет искать файл по умолчанию — так же, как `with_default_config()`, то есть `app_config.toml` или `app_config.json` в текущей рабочей директории. Это удобно, когда нужен файл по умолчанию, но при этом требуется привязать пользовательские секции или включить горячую перезагрузку:
+Если не вызывать [`with_file()`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.with_file), билдер будет искать файл по умолчанию — так же, как [`with_default_config()`](https://docs.rs/volga/latest/volga/struct.App.html#method.with_default_config), то есть `app_config.toml` или `app_config.json` в текущей рабочей директории. Это удобно, когда нужен файл по умолчанию, но при этом требуется привязать пользовательские секции или включить горячую перезагрузку:
 
 ```rust
 let app = App::new().with_config(|cfg| {
@@ -103,7 +103,7 @@ let app = App::new().with_config(|cfg| {
 
 ### Отдельный билдер
 
-Можно создать `ConfigBuilder` отдельно и передать его через `set_config()`:
+Можно создать [`ConfigBuilder`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html) отдельно и передать его через [`set_config()`](https://docs.rs/volga/latest/volga/struct.App.html#method.set_config):
 
 ```rust
 use volga::{App, ConfigBuilder};
@@ -119,7 +119,7 @@ let app = App::new().set_config(config);
 
 ### Обязательные секции
 
-Используйте `bind_section::<T>(key)` для регистрации обязательной секции. Если секция отсутствует или имеет неверный формат, приложение вызовет панику при запуске:
+Используйте [`bind_section::<T>(key)`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.bind_section) для регистрации обязательной секции. Если секция отсутствует или имеет неверный формат, приложение вызовет панику при запуске:
 
 ```rust
 #[derive(Deserialize)]
@@ -142,7 +142,7 @@ url = "postgres://localhost/mydb"
 
 ### Опциональные секции
 
-Используйте `bind_section_optional::<T>(key)` для секций, которые могут отсутствовать. Если секция не найдена, `Config<T>` не будет доступен, но приложение не вызовет панику:
+Используйте [`bind_section_optional::<T>(key)`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.bind_section_optional) для секций, которые могут отсутствовать. Если секция не найдена, [`Config<T>`](https://docs.rs/volga/latest/volga/struct.Config.html) не будет доступен, но приложение не вызовет панику:
 
 ```rust
 #[derive(Deserialize)]
@@ -158,7 +158,7 @@ let app = App::new().with_config(|cfg| {
 
 ## Доступ к конфигурации в обработчиках
 
-Используйте экстрактор `Config<T>` для доступа к привязанной секции в любом обработчике запросов. Он выполняет одну атомарную загрузку + `Arc::clone` на каждый запрос — без десериализации во время выполнения:
+Используйте экстрактор [`Config<T>`](https://docs.rs/volga/latest/volga/struct.Config.html) для доступа к привязанной секции в любом обработчике запросов. Он выполняет одну атомарную загрузку + `Arc::clone` на каждый запрос — без десериализации во время выполнения:
 
 ```rust
 use volga::{App, Config, ok};
@@ -186,7 +186,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Встроенные секции
 
-Волга автоматически распознаёт и применяет зарезервированные секции из конфигурационного файла. Эти секции настраивают внутренние компоненты фреймворка и **не требуют** вызова `bind_section()`:
+Волга автоматически распознаёт и применяет зарезервированные секции из конфигурационного файла. Эти секции настраивают внутренние компоненты фреймворка и **не требуют** вызова [`bind_section()`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.bind_section):
 
 | Секция       | Feature-флаг   | Поля                                                          |
 |--------------|----------------|---------------------------------------------------------------|
@@ -212,7 +212,7 @@ max_connections = 1000
 
 ## Горячая перезагрузка
 
-Включите автоматическую перезагрузку конфигурации с помощью `reload_on_change()`. Волга будет опрашивать файл каждые 5 секунд и обновлять все привязанные секции:
+Включите автоматическую перезагрузку конфигурации с помощью [`reload_on_change()`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.reload_on_change). Волга будет опрашивать файл каждые 5 секунд и обновлять все привязанные секции:
 
 ```rust
 let app = App::new().with_config(|cfg| {
@@ -224,11 +224,11 @@ let app = App::new().with_config(|cfg| {
 
 Поведение при перезагрузке:
 - **Обязательные секции** — если обязательная секция исчезает из файла или становится некорректной, сохраняется предыдущее значение.
-- **Опциональные секции** — если опциональная секция исчезает, `Config<T>` становится недоступным.
+- **Опциональные секции** — если опциональная секция исчезает, [`Config<T>`](https://docs.rs/volga/latest/volga/struct.Config.html) становится недоступным.
 - **Встроенные секции** (server, tls и т.д.) **не перезагружаются** — они применяются только при запуске.
 
 ::: warning
-`reload_on_change()` требует вызова `with_file()`. Приложение вызовет панику при запуске, если путь к файлу не указан.
+[`reload_on_change()`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.reload_on_change) требует вызова [`with_file()`](https://docs.rs/volga/latest/volga/struct.ConfigBuilder.html#method.with_file). Приложение вызовет панику при запуске, если путь к файлу не указан.
 :::
 
 ## Пример с JSON
