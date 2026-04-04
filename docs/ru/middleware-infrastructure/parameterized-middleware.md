@@ -107,11 +107,10 @@ async fn main() -> std::io::Result<()> {
         .attach(Timeout { duration: Duration::from_secs(1) });
 
     // Прикрепление к группе маршрутов
-    {
-        let mut api = app.map_group("/api");
+    app.group("/api", |api| {
         api.attach(Timeout { duration: Duration::from_secs(2) });
         api.map_get("/ping", || async { "pong" });
-    }
+    });
 
     app.run().await
 }
