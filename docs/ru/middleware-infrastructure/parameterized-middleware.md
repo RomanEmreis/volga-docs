@@ -6,7 +6,7 @@
 
 ## Обзор
 
-Параметризованный middleware — это обычный Rust-тип (как правило, `struct`), реализующий трейт [`Middleware`](https://docs.rs/volga/latest/volga/middleware/trait.Middleware.html). Такой тип хранит всю необходимую конфигурацию и разделяемое состояние, а его метод [`call()`](https://docs.rs/volga/latest/volga/middleware/trait.Middleware.html#tymethod.call) содержит основную логику middleware.
+Параметризованный middleware — это обычный Rust-тип (как правило, `struct`), реализующий трейт [`Middleware`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html). Такой тип хранит всю необходимую конфигурацию и разделяемое состояние, а его метод [`call()`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html#tymethod.call) содержит основную логику middleware.
 
 Это похоже на паттерны middleware в других экосистемах (например, слои Tower, middleware ASP.NET Core или классы Express.js).
 
@@ -65,10 +65,10 @@ impl Middleware for Timeout {
 
 ## .wrap() и .attach()
 
-Оба метода регистрируют middleware, работающие с полным [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/struct.HttpContext.html), но рассчитаны на разные сценарии:
+Оба метода регистрируют middleware, работающие с полным [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html), но рассчитаны на разные сценарии:
 
 - [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) оптимизирован для коротких встроенных замыканий. Аннотации типов для `ctx` и `next` не требуются.
-- [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach) предназначен для повторно используемых параметризованных типов middleware — как правило, структур, реализующих трейт [`Middleware`](https://docs.rs/volga/latest/volga/middleware/trait.Middleware.html).
+- [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach) предназначен для повторно используемых параметризованных типов middleware — как правило, структур, реализующих трейт [`Middleware`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html).
 
 ::: tip
 Используйте [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) для быстрых встроенных middleware и [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach), когда нужно оформить middleware как именованный настраиваемый тип, пригодный для повторного использования.

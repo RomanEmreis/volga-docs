@@ -6,7 +6,7 @@ This approach is ideal when your middleware needs its own state, configuration, 
 
 ## Overview
 
-A parameterized middleware is a regular Rust type (typically a `struct`) that implements the [`Middleware`](https://docs.rs/volga/latest/volga/middleware/trait.Middleware.html) trait. The type holds any configuration or shared state the middleware needs, and its [`call()`](https://docs.rs/volga/latest/volga/middleware/trait.Middleware.html#tymethod.call) method contains the middleware logic.
+A parameterized middleware is a regular Rust type (typically a `struct`) that implements the [`Middleware`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html) trait. The type holds any configuration or shared state the middleware needs, and its [`call()`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html#tymethod.call) method contains the middleware logic.
 
 This is very similar to middleware patterns found in other ecosystems (for example, Tower layers, ASP.NET Core middleware, or Express.js classes).
 
@@ -65,10 +65,10 @@ The `Timeout` struct carries its configuration (`duration`) and implements the m
 
 ## .wrap() vs .attach()
 
-Both methods register middleware operating on the full [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/struct.HttpContext.html), but they target different use cases:
+Both methods register middleware operating on the full [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html), but they target different use cases:
 
 - [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) is optimized for short, inline closures. No type annotations on `ctx` and `next` are required.
-- [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach) is intended for reusable, parameterized middleware types — typically `struct`s that implement the [`Middleware`](https://docs.rs/volga/latest/volga/middleware/trait.Middleware.html) trait.
+- [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach) is intended for reusable, parameterized middleware types — typically `struct`s that implement the [`Middleware`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html) trait.
 
 ::: tip
 Use [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) for quick inline middleware and [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach) when you want to package middleware as a named, configurable type you can reuse.
