@@ -148,26 +148,30 @@ Built-in features such as [CORS](./cors.md), [authentication](../security-access
 The same parameterized approach works for the other middleware traits as well. Besides [`Middleware`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html), you can implement [`Filter`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Filter.html), [`TapReq`](https://docs.rs/volga/latest/volga/middleware/handler/trait.TapReq.html), [`MapOk`](https://docs.rs/volga/latest/volga/middleware/handler/trait.MapOk.html), [`MapErr`](https://docs.rs/volga/latest/volga/http/endpoints/handlers/trait.MapErr.html), and [`With`](https://docs.rs/volga/latest/volga/middleware/handler/trait.With.html) on your own types. They are registered using the same methods as their closure counterparts — [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter), [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req), [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok), [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err), and [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) respectively. For example, a reusable parameterized filter:
 
 ```rust
-use volga::{App, Path, http::FilterResult, middleware::handler::Filter};
+use volga::{App, headers::HttpHeaders, middleware::Filter};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/sum/{x}/{y}", |x: i32, y: i32| async move { x + y })
-        .filter(PositiveOnly);
+        .filter(HasHeader {
+            header: "x-api-key".to_owned()
+        });
 
     app.run().await
 }
 
 #[derive(Clone)]
-struct PositiveOnly;
+struct HasHeader {
+    header: String
+}
 
-impl Filter<Path<(i32, i32)>> for PositiveOnly {
+impl Filter<HttpHeaders> for HasHeader {
     type Output = bool;
 
-    async fn filter(&self, Path((x, y)): Path<(i32, i32)>) -> bool {
-        x >= 0 && y >= 0
+    async fn filter(&self, headers: HttpHeaders) -> bool {
+        headers.get_raw(&self.header).is_some()
     }
 }
 ```
