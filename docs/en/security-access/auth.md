@@ -129,10 +129,10 @@ struct Payload {
 
 ### Bearer Auth Configuration
 
-The bearer auth middleware enforces the following security policies by default:
+The [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html) enforces the following security policies by default:
 
-* **`require_https`** is **enabled** — non-TLS, non-loopback requests are rejected with `400 Bad Request`. Disable for reverse-proxy deployments where TLS is terminated upstream.
-* **`strip_token_from_request`** is **enabled** — the `Authorization` header is removed after successful validation. Disable if downstream handlers need access to the token.
+* **[`require_https`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.require_https)** is **enabled** — non-TLS, non-loopback requests are rejected with `400 Bad Request`. Disable for reverse-proxy deployments where TLS is terminated upstream.
+* **[`strip_token_from_request`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.strip_token_from_request)** is **enabled** — the `Authorization` header is removed after successful validation. Disable if downstream handlers need access to the token.
 
 ```rust
 let mut app = App::new()
@@ -143,7 +143,7 @@ let mut app = App::new()
     );
 ```
 
-When configuring audience validation via `with_aud(...)`, the `aud` claim is automatically added to required claims — tokens missing it are rejected. Call `without_strict_aud()` to allow tokens that do not include `aud`:
+When configuring audience validation via [`with_aud(...)`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_aud), the `aud` claim is automatically added to required claims — tokens missing it are rejected. Call [`without_strict_aud()`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.without_strict_aud) to allow tokens that do not include `aud`:
 
 ```rust
 let mut app = App::new()
@@ -155,7 +155,7 @@ let mut app = App::new()
 ```
 
 ::: info
-`EncodingKey`, `DecodingKey`, and `Algorithm` are now native Volga types (no longer re-exported from `jsonwebtoken`). Import paths remain the same (`volga::auth::{EncodingKey, DecodingKey}`), but `jsonwebtoken::ErrorKind` is no longer available — use the PEM / base64 / secret / env / file constructors provided by Volga instead. Token validation settings live on `BearerAuthConfig`; the previous `BearerTokenService::validation()` accessor has been removed.
+`EncodingKey`, `DecodingKey`, and `Algorithm` are now native Volga types (no longer re-exported from `jsonwebtoken`). Import paths remain the same (`volga::auth::{EncodingKey, DecodingKey}`), but `jsonwebtoken::ErrorKind` is no longer available — use the PEM / base64 / secret / env / file constructors provided by Volga instead. Token validation settings live on [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html); the previous `BearerTokenService::validation()` accessor has been removed.
 :::
 
 ### JWT Usage
