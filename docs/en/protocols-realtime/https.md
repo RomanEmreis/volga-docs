@@ -205,7 +205,7 @@ async fn main() -> std::io::Result<()> {
 Then if you run this code you will receive the `Strict-Transport-Security` HTTP header along with the successful response.
 
 ::: info
-[`with_preload()`](https://docs.rs/volga/latest/volga/http/hsts/struct.HstsConfig.html#method.with_preload) and [`with_sub_domains()`](https://docs.rs/volga/latest/volga/http/hsts/struct.HstsConfig.html#method.with_sub_domains) take no arguments — they enable the corresponding flags. Use [`without_preload()`](https://docs.rs/volga/latest/volga/http/hsts/struct.HstsConfig.html#method.without_preload) / [`without_sub_domains()`](https://docs.rs/volga/latest/volga/http/hsts/struct.HstsConfig.html#method.without_sub_domains) to disable them. All HSTS settings are configured through the `with_hsts(|h| ...)` closure on `TlsConfig`.
+[`with_preload()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.with_preload) and [`with_sub_domains()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.with_sub_domains) take no arguments — they enable the corresponding flags. Use [`without_preload()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.without_preload) / [`without_sub_domains()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.without_sub_domains) to disable them. All HSTS settings are configured through the `with_hsts(|h| ...)` closure on [`TlsConfig`](https://docs.rs/volga/latest/volga/tls/struct.TlsConfig.html#method.with_hsts).
 :::
 
 You can find more examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/tls/src/main.rs).
