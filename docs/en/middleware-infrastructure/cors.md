@@ -58,7 +58,7 @@ async fn main() -> std::io::Result<()> {
 ```
 
 :::warning
-If you need to enable credentials using [`with_credentials(true)`](https://docs.rs/volga/latest/volga/http/cors/struct.CorsConfig.html#method.with_credentials), note that it **cannot** be used with wildcard origins, headers, or methods for security reasons. These constraints are validated in [`use_cors()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_cors), which will panic if misconfigured.
+If you need to enable credentials using [`with_credentials()`](https://docs.rs/volga/latest/volga/http/cors/struct.CorsConfig.html#method.with_credentials), note that it **cannot** be used with wildcard origins, headers, or methods for security reasons. These constraints are validated in [`use_cors()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_cors), which will panic if misconfigured. The method takes no arguments — use [`without_credentials()`](https://docs.rs/volga/latest/volga/http/cors/struct.CorsConfig.html#method.without_credentials) to explicitly disable. Similarly, the `Vary` response header is controlled via [`with_vary_header()`](https://docs.rs/volga/latest/volga/http/cors/struct.CorsConfig.html#method.with_vary_header) / [`without_vary_header()`](https://docs.rs/volga/latest/volga/http/cors/struct.CorsConfig.html#method.without_vary_header).
 :::
 
 ## CORS Policies and Scoping
