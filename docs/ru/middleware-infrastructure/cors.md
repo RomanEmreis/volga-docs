@@ -58,7 +58,7 @@ async fn main() -> std::io::Result<()> {
 ```
 
 :::warning  
-Если вам нужно включить передачу учётных данных с помощью [`with_credentials(true)`](https://docs.rs/volga/latest/volga/http/cors/struct.CorsConfig.html#method.with_credentials), учтите, что **нельзя** использовать эту настройку совместно с wildcard-значениями для источников, заголовков или методов по соображениям безопасности. Эти ограничения проверяются в [`use_cors()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_cors), и в случае некорректной конфигурации произойдёт паника.
+Если вам нужно включить передачу учётных данных с помощью [`with_credentials()`](https://docs.rs/volga/latest/volga/http/cors/struct.CorsConfig.html#method.with_credentials), учтите, что **нельзя** использовать эту настройку совместно с wildcard-значениями для источников, заголовков или методов по соображениям безопасности. Эти ограничения проверяются в [`use_cors()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_cors), и в случае некорректной конфигурации произойдёт паника. Метод не принимает аргументов — для явного отключения используйте [`without_credentials()`](https://docs.rs/volga/latest/volga/http/cors/struct.CorsConfig.html#method.without_credentials). Аналогично, заголовок `Vary` управляется через [`with_vary_header()`](https://docs.rs/volga/latest/volga/http/cors/struct.CorsConfig.html#method.with_vary_header) / [`without_vary_header()`](https://docs.rs/volga/latest/volga/http/cors/struct.CorsConfig.html#method.without_vary_header).
 :::
 
 ## Политики CORS и область действия
