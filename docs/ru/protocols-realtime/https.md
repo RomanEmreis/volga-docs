@@ -208,7 +208,7 @@ async fn main() -> std::io::Result<()> {
 Затем, если вы запустите этот код, вы получите HTTP-заголовок `Strict-Transport-Security` вместе с успешным ответом.
 
 ::: info
-[`with_preload()`](https://docs.rs/volga/latest/volga/http/hsts/struct.HstsConfig.html#method.with_preload) и [`with_sub_domains()`](https://docs.rs/volga/latest/volga/http/hsts/struct.HstsConfig.html#method.with_sub_domains) больше не принимают аргументов — они включают соответствующие флаги. Для отключения используйте [`without_preload()`](https://docs.rs/volga/latest/volga/http/hsts/struct.HstsConfig.html#method.without_preload) / [`without_sub_domains()`](https://docs.rs/volga/latest/volga/http/hsts/struct.HstsConfig.html#method.without_sub_domains). Все настройки HSTS задаются через замыкание `with_hsts(|h| ...)` на `TlsConfig`.
+[`with_preload()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.with_preload) и [`with_sub_domains()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.with_sub_domains) больше не принимают аргументов — они включают соответствующие флаги. Для отключения используйте [`without_preload()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.without_preload) / [`without_sub_domains()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.without_sub_domains). Все настройки HSTS задаются через замыкание [`with_hsts(|h| ...)`](https://docs.rs/volga/latest/volga/tls/struct.TlsConfig.html#method.with_hsts) на [`TlsConfig`](https://docs.rs/volga/latest/volga/tls/struct.TlsConfig.html).
 :::
 
 Больше примеров вы можете найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/tls/src/main.rs).
