@@ -129,10 +129,10 @@ struct Payload {
 
 ### Конфигурация Bearer Auth
 
-Middleware Bearer-аутентификации применяет следующие политики безопасности по-умолчанию:
+[`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html) применяет следующие политики безопасности по-умолчанию:
 
-* **`require_https`** **включён** — non-TLS запросы (кроме loopback) отклоняются с `400 Bad Request`. Отключите этот флаг для развёртываний за обратным прокси, где TLS терминируется выше.
-* **`strip_token_from_request`** **включён** — заголовок `Authorization` удаляется из запроса после успешной валидации. Отключите, если нижестоящим обработчикам нужен доступ к токену.
+* **[`require_https`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.require_https)** **включён** — non-TLS запросы (кроме loopback) отклоняются с `400 Bad Request`. Отключите этот флаг для развёртываний за обратным прокси, где TLS терминируется выше.
+* **[`strip_token_from_request`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.strip_token_from_request)** **включён** — заголовок `Authorization` удаляется из запроса после успешной валидации. Отключите, если нижестоящим обработчикам нужен доступ к токену.
 
 ```rust
 let mut app = App::new()
@@ -143,7 +143,7 @@ let mut app = App::new()
     );
 ```
 
-При настройке валидации аудитории через `with_aud(...)` claim `aud` автоматически добавляется в список обязательных — токены без него отклоняются. Чтобы разрешить токены без `aud`, вызовите `without_strict_aud()`:
+При настройке валидации аудитории через [`with_aud(...)`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_aud) claim `aud` автоматически добавляется в список обязательных — токены без него отклоняются. Чтобы разрешить токены без `aud`, вызовите [`without_strict_aud()`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.without_strict_aud):
 
 ```rust
 let mut app = App::new()
@@ -155,7 +155,7 @@ let mut app = App::new()
 ```
 
 ::: info
-`EncodingKey`, `DecodingKey` и `Algorithm` теперь являются собственными типами Волги (больше не реэкспортируются из `jsonwebtoken`). Пути импорта остались прежними (`volga::auth::{EncodingKey, DecodingKey}`), но `jsonwebtoken::ErrorKind` больше недоступен — используйте конструкторы PEM / base64 / secret / env / file, предоставляемые Волгой. Параметры валидации токена настраиваются через `BearerAuthConfig`; прежний доступ через `BearerTokenService::validation()` удалён.
+`EncodingKey`, `DecodingKey` и `Algorithm` теперь являются собственными типами Волги (больше не реэкспортируются из `jsonwebtoken`). Пути импорта остались прежними (`volga::auth::{EncodingKey, DecodingKey}`), но `jsonwebtoken::ErrorKind` больше недоступен — используйте конструкторы PEM / base64 / secret / env / file, предоставляемые Волгой. Параметры валидации токена настраиваются через [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html); прежний доступ через `BearerTokenService::validation()` удалён.
 :::
 
 ### Использование JWT
