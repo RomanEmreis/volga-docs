@@ -127,6 +127,37 @@ struct Payload {
 }
 ```
 
+### Конфигурация Bearer Auth
+
+Middleware Bearer-аутентификации применяет следующие политики безопасности по-умолчанию:
+
+* **`require_https`** **включён** — non-TLS запросы (кроме loopback) отклоняются с `400 Bad Request`. Отключите этот флаг для развёртываний за обратным прокси, где TLS терминируется выше.
+* **`strip_token_from_request`** **включён** — заголовок `Authorization` удаляется из запроса после успешной валидации. Отключите, если нижестоящим обработчикам нужен доступ к токену.
+
+```rust
+let mut app = App::new()
+    .with_bearer_auth(|auth| auth
+        .set_decoding_key(DecodingKey::from_secret(secret.as_bytes()))
+        .require_https(false)             // отключить для развёртываний за обратным прокси
+        .strip_token_from_request(false)  // оставить заголовок Authorization для дальнейших обработчиков
+    );
+```
+
+При настройке валидации аудитории через `with_aud(...)` claim `aud` автоматически добавляется в список обязательных — токены без него отклоняются. Чтобы разрешить токены без `aud`, вызовите `without_strict_aud()`:
+
+```rust
+let mut app = App::new()
+    .with_bearer_auth(|auth| auth
+        .set_decoding_key(DecodingKey::from_secret(secret.as_bytes()))
+        .with_aud(["my-service"])
+        .without_strict_aud()
+    );
+```
+
+::: info
+`EncodingKey`, `DecodingKey` и `Algorithm` теперь являются собственными типами Волги (больше не реэкспортируются из `jsonwebtoken`). Пути импорта остались прежними (`volga::auth::{EncodingKey, DecodingKey}`), но `jsonwebtoken::ErrorKind` больше недоступен — используйте конструкторы PEM / base64 / secret / env / file, предоставляемые Волгой. Параметры валидации токена настраиваются через `BearerAuthConfig`; прежний доступ через `BearerTokenService::validation()` удалён.
+:::
+
 ### Использование JWT
 
 Промежуточное ПО [authorize()](https://docs.rs/volga/latest/volga/app/struct.App.html#method.authorize) предоставляет инструменты для реализации управления доступом на основе ролей или разрешений и может быть определено для отдельного маршрута, группы маршрутов или всего приложения.
@@ -270,4 +301,3 @@ fn main() {
 ## Примеры
 * [Basic Auth](https://github.com/RomanEmreis/volga/blob/main/examples/cookies/src/main.rs)
 * [JWT](https://github.com/RomanEmreis/volga/blob/main/examples/jwt/src/main.rs)
-
