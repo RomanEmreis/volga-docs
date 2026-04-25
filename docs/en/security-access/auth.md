@@ -127,6 +127,37 @@ struct Payload {
 }
 ```
 
+### Bearer Auth Configuration
+
+The bearer auth middleware enforces the following security policies by default:
+
+* **`require_https`** is **enabled** — non-TLS, non-loopback requests are rejected with `400 Bad Request`. Disable for reverse-proxy deployments where TLS is terminated upstream.
+* **`strip_token_from_request`** is **enabled** — the `Authorization` header is removed after successful validation. Disable if downstream handlers need access to the token.
+
+```rust
+let mut app = App::new()
+    .with_bearer_auth(|auth| auth
+        .set_decoding_key(DecodingKey::from_secret(secret.as_bytes()))
+        .require_https(false)             // disable for reverse-proxy deployments
+        .strip_token_from_request(false)  // keep Authorization header for downstream handlers
+    );
+```
+
+When configuring audience validation via `with_aud(...)`, the `aud` claim is automatically added to required claims — tokens missing it are rejected. Call `without_strict_aud()` to allow tokens that do not include `aud`:
+
+```rust
+let mut app = App::new()
+    .with_bearer_auth(|auth| auth
+        .set_decoding_key(DecodingKey::from_secret(secret.as_bytes()))
+        .with_aud(["my-service"])
+        .without_strict_aud()
+    );
+```
+
+::: info
+`EncodingKey`, `DecodingKey`, and `Algorithm` are now native Volga types (no longer re-exported from `jsonwebtoken`). Import paths remain the same (`volga::auth::{EncodingKey, DecodingKey}`), but `jsonwebtoken::ErrorKind` is no longer available — use the PEM / base64 / secret / env / file constructors provided by Volga instead. Token validation settings live on `BearerAuthConfig`; the previous `BearerTokenService::validation()` accessor has been removed.
+:::
+
 ### JWT Usage
 
 The [authorize()](https://docs.rs/volga/latest/volga/app/struct.App.html#method.authorize) middleware provides tools to implement roles-based or permissions-based access control
