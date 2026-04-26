@@ -263,7 +263,7 @@ Volga provides a powerful [`Authorizer`](https://docs.rs/volga/latest/volga/auth
 ```rust
 use serde::Deserialize;
 use volga::auth::{
-    AuthClaims, Authorizer
+    AuthClaims, Authorizer,
     role, roles, permission, permissions, predicate
 };
 
