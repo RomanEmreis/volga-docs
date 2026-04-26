@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="generator" content="VuePress 2.0.0-rc.24" />
+    <style>
+      :root {
+        --vp-c-bg: #fff;
+      }
+
+      [data-theme='dark'] {
+        --vp-c-bg: #1b1b1f;
+      }
+
+      html,
+      body {
+        background-color: var(--vp-c-bg);
+      }
+    </style>
+    <script>
+      const useChoice = localStorage.getItem('vuepress-color-scheme')
+      const systemStatus =
+        'matchMedia' in window
+          ? window.matchMedia('(prefers-color-scheme: dark)').matches
+          : false
+
+      if (useChoice === 'light') {
+        document.documentElement.dataset.theme = 'light'
+      } else if (useChoice === 'dark' || systemStatus) {
+        document.documentElement.dataset.theme = 'dark'
+      }
+    </script>
+    <title>Volga</title><meta name="description" content="Easy & Fast Web Framework for Rust">
+    <link rel="preload" href="/volga-docs/assets/style-BJmXWQM2.css" as="style"><link rel="stylesheet" href="/volga-docs/assets/style-BJmXWQM2.css">
+    <link rel="modulepreload" href="/volga-docs/assets/app-rvOAMcl9.js"><link rel="modulepreload" href="/volga-docs/assets/404.html-Dmv_K1Os.js">
+    <link rel="prefetch" href="/volga-docs/assets/index.html-COQCbUyB.js" as="script"><link rel="prefetch" href="/volga-docs/assets/index.html-DwE-sPuJ.js" as="script"><link rel="prefetch" href="/volga-docs/assets/index.html-kvVJP9on.js" as="script"><link rel="prefetch" href="/volga-docs/assets/query-params.html-D7DKy2_r.js" as="script"><link rel="prefetch" href="/volga-docs/assets/quick-start.html-CKkgOmpF.js" as="script"><link rel="prefetch" href="/volga-docs/assets/route-groups.html-JDbY-H_z.js" as="script"><link rel="prefetch" href="/volga-docs/assets/route-params.html-C12Z9rtT.js" as="script"><link rel="prefetch" href="/volga-docs/assets/custom-trace-opt-head.html-BIu1TUNx.js" as="script"><link rel="prefetch" href="/volga-docs/assets/di.html-B_r8dsrP.js" as="script"><link rel="prefetch" href="/volga-docs/assets/compression.html-CWnBnF8V.js" as="script"><link rel="prefetch" href="/volga-docs/assets/config-files.html-Df7SzXgu.js" as="script"><link rel="prefetch" href="/volga-docs/assets/cors.html-DqBtMMBg.js" as="script"><link rel="prefetch" href="/volga-docs/assets/decompression.html-TLlQhua9.js" as="script"><link rel="prefetch" href="/volga-docs/assets/middleware.html-Bgvm9OpM.js" as="script"><link rel="prefetch" href="/volga-docs/assets/middlewares.html-DLlf86Ta.js" as="script"><link rel="prefetch" href="/volga-docs/assets/parameterized-middleware.html-BpJqzRtq.js" as="script"><link rel="prefetch" href="/volga-docs/assets/rate-limiting.html-CGRm8CuM.js" as="script"><link rel="prefetch" href="/volga-docs/assets/static-files.html-DrJsoM2b.js" as="script"><link rel="prefetch" href="/volga-docs/assets/http.html-CatFAHJB.js" as="script"><link rel="prefetch" href="/volga-docs/assets/https.html-DVXL4PLa.js" as="script"><link rel="prefetch" href="/volga-docs/assets/sse.html-B-3-CgmO.js" as="script"><link rel="prefetch" href="/volga-docs/assets/ws.html-CMXX0IdN.js" as="script"><link rel="prefetch" href="/volga-docs/assets/cancellation.html-BlFf8J8o.js" as="script"><link rel="prefetch" href="/volga-docs/assets/errors.html-Cpgf9JDQ.js" as="script"><link rel="prefetch" href="/volga-docs/assets/tracing.html-DkPBCU8t.js" as="script"><link rel="prefetch" href="/volga-docs/assets/cookie.html-BD7ZElPT.js" as="script"><link rel="prefetch" href="/volga-docs/assets/files.html-VzUIrbs3.js" as="script"><link rel="prefetch" href="/volga-docs/assets/form.html-DKYU9BJI.js" as="script"><link rel="prefetch" href="/volga-docs/assets/headers.html-Dy-iJeCS.js" as="script"><link rel="prefetch" href="/volga-docs/assets/json-payload.html-DRZFFDA0.js" as="script"><link rel="prefetch" href="/volga-docs/assets/auth.html-Cx9xc3J7.js" as="script"><link rel="prefetch" href="/volga-docs/assets/custom-trace-opt-head.html-BHq86hM0.js" as="script"><link rel="prefetch" href="/volga-docs/assets/di.html-vPjHLKVs.js" as="script"><link rel="prefetch" href="/volga-docs/assets/query-params.html-DwuBJE1F.js" as="script"><link rel="prefetch" href="/volga-docs/assets/quick-start.html-B4pmDFId.js" as="script"><link rel="prefetch" href="/volga-docs/assets/route-groups.html-CHBh8Zfz.js" as="script"><link rel="prefetch" href="/volga-docs/assets/route-params.html-CMbEiZKr.js" as="script"><link rel="prefetch" href="/volga-docs/assets/compression.html-CeSB83OD.js" as="script"><link rel="prefetch" href="/volga-docs/assets/config-files.html-CPbsIYjA.js" as="script"><link rel="prefetch" href="/volga-docs/assets/cors.html-UQIutebm.js" as="script"><link rel="prefetch" href="/volga-docs/assets/decompression.html-DH6gF_1P.js" as="script"><link rel="prefetch" href="/volga-docs/assets/middleware.html-X_StAgJ-.js" as="script"><link rel="prefetch" href="/volga-docs/assets/middlewares.html-eWtqdL5j.js" as="script"><link rel="prefetch" href="/volga-docs/assets/parameterized-middleware.html-CleTh615.js" as="script"><link rel="prefetch" href="/volga-docs/assets/rate-limiting.html-B2rB2lSM.js" as="script"><link rel="prefetch" href="/volga-docs/assets/static-files.html-BFxD4QwJ.js" as="script"><link rel="prefetch" href="/volga-docs/assets/http.html-DAlHH7_n.js" as="script"><link rel="prefetch" href="/volga-docs/assets/https.html-CUQKUwQ_.js" as="script"><link rel="prefetch" href="/volga-docs/assets/sse.html-x51MF4RD.js" as="script"><link rel="prefetch" href="/volga-docs/assets/ws.html-BBJMNCBo.js" as="script"><link rel="prefetch" href="/volga-docs/assets/cancellation.html-BpU7ujf-.js" as="script"><link rel="prefetch" href="/volga-docs/assets/errors.html-DBQ1lG0j.js" as="script"><link rel="prefetch" href="/volga-docs/assets/tracing.html-CTaojyiN.js" as="script"><link rel="prefetch" href="/volga-docs/assets/cookie.html-DUMAesPj.js" as="script"><link rel="prefetch" href="/volga-docs/assets/files.html-CP8Ff1wk.js" as="script"><link rel="prefetch" href="/volga-docs/assets/form.html-BbOeo_Kh.js" as="script"><link rel="prefetch" href="/volga-docs/assets/headers.html-DJSS6t3k.js" as="script"><link rel="prefetch" href="/volga-docs/assets/json-payload.html-BYTqDiLo.js" as="script"><link rel="prefetch" href="/volga-docs/assets/auth.html-DXo5o541.js" as="script">
+  </head>
+  <body>
+    <div id="app"><!--[--><div class="vp-theme-container" vp-container data-v-33d3430e><main class="page" data-v-33d3430e><div vp-content data-v-33d3430e><h1 data-v-33d3430e>404</h1><blockquote data-v-33d3430e>There&#39;s nothing here.</blockquote><a class="route-link" href="/volga-docs/" data-v-33d3430e>Take me home</a></div></main></div><!--[--><!----><!--]--><!--]--></div>
+    <script type="module" src="/volga-docs/assets/app-rvOAMcl9.js" defer></script>
+  </body>
+</html>
