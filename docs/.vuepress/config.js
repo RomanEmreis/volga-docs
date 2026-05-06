@@ -58,7 +58,7 @@ export default defineUserConfig({
           {
             text: 'Requests & Responses',
             prefix: '/en/requests-responses/',
-            children: ['headers', 'json-payload', 'form', 'files', 'cookie'],
+            children: ['headers', 'json-payload', 'form', 'files', 'multipart', 'cookie'],
           },
           {
             text: 'Middleware & Infrastructure',
@@ -116,7 +116,7 @@ export default defineUserConfig({
           {
             text: 'Запросы и ответы',
             prefix: '/ru/requests-responses/',
-            children: ['headers', 'json-payload', 'form', 'files', 'cookie'],
+            children: ['headers', 'json-payload', 'form', 'files', 'multipart', 'cookie'],
           },
           {
             text: 'Middleware и инфраструктура',
