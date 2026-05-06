@@ -1,6 +1,6 @@
 # Multipart Responses
 
-Starting from `0.9.2`, [`Multipart`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html) in Volga is bidirectional: in addition to acting as a request extractor (see [Working with Files](./files.md)), it implements [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/trait.IntoResponse.html) and can be returned from handlers to produce a `multipart/*` response.
+Starting from `0.9.2`, [`Multipart`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html) in Volga is bidirectional: in addition to acting as a request extractor (see [Working with Files](./files.md)), it implements [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) and can be returned from handlers to produce a `multipart/*` response.
 
 This is useful for:
 * Returning multiple related blobs in a single response (form-data style).
@@ -62,7 +62,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/report", || async {
-        Multipart::from_parts(vec![
+        Multipart::from_parts([
             Part::text("greeting", "hello"),
             Part::file("logo", "logo.bin", Bytes::from_static(b"\x01\x02\x03")),
         ])
@@ -77,7 +77,7 @@ async fn main() -> std::io::Result<()> {
 When a part's body is large or produced incrementally, use [`Part::stream`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Part.html#method.stream) to send it without buffering. The body must be a `Stream<Item = Result<Bytes, volga::error::Error>>`:
 ```rust
 use bytes::Bytes;
-use futures_util::stream;
+use futures_util::{StreamExt, stream};
 use volga::{App, Multipart, multipart::Part};
 
 #[tokio::main]
@@ -85,18 +85,20 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app.map_get("/stream", || async {
-        let chunks = stream::iter(vec![
-            Ok::<_, volga::error::Error>(Bytes::from_static(b"alpha-")),
-            Ok(Bytes::from_static(b"beta-")),
-            Ok(Bytes::from_static(b"gamma")),
-        ]);
+        let chunks = stream::iter([
+            Bytes::from_static(b"alpha-"),
+            Bytes::from_static(b"beta-"),
+            Bytes::from_static(b"gamma"),
+        ])
+        .map(Ok::<_, volga::error::Error>);
+
         let part = Part::stream(
             "log",
             "log.txt",
             volga::headers::ContentType::text_utf_8(),
             chunks,
         );
-        Multipart::from_parts(vec![part])
+        Multipart::from_parts([part])
     });
 
     app.run().await
@@ -131,7 +133,7 @@ async fn main() -> std::io::Result<()> {
                 HeaderValue::from_static("bytes 5-9/10"),
             );
 
-        Multipart::from_parts(vec![part1, part2])
+        Multipart::from_parts([part1, part2])
             .with_subtype(MultipartSubtype::ByteRanges)
     });
 
