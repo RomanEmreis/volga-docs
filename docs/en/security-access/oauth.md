@@ -1,8 +1,8 @@
 # OAuth 2.1 & OpenID Connect
 
-Volga ships a full OAuth 2.1 / OpenID Connect foundation on top of its [Bearer Token authentication](/en/security-access/auth.html). It lets you build **resource servers** that validate tokens against an OAuth 2.1 / OIDC issuer's published keys — with no shared secret — and **serve the discovery metadata documents** clients need to start a flow.
+Volga ships a full OAuth 2.1 / OpenID Connect foundation on top of its [Bearer Token authentication](./auth.md). It lets you build **resource servers** that validate tokens against an OAuth 2.1 / OIDC issuer's published keys — with no shared secret — and **serve the discovery metadata documents** clients need to start a flow.
 
-The protocol-level types (error models, metadata documents, the `WWW-Authenticate` challenge builder, well-known URL derivation) live under [`volga::auth::oauth`](https://docs.rs/volga/latest/volga/auth/oauth/index.html) and are shared with the standalone [OAuth client](/en/security-access/oauth-client.html).
+The protocol-level types (error models, metadata documents, the `WWW-Authenticate` challenge builder, well-known URL derivation) live under [`volga::auth::oauth`](https://docs.rs/volga/latest/volga/auth/oauth/index.html) and are shared with the standalone [OAuth client](./oauth-client.md).
 
 ## Feature flags
 
@@ -72,8 +72,8 @@ The `iss` claim is constrained to the configured issuer automatically and made *
 
 Keys are fetched lazily on the first request and cached, so token validation costs no network round-trip in the common case. The cache maintains itself:
 
-* A token with an **unknown `kid`** triggers a refresh (key rotation), rate-limited by [`with_refresh_cooldown`](https://docs.rs/volga/latest/volga/auth/struct.OAuthConfig.html#method.with_refresh_cooldown) (default 60 s); concurrent misses share a single refresh.
-* Known `kid`s are **re-checked** with the issuer once the cached set is older than [`with_max_key_age`](https://docs.rs/volga/latest/volga/auth/struct.OAuthConfig.html#method.with_max_key_age) (default 15 minutes), so a revoked or re-keyed `kid` stops validating without a restart.
+* A token with an **unknown `kid`** triggers a refresh (key rotation), rate-limited by [`with_refresh_cooldown`](https://docs.rs/volga/latest/volga/auth/oauth_client/struct.OAuthConfig.html#method.with_refresh_cooldown) (default 60 s); concurrent misses share a single refresh.
+* Known `kid`s are **re-checked** with the issuer once the cached set is older than [`with_max_key_age`](https://docs.rs/volga/latest/volga/auth/oauth_client/struct.OAuthConfig.html#method.with_max_key_age) (default 15 minutes), so a revoked or re-keyed `kid` stops validating without a restart.
 * While the issuer is **unreachable** and keys were already loaded, the last known set keeps serving — an issuer outage does not take token validation down with it. When no keys have ever loaded, protected routes answer `503` (a server-side problem) rather than blaming the token.
 
 ### Configuration
@@ -203,7 +203,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-The client side of the same flow — discovery, the Authorization Code + PKCE exchange and calling the protected route — is covered on the [OAuth 2.1 Client](/en/security-access/oauth-client.html) page.
+The client side of the same flow — discovery, the Authorization Code + PKCE exchange and calling the protected route — is covered on the [OAuth 2.1 Client](./oauth-client.md) page.
 
 ## Examples
 * [OAuth Flow](https://github.com/RomanEmreis/volga/blob/main/examples/oauth_flow/src/main.rs) — a complete Authorization Code + PKCE flow between an authorization server, a resource server and a client, in one process.

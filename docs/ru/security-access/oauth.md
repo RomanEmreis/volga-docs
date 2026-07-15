@@ -1,8 +1,8 @@
 # OAuth 2.1 и OpenID Connect
 
-Волга предоставляет полноценную основу для OAuth 2.1 / OpenID Connect поверх [аутентификации через Bearer Token](/ru/security-access/auth.html). Она позволяет создавать **сервер ресурсов (resource server)**, который валидирует токены по опубликованным ключам OAuth 2.1 / OIDC-эмитента (issuer) — без общего секрета — а также **отдавать документы метаданных (discovery)**, необходимые клиентам для запуска флоу.
+Волга предоставляет полноценную основу для OAuth 2.1 / OpenID Connect поверх [аутентификации через Bearer Token](./auth.md). Она позволяет создавать **сервер ресурсов (resource server)**, который валидирует токены по опубликованным ключам OAuth 2.1 / OIDC-эмитента (issuer) — без общего секрета — а также **отдавать документы метаданных (discovery)**, необходимые клиентам для запуска флоу.
 
-Типы уровня протокола (модели ошибок, документы метаданных, построитель заголовка `WWW-Authenticate`, вывод well-known URL) находятся в модуле [`volga::auth::oauth`](https://docs.rs/volga/latest/volga/auth/oauth/index.html) и совместно используются с отдельным [OAuth-клиентом](/ru/security-access/oauth-client.html).
+Типы уровня протокола (модели ошибок, документы метаданных, построитель заголовка `WWW-Authenticate`, вывод well-known URL) находятся в модуле [`volga::auth::oauth`](https://docs.rs/volga/latest/volga/auth/oauth/index.html) и совместно используются с отдельным [OAuth-клиентом](./oauth-client.md).
 
 ## Feature-флаги
 
@@ -72,8 +72,8 @@ Claim `iss` автоматически ограничивается настро
 
 Ключи загружаются лениво при первом запросе и кэшируются, поэтому в типичном случае валидация токена не требует обращения по сети. Кэш поддерживает себя сам:
 
-* Токен с **неизвестным `kid`** запускает обновление (ротация ключей), ограниченное по частоте через [`with_refresh_cooldown`](https://docs.rs/volga/latest/volga/auth/struct.OAuthConfig.html#method.with_refresh_cooldown) (по-умолчанию 60 с); одновременные промахи разделяют одно обновление.
-* Известные `kid` **перепроверяются** у эмитента, как только кэшированный набор становится старше [`with_max_key_age`](https://docs.rs/volga/latest/volga/auth/struct.OAuthConfig.html#method.with_max_key_age) (по-умолчанию 15 минут), так что отозванный или переизданный `kid` перестаёт валидироваться без перезапуска.
+* Токен с **неизвестным `kid`** запускает обновление (ротация ключей), ограниченное по частоте через [`with_refresh_cooldown`](https://docs.rs/volga/latest/volga/auth/oauth_client/struct.OAuthConfig.html#method.with_refresh_cooldown) (по-умолчанию 60 с); одновременные промахи разделяют одно обновление.
+* Известные `kid` **перепроверяются** у эмитента, как только кэшированный набор становится старше [`with_max_key_age`](https://docs.rs/volga/latest/volga/auth/oauth_client/struct.OAuthConfig.html#method.with_max_key_age) (по-умолчанию 15 минут), так что отозванный или переизданный `kid` перестаёт валидироваться без перезапуска.
 * Пока эмитент **недоступен**, а ключи уже были загружены, продолжает работать последний известный набор — сбой эмитента не роняет валидацию токенов. Если же ключи ни разу не загрузились, защищённые маршруты отвечают `503` (проблема на стороне сервера), а не обвиняют токен.
 
 ### Конфигурация
@@ -203,7 +203,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Клиентская сторона того же флоу — discovery, обмен Authorization Code + PKCE и вызов защищённого маршрута — описана на странице [OAuth 2.1 Клиент](/ru/security-access/oauth-client.html).
+Клиентская сторона того же флоу — discovery, обмен Authorization Code + PKCE и вызов защищённого маршрута — описана на странице [OAuth 2.1 Клиент](./oauth-client.md).
 
 ## Примеры
 * [OAuth Flow](https://github.com/RomanEmreis/volga/blob/main/examples/oauth_flow/src/main.rs) — полный флоу Authorization Code + PKCE между сервером авторизации, сервером ресурсов и клиентом в одном процессе.

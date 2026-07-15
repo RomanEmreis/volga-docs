@@ -215,7 +215,7 @@ let mut app = App::new()
 app.use_oauth();
 ```
 
-Полный флоу (валидация по эмитенту, ротация ключей и отдача метаданных) описан на странице [OAuth 2.1 и OpenID Connect](/ru/security-access/oauth.html), а запуск флоу Authorization Code + PKCE — на странице [OAuth 2.1 Клиент](/ru/security-access/oauth-client.html).
+Полный флоу (валидация по эмитенту, ротация ключей и отдача метаданных) описан на странице [OAuth 2.1 и OpenID Connect](./oauth.md), а запуск флоу Authorization Code + PKCE — на странице [OAuth 2.1 Клиент](./oauth-client.md).
 
 ## Определение структуры Claims
 
