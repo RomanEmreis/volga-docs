@@ -79,9 +79,16 @@ async fn authorize() -> Result<(), ClientError> {
         .with_resource("https://api.example.com")
         .build()?;
 
-    // 2. send the user to `auth.url`; then, in the redirect callback:
-    let (code, state) = ("code", "state");
-    assert!(auth.matches_state(state)); // always verify — CSRF protection
+    // 2. send the user to `auth.url`. The provider redirects back to your
+    //    callback with the real `code` and `state` query parameters — read
+    //    them there. (This snippet reuses the generated `auth.state` so the
+    //    check below holds on the happy path.)
+    let (code, state) = ("the-authorization-code", auth.state.as_str());
+
+    // always verify the callback state before exchanging — CSRF protection
+    if !auth.matches_state(state) {
+        return Ok(()); // reject — possible CSRF
+    }
 
     // 3. exchange the code for tokens (the PKCE verifier goes along)
     let tokens = client.exchange_code(&metadata, code, &auth).await?;

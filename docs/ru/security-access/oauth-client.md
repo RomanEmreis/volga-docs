@@ -79,9 +79,16 @@ async fn authorize() -> Result<(), ClientError> {
         .with_resource("https://api.example.com")
         .build()?;
 
-    // 2. отправляем пользователя на `auth.url`; затем в callback-редиректе:
-    let (code, state) = ("code", "state");
-    assert!(auth.matches_state(state)); // всегда проверяйте — защита от CSRF
+    // 2. отправляем пользователя на `auth.url`. Провайдер редиректит обратно
+    //    на ваш callback с настоящими query-параметрами `code` и `state` —
+    //    их и читаем там. (В этом примере переиспользуется сгенерированный
+    //    `auth.state`, чтобы проверка ниже проходила на «счастливом пути».)
+    let (code, state) = ("the-authorization-code", auth.state.as_str());
+
+    // всегда проверяйте state из callback до обмена — защита от CSRF
+    if !auth.matches_state(state) {
+        return Ok(()); // отклоняем — возможен CSRF
+    }
 
     // 3. обмениваем код на токены (verifier PKCE идёт вместе с запросом)
     let tokens = client.exchange_code(&metadata, code, &auth).await?;
