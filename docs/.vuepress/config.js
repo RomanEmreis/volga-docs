@@ -68,7 +68,7 @@ export default defineUserConfig({
           {
             text: 'Security & Access',
             prefix: '/en/security-access/',
-            children: ['auth'],
+            children: ['auth', 'oauth', 'oauth-client'],
           },
           {
             text: 'Reliability & Observability',
@@ -126,7 +126,7 @@ export default defineUserConfig({
           {
             text: 'Безопасность и доступ',
             prefix: '/ru/security-access/',
-            children: ['auth'],
+            children: ['auth', 'oauth', 'oauth-client'],
           },
           {
             text: 'Надежность и наблюдаемость',

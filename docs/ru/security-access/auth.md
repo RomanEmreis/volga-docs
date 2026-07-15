@@ -203,6 +203,20 @@ struct Claims {
 Этот секрет используется для подписания токена на этапе генерации и проверки подписи на этапе валидации. Если секреты отличаются - токен будет отклонён как недействительный.
 :::
 
+### Валидация токенов по OAuth 2.1 / OIDC-эмитенту
+
+Вместо настройки статического ключа сервер ресурсов может валидировать Bearer-токены по опубликованным ключам OAuth 2.1 / OIDC-эмитента — без общего секрета. Опишите эмитента через [`with_oauth(...)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_oauth) и подключите через [`use_oauth()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_oauth):
+
+```rust
+let mut app = App::new()
+    .with_bearer_auth(|auth| auth.with_aud(["https://api.example.com"]))
+    .with_oauth(|oauth| oauth.with_issuer("https://auth.example.com"));
+
+app.use_oauth();
+```
+
+Полный флоу (валидация по эмитенту, ротация ключей и отдача метаданных) описан на странице [OAuth 2.1 и OpenID Connect](/ru/security-access/oauth.html), а запуск флоу Authorization Code + PKCE — на странице [OAuth 2.1 Клиент](/ru/security-access/oauth-client.html).
+
 ## Определение структуры Claims
 
 Для удобства `jwt-auth-full` включает derive-макрос [`Claims`](https://docs.rs/volga/latest/volga/auth/derive.Claims.html) для объявления структуры claim'ов. Но вы также можете использовать альтернативные способы:

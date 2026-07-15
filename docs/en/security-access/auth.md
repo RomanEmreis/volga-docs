@@ -204,6 +204,20 @@ To ensure proper JWT functionality, you must use the same `JWT_SECRET` both when
 This secret is used to sign the token during generation and to verify the signature during validation. If these values differ - the token will be rejected as invalid.
 :::
 
+### Validating Tokens Against an OAuth 2.1 / OIDC Issuer
+
+Rather than configuring a static key, a resource server can validate bearer tokens against an OAuth 2.1 / OIDC issuer's published keys — no shared secret required. Describe the issuer with [`with_oauth(...)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_oauth) and opt in with [`use_oauth()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_oauth):
+
+```rust
+let mut app = App::new()
+    .with_bearer_auth(|auth| auth.with_aud(["https://api.example.com"]))
+    .with_oauth(|oauth| oauth.with_issuer("https://auth.example.com"));
+
+app.use_oauth();
+```
+
+See the [OAuth 2.1 & OpenID Connect](/en/security-access/oauth.html) page for the full flow (issuer-based validation, key rotation and metadata serving) and the [OAuth 2.1 Client](/en/security-access/oauth-client.html) page for driving the Authorization Code + PKCE flow.
+
 ## Defining Claims
 
 The `jwt-auth-full` feature enables the [`Claims`](https://docs.rs/volga/latest/volga/auth/derive.Claims.html) derive macro for defining JWT claims. Alternatively, you can define claims using:
