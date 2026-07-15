@@ -29,21 +29,21 @@ At least one of the two must be enabled.
 [`DiscoveryClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.DiscoveryClient.html) resolves the well-known discovery URLs, fetches the documents over HTTPS and validates each against the identifier it was requested for (RFC 8414 §3.3 / RFC 9728 §3.3):
 
 ```rust
-use volga_oauth_client::DiscoveryClient;
+use volga_oauth_client::{ClientError, DiscoveryClient};
 
-# async fn discover() -> Result<(), volga_oauth_client::ClientError> {
-let client = DiscoveryClient::new();
+async fn discover() -> Result<(), ClientError> {
+    let client = DiscoveryClient::new();
 
-// straight from an issuer identifier (RFC 8414, or the OIDC path):
-let server = client.fetch_server_metadata("https://auth.example.com").await?;
+    // straight from an issuer identifier (RFC 8414, or the OIDC path):
+    let server = client.fetch_server_metadata("https://auth.example.com").await?;
 
-// or start from the resource and follow it to its authorization server:
-let resource = client.fetch_resource_metadata("https://api.example.com").await?;
-let server = client.discover_authorization_server(&resource).await?;
+    // or start from the resource and follow it to its authorization server:
+    let resource = client.fetch_resource_metadata("https://api.example.com").await?;
+    let server = client.discover_authorization_server(&resource).await?;
 
-assert!(server.token_endpoint.is_some());
-# Ok(())
-# }
+    assert!(server.token_endpoint.is_some());
+    Ok(())
+}
 ```
 
 * [`fetch_server_metadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.DiscoveryClient.html#method.fetch_server_metadata) / [`fetch_oidc_metadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.DiscoveryClient.html#method.fetch_oidc_metadata) — the same document shape at the RFC 8414 and OIDC Discovery paths.
@@ -141,26 +141,28 @@ The key is chosen by the application — typically a user or session identifier,
 [`RegistrationClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.RegistrationClient.html) submits [`ClientMetadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientMetadata.html) to a server's registration endpoint (RFC 7591) and returns the issued credentials. [`OAuthClient::from_registration`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.from_registration) adopts them into a ready-to-use client:
 
 ```rust
-use volga_oauth_client::{ClientMetadata, DiscoveryClient, OAuthClient, RegistrationClient};
+use volga_oauth_client::{
+    ClientError, ClientMetadata, DiscoveryClient, OAuthClient, RegistrationClient,
+};
 
-# async fn register() -> Result<(), volga_oauth_client::ClientError> {
-let metadata = DiscoveryClient::new()
-    .fetch_server_metadata("https://auth.example.com")
-    .await?;
+async fn register() -> Result<(), ClientError> {
+    let metadata = DiscoveryClient::new()
+        .fetch_server_metadata("https://auth.example.com")
+        .await?;
 
-let registered = RegistrationClient::new()
-    .register(
-        &metadata,
-        &ClientMetadata::new()
-            .with_redirect_uris(["https://app.example.com/callback"])
-            .with_client_name("My App"),
-    )
-    .await?;
+    let registered = RegistrationClient::new()
+        .register(
+            &metadata,
+            &ClientMetadata::new()
+                .with_redirect_uris(["https://app.example.com/callback"])
+                .with_client_name("My App"),
+        )
+        .await?;
 
-// ready-to-use client under the issued credentials
-let client = OAuthClient::from_registration(&registered)?;
-# Ok(())
-# }
+    // ready-to-use client under the issued credentials
+    let client = OAuthClient::from_registration(&registered)?;
+    Ok(())
+}
 ```
 
 For servers that do not allow open registration, attach an initial access token with [`with_initial_access_token`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.RegistrationClient.html#method.with_initial_access_token).

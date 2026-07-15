@@ -29,21 +29,21 @@ volga-oauth-client = { version = "..." }
 [`DiscoveryClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.DiscoveryClient.html) разрешает well-known discovery-URL, загружает документы по HTTPS и проверяет каждый на соответствие идентификатору, для которого он был запрошен (RFC 8414 §3.3 / RFC 9728 §3.3):
 
 ```rust
-use volga_oauth_client::DiscoveryClient;
+use volga_oauth_client::{ClientError, DiscoveryClient};
 
-# async fn discover() -> Result<(), volga_oauth_client::ClientError> {
-let client = DiscoveryClient::new();
+async fn discover() -> Result<(), ClientError> {
+    let client = DiscoveryClient::new();
 
-// напрямую по идентификатору эмитента (RFC 8414 или путь OIDC):
-let server = client.fetch_server_metadata("https://auth.example.com").await?;
+    // напрямую по идентификатору эмитента (RFC 8414 или путь OIDC):
+    let server = client.fetch_server_metadata("https://auth.example.com").await?;
 
-// или начиная с ресурса и следуя к его серверу авторизации:
-let resource = client.fetch_resource_metadata("https://api.example.com").await?;
-let server = client.discover_authorization_server(&resource).await?;
+    // или начиная с ресурса и следуя к его серверу авторизации:
+    let resource = client.fetch_resource_metadata("https://api.example.com").await?;
+    let server = client.discover_authorization_server(&resource).await?;
 
-assert!(server.token_endpoint.is_some());
-# Ok(())
-# }
+    assert!(server.token_endpoint.is_some());
+    Ok(())
+}
 ```
 
 * [`fetch_server_metadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.DiscoveryClient.html#method.fetch_server_metadata) / [`fetch_oidc_metadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.DiscoveryClient.html#method.fetch_oidc_metadata) — один и тот же вид документа по путям RFC 8414 и OIDC Discovery.
@@ -141,26 +141,28 @@ impl TokenStore for MyStore {
 [`RegistrationClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.RegistrationClient.html) отправляет [`ClientMetadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientMetadata.html) на registration-эндпоинт сервера (RFC 7591) и возвращает выданные учётные данные. [`OAuthClient::from_registration`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.from_registration) принимает их и создаёт готовый к использованию клиент:
 
 ```rust
-use volga_oauth_client::{ClientMetadata, DiscoveryClient, OAuthClient, RegistrationClient};
+use volga_oauth_client::{
+    ClientError, ClientMetadata, DiscoveryClient, OAuthClient, RegistrationClient,
+};
 
-# async fn register() -> Result<(), volga_oauth_client::ClientError> {
-let metadata = DiscoveryClient::new()
-    .fetch_server_metadata("https://auth.example.com")
-    .await?;
+async fn register() -> Result<(), ClientError> {
+    let metadata = DiscoveryClient::new()
+        .fetch_server_metadata("https://auth.example.com")
+        .await?;
 
-let registered = RegistrationClient::new()
-    .register(
-        &metadata,
-        &ClientMetadata::new()
-            .with_redirect_uris(["https://app.example.com/callback"])
-            .with_client_name("My App"),
-    )
-    .await?;
+    let registered = RegistrationClient::new()
+        .register(
+            &metadata,
+            &ClientMetadata::new()
+                .with_redirect_uris(["https://app.example.com/callback"])
+                .with_client_name("My App"),
+        )
+        .await?;
 
-// готовый к использованию клиент с выданными учётными данными
-let client = OAuthClient::from_registration(&registered)?;
-# Ok(())
-# }
+    // готовый к использованию клиент с выданными учётными данными
+    let client = OAuthClient::from_registration(&registered)?;
+    Ok(())
+}
 ```
 
 Для серверов, не разрешающих открытую регистрацию, добавьте начальный токен доступа через [`with_initial_access_token`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.RegistrationClient.html#method.with_initial_access_token).
