@@ -216,7 +216,7 @@ let mut app = App::new()
 app.use_oauth();
 ```
 
-See the [OAuth 2.1 & OpenID Connect](/en/security-access/oauth.html) page for the full flow (issuer-based validation, key rotation and metadata serving) and the [OAuth 2.1 Client](/en/security-access/oauth-client.html) page for driving the Authorization Code + PKCE flow.
+See the [OAuth 2.1 & OpenID Connect](./oauth.md) page for the full flow (issuer-based validation, key rotation and metadata serving) and the [OAuth 2.1 Client](./oauth-client.md) page for driving the Authorization Code + PKCE flow.
 
 ## Defining Claims
 
