@@ -22,7 +22,7 @@ Instead of configuring a static [`DecodingKey`](https://docs.rs/volga/latest/vol
 
 Describe the issuer with [`with_oauth(...)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_oauth) and activate it explicitly with [`use_oauth()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_oauth):
 
-```rust
+```rust compile
 use serde::Deserialize;
 use volga::{
     App, ok,
@@ -80,7 +80,7 @@ Keys are fetched lazily on the first request and cached, so token validation cos
 
 The issuer is mandatory; everything else has production-safe defaults.
 
-```rust
+```rust compile-fragment
 use std::time::Duration;
 use volga::App;
 
@@ -96,7 +96,7 @@ let app = App::new()
 
 For a local development issuer served over plain HTTP, relax the transport policy:
 
-```rust
+```rust compile-fragment
 let app = App::new()
     .with_oauth(|oauth| oauth
         .with_issuer("http://127.0.0.1:5000")
@@ -123,7 +123,7 @@ A resource server tells clients where to authenticate; an authorization server p
 
 Configure it with [`with_oauth_resource_metadata`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_oauth_resource_metadata) (or [`set_oauth_resource_metadata`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_oauth_resource_metadata) for the whole value, including the `&str` identifier shorthand) and serve it with [`use_oauth_resource_metadata`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_oauth_resource_metadata):
 
-```rust
+```rust compile-fragment
 let mut app = App::new()
     .with_oauth_resource_metadata(|metadata| metadata
         .with_resource("https://api.example.com")
@@ -141,7 +141,7 @@ When bearer authentication is configured, the derived metadata URL is advertised
 
 Applications that are themselves an authorization server publish their endpoints via [`with_oauth_server_metadata`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_oauth_server_metadata) and serve the document at one or both discovery paths:
 
-```rust
+```rust compile-fragment
 let mut app = App::new()
     .with_oauth_server_metadata(|metadata| metadata
         .with_issuer("https://auth.example.com")
@@ -160,7 +160,7 @@ The server-metadata closure is seeded with the OAuth 2.1 prefills `response_type
 
 Two fields worth naming explicitly became typed builders in **v0.9.6** and **v0.9.8**:
 
-```rust
+```rust compile-fragment
 let mut app = App::new()
     .with_oauth_server_metadata(|metadata| metadata
         .with_issuer("https://auth.example.com")
@@ -175,7 +175,7 @@ Announcing RFC 9207 support makes it **mandatory** for clients: a `volga-oauth-c
 
 Both documents can also come from the `[oauth.resource]` / `[oauth.server]` sections of the configuration file (the `config` feature); the file overrides prior builder calls. The `set_*` shorthand configures a minimal document from the identifier alone:
 
-```rust
+```rust compile-fragment
 let mut app = App::new()
     .set_oauth_resource_metadata("https://api.example.com")
     .set_oauth_server_metadata("https://auth.example.com");
@@ -188,7 +188,7 @@ app.use_oauth_server_metadata().use_oidc_metadata();
 
 Putting the pieces together, a resource server needs only a handful of lines — token validation is wired straight to the issuer's published keys, with no secret configured anywhere:
 
-```rust
+```rust compile
 use volga::{App, auth::{AuthClaims, roles}, ok};
 use serde::Deserialize;
 

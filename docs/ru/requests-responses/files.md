@@ -7,7 +7,7 @@
 
 ### Использование `file!`
 Макрос `file!` предлагает удобный синтаксис для отправки файла:
-```rust
+```rust compile
 use volga::{App, file};
 use tokio::fs::File;
 
@@ -34,7 +34,7 @@ async fn main() -> std::io::Result<()> {
 
 ### Пример загрузки файла
 Пример настройки маршрута для обработки загрузки файлов:
-```rust
+```rust compile
 use volga::{App, File};
 
 #[tokio::main]
@@ -60,7 +60,7 @@ volga = { version = "...", features = ["multipart"] }
 ```
 ### Пример загрузки нескольких файлов
 Пример, демонстрирующий многокомпонентную загрузку файлов:
-```rust
+```rust compile
 use volga::{App, Multipart};
 
 #[tokio::main]

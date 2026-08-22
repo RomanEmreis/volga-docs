@@ -36,7 +36,7 @@ Here, the `HEAD` method returns headers without a body, often mirroring the head
 ## OPTIONS Method
 
 For specifically handling `OPTIONS` requests, use the [`map_options`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_options) method to map this HTTP method:
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]

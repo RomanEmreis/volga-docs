@@ -36,7 +36,7 @@ volga-oauth-client = { version = "..." }
 
 [`DiscoveryClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.DiscoveryClient.html) разрешает well-known discovery-URL, загружает документы по HTTPS и проверяет каждый на соответствие идентификатору, для которого он был запрошен (RFC 8414 §3.3 / RFC 9728 §3.3):
 
-```rust
+```rust compile
 use volga_oauth_client::{ClientError, DiscoveryClient};
 
 async fn discover() -> Result<(), ClientError> {
@@ -67,7 +67,7 @@ async fn discover() -> Result<(), ClientError> {
 
 [`OAuthClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html) реализует флоу OAuth 2.1 Authorization Code. PKCE (S256) генерируется и применяется автоматически — это защита, которую OAuth 2.1 предписывает для публичных клиентов.
 
-```rust
+```rust compile
 use std::sync::Arc;
 use volga_oauth_client::{ClientError, DiscoveryClient, InMemoryTokenStore, OAuthClient};
 
@@ -120,7 +120,7 @@ async fn authorize() -> Result<(), ClientError> {
 
 Начиная с **v0.9.6**, метод [`validate_callback`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.AuthorizationRequest.html#method.validate_callback) проверяет callback целиком — и `state`, и параметр `iss` из RFC 9207 — и рекомендуется вместо голого `matches_state`:
 
-```rust
+```rust compile
 use volga_oauth_client::{AuthorizationRequest, AuthorizationServerMetadata, ClientError};
 
 fn check(
@@ -150,7 +150,7 @@ fn check(
 
 ### Общий секрет
 
-```rust
+```rust compile-fragment
 use volga_oauth_client::{ClientAuthMethod, OAuthClient};
 
 let client = OAuthClient::new("my-client")
@@ -163,7 +163,7 @@ let client = OAuthClient::new("my-client")
 
 Начиная с **v0.9.8** (флаг `private-key-jwt`), клиент может аутентифицироваться утверждением, подписанным его собственным ключом (RFC 7523 §2.2) — при этом общий секрет никогда не покидает клиент:
 
-```rust
+```rust compile
 use volga_oauth_client::{ClientError, JwsAlgorithm, OAuthClient, PrivateKeyJwt};
 
 fn build() -> Result<OAuthClient, ClientError> {
@@ -184,7 +184,7 @@ fn build() -> Result<OAuthClient, ClientError> {
 
 Сервер авторизации проверяет утверждения открытой половиной ключа, которую он либо забирает по `jwks_uri`, либо получил при регистрации. [`with_public_jwk`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html#method.with_public_jwk) прикрепляет её, а [`jwks()`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html#method.jwks) формирует документ для публикации:
 
-```rust
+```rust compile
 use volga_oauth_client::{ClientError, JwsAlgorithm, PrivateKeyJwt, PublicJwk};
 
 fn publish(key: PrivateKeyJwt, public: PublicJwk) -> Result<(), ClientError> {
@@ -215,7 +215,7 @@ fn publish(key: PrivateKeyJwt, public: PublicJwk) -> Result<(), ClientError> {
 
 Сохранение выполняется через трейт [`TokenStore`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/trait.TokenStore.html). [`InMemoryTokenStore`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.InMemoryTokenStore.html) — встроенная реализация в памяти процесса, подходящая для CLI, тестов и одноинстансовых сервисов; всё долговременное (БД, зашифрованный файл, связка ключей ОС) реализуется одной реализацией трейта.
 
-```rust
+```rust compile
 use volga_oauth_client::{TokenSet, TokenStore};
 
 struct MyStore;
@@ -233,7 +233,7 @@ impl TokenStore for MyStore {
 
 [`RegistrationClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.RegistrationClient.html) отправляет [`ClientMetadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientMetadata.html) на registration-эндпоинт сервера (RFC 7591) и возвращает выданные учётные данные. [`OAuthClient::from_registration`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.from_registration) принимает их и создаёт готовый к использованию клиент:
 
-```rust
+```rust compile
 use volga_oauth_client::{
     ClientError, ClientMetadata, DiscoveryClient, OAuthClient, RegistrationClient,
 };
@@ -267,7 +267,7 @@ async fn register() -> Result<(), ClientError> {
 
 Если регистрация использует `private_key_jwt`, принимайте её через [`from_registration_with_key`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.from_registration_with_key) — он также отклонит ключ, который регистрация не приняла бы: подписывающий алгоритмом, отличным от зарегистрированного `token_endpoint_auth_signing_alg`, или с `kid`, который не разрешается встроенным `jwks`:
 
-```rust
+```rust compile
 use volga_oauth_client::{ClientError, ClientRegistrationResponse, OAuthClient, PrivateKeyJwt};
 
 fn adopt(
@@ -290,7 +290,7 @@ fn adopt(
 
 [`ClientConfig`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientConfig.html) несёт политику, общую для всех операций клиента — принудительный HTTPS, таймауты на запрос и лимиты редиректов. Значения по-умолчанию безопасны для продакшена; чаще всего переопределяют отключение HTTPS для локального сервера разработки:
 
-```rust
+```rust compile-fragment
 use std::time::Duration;
 use volga_oauth_client::{ClientConfig, OAuthClient};
 
@@ -308,7 +308,7 @@ let client = OAuthClient::new("my-client").with_config(config);
 
 Начиная с **v0.9.8**, при включённом на `volga` флаге `oauth-client`, [`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html) преобразуется в [`volga::Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html), поэтому обработчик, общающийся с сервером авторизации, может пробрасывать ошибку через `?`:
 
-```rust
+```rust compile
 use volga::{HttpResult, ok};
 use volga_oauth_client::{DiscoveryClient};
 

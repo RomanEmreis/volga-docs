@@ -28,7 +28,7 @@ pub trait Middleware: Send + Sync + 'static {
 ## Пример: Middleware `Timeout`
 
 Ниже приведён небольшой middleware, добавляющий искусственную задержку перед дальнейшей обработкой запроса. Длительность задержки настраивается при регистрации:
-```rust
+```rust compile
 use std::time::Duration;
 use volga::{App, HttpResult, middleware::{HttpContext, NextFn, Middleware}};
 
@@ -75,7 +75,7 @@ impl Middleware for Timeout {
 :::
 
 `attach()` также принимает замыкания, но в этом случае требуется указывать аннотации типов для аргументов:
-```rust
+```rust compile
 use volga::{App, middleware::{HttpContext, NextFn}};
 
 #[tokio::main]
@@ -93,7 +93,7 @@ async fn main() -> std::io::Result<()> {
 ## Регистрация на маршрутах и группах маршрутов
 
 Параметризованные middleware могут быть прикреплены не только ко всему приложению, но и к отдельным маршрутам и [группам маршрутов](../getting-started/route-groups.md):
-```rust
+```rust compile
 use std::time::Duration;
 use volga::{App, HttpResult, middleware::{HttpContext, NextFn, Middleware}};
 
@@ -147,7 +147,7 @@ impl Middleware for Timeout {
 
 Тот же параметризованный подход работает и для остальных middleware-трейтов. Помимо [`Middleware`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html), вы можете реализовать [`Filter`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Filter.html), [`TapReq`](https://docs.rs/volga/latest/volga/middleware/handler/trait.TapReq.html), [`MapOk`](https://docs.rs/volga/latest/volga/middleware/handler/trait.MapOk.html), [`MapErr`](https://docs.rs/volga/latest/volga/http/endpoints/handlers/trait.MapErr.html) и [`With`](https://docs.rs/volga/latest/volga/middleware/handler/trait.With.html) на собственных типах. Они регистрируются теми же методами, что и их аналоги-замыкания — [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter), [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req), [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok), [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) и [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) соответственно. Например, переиспользуемый параметризованный фильтр:
 
-```rust
+```rust compile
 use volga::{App, headers::HttpHeaders, middleware::Filter};
 
 #[tokio::main]

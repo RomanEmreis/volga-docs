@@ -13,7 +13,7 @@ tokio = { version = "...", features = ["full"] }
 http-body-util = "0.1"
 ```
 
-```rust
+```rust compile
 use http_body_util::BodyExt;
 use volga::{App, HttpBody, ok};
 
@@ -44,7 +44,7 @@ The body limit still applies: by default Volga rejects request bodies over 5 MB.
 
 [`HttpBody`](https://docs.rs/volga/latest/volga/http/body/struct.HttpBody.html) can also be returned, which makes a pass-through handler a matter of moving it into the response — nothing is buffered:
 
-```rust
+```rust compile
 use volga::{App, HttpBody, HttpResponse, headers::ContentType};
 
 #[tokio::main]
@@ -73,7 +73,7 @@ tokio = { version = "...", features = ["full"] }
 futures-util = "0.3"
 ```
 
-```rust
+```rust compile
 use futures_util::StreamExt;
 use volga::{App, http::HttpBodyStream, ok};
 

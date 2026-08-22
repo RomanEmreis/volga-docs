@@ -37,7 +37,7 @@ msg = "World"
 
 Define a struct for your custom section and bind it during app setup:
 
-```rust
+```rust compile
 use volga::{App, Config, ok};
 use serde::Deserialize;
 
@@ -71,7 +71,7 @@ Volga provides three ways to load a config file:
 
 The simplest option — [`with_default_config()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_default_config) automatically discovers `app_config.toml` or `app_config.json` in the current working directory:
 
-```rust
+```rust compile-fragment
 let app = App::new().with_default_config();
 ```
 
@@ -160,7 +160,7 @@ let app = App::new().with_config(|cfg| {
 
 Use the [`Config<T>`](https://docs.rs/volga/latest/volga/config/struct.Config.html) extractor to access a bound section in any request handler. It performs one atomic load + `Arc::clone` per request — no deserialization at runtime:
 
-```rust
+```rust compile
 use volga::{App, Config, ok};
 use serde::Deserialize;
 

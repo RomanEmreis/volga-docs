@@ -18,7 +18,7 @@
 
 Базовый грант «сервис-сервис». Запроса авторизации, который нёс бы скоупы, здесь нет, поэтому скоупы указываются в самом запросе токена — либо опускаются, и тогда сервер применяет грант по-умолчанию для этого клиента:
 
-```rust
+```rust compile
 use volga_oauth_client::{AuthorizationServerMetadata, ClientError, OAuthClient};
 
 async fn run(metadata: &AuthorizationServerMetadata) -> Result<(), ClientError> {
@@ -39,7 +39,7 @@ async fn run(metadata: &AuthorizationServerMetadata) -> Result<(), ClientError> 
 
 По RFC 6749 §4.4.3 этот грант **не выдаёт refresh-токен**, поэтому [`OAuthClient::token`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.token) нечем обновлять сохранённый токен — обновлением служит повторный запуск самого гранта. Именно это делает [`ClientCredentialsRequest::token`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientCredentialsRequest.html#method.token): отдаёт сохранённый токен, пока он свежий, и заново выполняет грант — с теми же скоупами и индикаторами ресурсов — когда это уже не так.
 
-```rust
+```rust compile
 use std::sync::Arc;
 use volga_oauth_client::{
     AuthorizationServerMetadata, ClientError, InMemoryTokenStore, OAuthClient,
@@ -72,7 +72,7 @@ async fn run(metadata: &AuthorizationServerMetadata) -> Result<(), ClientError> 
 
 Предъявляет JWT в качестве гранта авторизации. Утверждение передаётся вызывающей стороной, а не выпускается здесь: это то, что уже выдал другой авторитет — токен workload-идентичности платформы, на которой работает клиент, или утверждение личности, полученное предыдущим обменом.
 
-```rust
+```rust compile
 use volga_oauth_client::{AuthorizationServerMetadata, ClientError, OAuthClient};
 
 async fn run(
@@ -101,7 +101,7 @@ async fn run(
 
 Меняет один токен на другой (RFC 8693) — грант делегирования и олицетворения. `subject_token` представляет сторону, для которой запрашивается новый токен, а `subject_token_type` определяет, что это такое: одна из констант [`token_type`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/protocol/token_type/index.html) или любой URI, понятный серверу.
 
-```rust
+```rust compile
 use volga_oauth_client::{
     AuthorizationServerMetadata, ClientError, OAuthClient, token_type,
 };

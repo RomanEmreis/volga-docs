@@ -4,7 +4,7 @@
 
 Вот как это можно использовать:
 
-```rust
+```rust compile
 use std::time::Duration;
 use volga::{App, CancellationToken, ok};
 
@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 Более продвинутый вариант с использованием [`tokio::select!`](https://docs.rs/tokio/latest/tokio/macro.select.html):
-```rust
+```rust compile
 use std::time::Duration;
 use volga::{App, CancellationToken, ok};
 

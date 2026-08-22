@@ -22,7 +22,7 @@ For signed or private cookies, see the [Signed & Private Cookies](#signed--priva
 
 Here's how to create and read cookies:
 
-```rust
+```rust compile
 use volga::{
     App, HttpResult,
     http::Cookies,
@@ -126,7 +126,7 @@ volga = { version = "...", features = ["cookie-full", "di"] }
 
 Signed and private cookies require secret keys, provided via DI:
 
-```rust
+```rust compile-fragment
 use volga::http::SignedKey;
 
 app.add_singleton(SignedKey::generate()); // or use your own key
@@ -134,7 +134,7 @@ app.add_singleton(SignedKey::generate()); // or use your own key
 
 Alternatively, for private cookies:
 
-```rust
+```rust compile-fragment
 use volga::http::PrivateKey;
 
 app.add_singleton(PrivateKey::generate()); // or use your own key

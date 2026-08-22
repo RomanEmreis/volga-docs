@@ -8,7 +8,7 @@ Starting with **v0.9.3**, the same shutdown can be triggered from your own code 
 
 [`App::with_shutdown()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_shutdown) returns an app paired with a fresh handle:
 
-```rust
+```rust compile
 use std::time::Duration;
 use volga::App;
 
@@ -31,7 +31,7 @@ The handle is cheap to clone and can be handed anywhere; calling [`shutdown()`](
 
 If the handle is owned elsewhere — created during startup, stored in your application state, shared with background tasks — register it on an existing app with [`with_shutdown_signal()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_shutdown_signal):
 
-```rust
+```rust compile
 use volga::{App, ShutdownHandle};
 
 #[tokio::main]
@@ -55,7 +55,7 @@ Two more methods let you observe the state rather than trigger it:
 
 [`shutdown_on()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.shutdown_on) triggers a graceful shutdown when the given future resolves — useful for anything that already signals itself asynchronously: a `oneshot` channel, an external watchdog, a config-reload notification, a lease renewal that gave up.
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -81,7 +81,7 @@ The future is spawned onto the Tokio runtime when the app starts, so [`shutdown_
 
 Since the handle is just a clonable value, injecting it through [dependency injection](/volga-docs/en/advanced-patterns/di.html) gives you an administrative shutdown endpoint:
 
-```rust
+```rust compile
 use volga::{App, ShutdownHandle, di::Dc, ok};
 
 #[tokio::main]

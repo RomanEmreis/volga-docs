@@ -29,7 +29,7 @@ tokio = { version = "...", features = ["full"] }
 
 Создайте стартовую точку приложения в файле `main.rs`:
 
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]
@@ -51,18 +51,18 @@ async fn main() -> std::io::Result<()> {
 
 Структура [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) представляет ваше API и по умолчанию привязывается к адресу `http://localhost:7878`:
 
-```rust
+```rust compile-fragment
 let mut app = App::new();
 ```
 
 Если требуется привязать сервер к другому сокету, можно использовать метод [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind), например:
 
-```rust
+```rust compile-fragment
 // Привязка сервера к http://localhost:5000
 let mut app = App::new().bind("localhost:5000");
 ```
 Начиная с **v0.9.7**, метод [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind) принимает полную грамматику адресов [`tokio::net::TcpListener::bind`](https://docs.rs/tokio/latest/tokio/net/struct.TcpListener.html#method.bind):
-```rust
+```rust compile-fragment
 let app = App::new().bind("127.0.0.1:7878");      // литерал IPv4
 let app = App::new().bind("[::1]:7878");          // литерал IPv6
 let app = App::new().bind("::1:7878");            // литерал IPv6 без скобок
@@ -136,7 +136,7 @@ volga = { version = "..." }
 
 Тогда `main.rs` может выглядеть так:
 
-```rust
+```rust compile
 use volga::{App, ok};
 
 fn main() {

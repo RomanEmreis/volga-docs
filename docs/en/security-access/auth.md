@@ -210,7 +210,7 @@ This secret is used to sign the token during generation and to verify the signat
 
 Rather than configuring a static key, a resource server can validate bearer tokens against an OAuth 2.1 / OIDC issuer's published keys — no shared secret required. Describe the issuer with [`with_oauth(...)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_oauth) and opt in with [`use_oauth()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_oauth):
 
-```rust
+```rust compile-fragment
 let mut app = App::new()
     .with_bearer_auth(|auth| auth.with_aud(["https://api.example.com"]))
     .with_oauth(|oauth| oauth.with_issuer("https://auth.example.com"));

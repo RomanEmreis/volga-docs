@@ -17,7 +17,7 @@ With `full`, HTTP/2 is used when possible, and it falls back to HTTP/1 automatic
 ## HTTP Methods
 Volga has a named `map_*` method for every standard verb, registered on an [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) or on a [`RouteGroup`](https://docs.rs/volga/latest/volga/routing/struct.RouteGroup.html):
 
-```rust
+```rust compile-fragment
 app.map_get("/items", || async { ok!("list") });
 app.map_post("/items", || async { ok!("created") });
 app.map_put("/items/{id}", || async { ok!("updated") });
@@ -37,7 +37,7 @@ Starting with **v0.9.4**, Volga supports the HTTP `QUERY` method — a safe, ide
 
 Register a handler with [`map_query()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_query):
 
-```rust
+```rust compile
 use volga::{App, Json, ok};
 use serde::Deserialize;
 
@@ -75,7 +75,7 @@ Prefer putting complex selection criteria in the request body of a `QUERY` reque
 ### Any method
 Also since **v0.9.4**, [`map()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map) registers a route for any HTTP method. It is useful when the verb is only known at runtime, when the same handler serves several methods, or for non-standard verbs:
 
-```rust
+```rust compile
 use volga::{App, ok};
 use volga::http::Method;
 

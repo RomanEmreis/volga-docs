@@ -209,7 +209,7 @@ struct Claims {
 
 Вместо настройки статического ключа сервер ресурсов может валидировать Bearer-токены по опубликованным ключам OAuth 2.1 / OIDC-эмитента — без общего секрета. Опишите эмитента через [`with_oauth(...)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_oauth) и подключите через [`use_oauth()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_oauth):
 
-```rust
+```rust compile-fragment
 let mut app = App::new()
     .with_bearer_auth(|auth| auth.with_aud(["https://api.example.com"]))
     .with_oauth(|oauth| oauth.with_issuer("https://auth.example.com"));

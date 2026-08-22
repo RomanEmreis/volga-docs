@@ -6,7 +6,7 @@ Volga provides a convenient mechanism for grouping routes using prefixes. This h
 
 Here is an example demonstrating how to use route groups in a Volga application:
 
-```rust
+```rust compile
 use volga::{App, HttpResult, ok};
 
 #[tokio::main]

@@ -36,7 +36,7 @@ At least one of `http1` / `http2` must be enabled.
 
 [`DiscoveryClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.DiscoveryClient.html) resolves the well-known discovery URLs, fetches the documents over HTTPS and validates each against the identifier it was requested for (RFC 8414 §3.3 / RFC 9728 §3.3):
 
-```rust
+```rust compile
 use volga_oauth_client::{ClientError, DiscoveryClient};
 
 async fn discover() -> Result<(), ClientError> {
@@ -67,7 +67,7 @@ Attach a [`MetadataCache`](https://docs.rs/volga-oauth-client/latest/volga_oauth
 
 [`OAuthClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html) drives the OAuth 2.1 Authorization Code flow. PKCE (S256) is generated and applied automatically — it is the protection OAuth 2.1 prescribes for public clients.
 
-```rust
+```rust compile
 use std::sync::Arc;
 use volga_oauth_client::{ClientError, DiscoveryClient, InMemoryTokenStore, OAuthClient};
 
@@ -120,7 +120,7 @@ Always verify the callback `state` with [`matches_state`](https://docs.rs/volga-
 
 Since **v0.9.6**, [`validate_callback`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.AuthorizationRequest.html#method.validate_callback) checks the whole callback at once — the `state` *and* the RFC 9207 `iss` parameter — and is the recommended replacement for a bare `matches_state`:
 
-```rust
+```rust compile
 use volga_oauth_client::{AuthorizationRequest, AuthorizationServerMetadata, ClientError};
 
 fn check(
@@ -150,7 +150,7 @@ Without a credential the client acts as a **public client** (PKCE is the protect
 
 ### Shared secret
 
-```rust
+```rust compile-fragment
 use volga_oauth_client::{ClientAuthMethod, OAuthClient};
 
 let client = OAuthClient::new("my-client")
@@ -163,7 +163,7 @@ let client = OAuthClient::new("my-client")
 
 Since **v0.9.8** (feature `private-key-jwt`), the client can authenticate with an assertion signed by its own key (RFC 7523 §2.2), so no shared secret ever leaves it:
 
-```rust
+```rust compile
 use volga_oauth_client::{ClientError, JwsAlgorithm, OAuthClient, PrivateKeyJwt};
 
 fn build() -> Result<OAuthClient, ClientError> {
@@ -184,7 +184,7 @@ Symmetric algorithms are refused: an HMAC secret the server already holds proves
 
 The authorization server verifies assertions with the public half of the key, which it either fetches from a `jwks_uri` or received inline at registration. [`with_public_jwk`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html#method.with_public_jwk) attaches it and [`jwks()`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html#method.jwks) renders the document to publish:
 
-```rust
+```rust compile
 use volga_oauth_client::{ClientError, JwsAlgorithm, PrivateKeyJwt, PublicJwk};
 
 fn publish(key: PrivateKeyJwt, public: PublicJwk) -> Result<(), ClientError> {
@@ -215,7 +215,7 @@ The registered wire identifiers both sides of the protocol agree on live in one 
 
 Persistence goes through the [`TokenStore`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/trait.TokenStore.html) trait. [`InMemoryTokenStore`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.InMemoryTokenStore.html) is the built-in process-local implementation — suitable for CLIs, tests and single-instance services; anything durable (a database, an encrypted file, an OS keychain) is one trait impl away.
 
-```rust
+```rust compile
 use volga_oauth_client::{TokenSet, TokenStore};
 
 struct MyStore;
@@ -233,7 +233,7 @@ The key is chosen by the application — typically a user or session identifier,
 
 [`RegistrationClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.RegistrationClient.html) submits [`ClientMetadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientMetadata.html) to a server's registration endpoint (RFC 7591) and returns the issued credentials. [`OAuthClient::from_registration`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.from_registration) adopts them into a ready-to-use client:
 
-```rust
+```rust compile
 use volga_oauth_client::{
     ClientError, ClientMetadata, DiscoveryClient, OAuthClient, RegistrationClient,
 };
@@ -267,7 +267,7 @@ Two [`ClientMetadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_cli
 
 When the registration authenticates with `private_key_jwt`, adopt it with [`from_registration_with_key`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.from_registration_with_key), which also refuses a key the registration would not accept — one signing with an algorithm other than the registered `token_endpoint_auth_signing_alg`, or carrying a `kid` an inlined `jwks` cannot resolve:
 
-```rust
+```rust compile
 use volga_oauth_client::{ClientError, ClientRegistrationResponse, OAuthClient, PrivateKeyJwt};
 
 fn adopt(
@@ -290,7 +290,7 @@ The RFC 7592 management protocol (reading, updating and deleting a registration)
 
 [`ClientConfig`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientConfig.html) carries the policy shared by every client operation — HTTPS enforcement, per-request timeouts and redirect limits. The defaults are safe for production; the most common override is disabling HTTPS for a local development server:
 
-```rust
+```rust compile-fragment
 use std::time::Duration;
 use volga_oauth_client::{ClientConfig, OAuthClient};
 
@@ -308,7 +308,7 @@ let client = OAuthClient::new("my-client").with_config(config);
 
 Since **v0.9.8**, with the `oauth-client` feature enabled on `volga`, a [`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html) converts into a [`volga::Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html), so a handler that talks to an authorization server can propagate the failure with `?`:
 
-```rust
+```rust compile
 use volga::{HttpResult, ok};
 use volga_oauth_client::{DiscoveryClient};
 

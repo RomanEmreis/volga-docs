@@ -6,7 +6,7 @@ If you'd like to use a struct, similarly to [`NamedPath<T>`](https://docs.rs/vol
 ## Access Query Parameters
 
 To demonstrate how to access query parameters, consider the following example:
-```rust
+```rust compile
 use volga::{App, Query, ok};
 use serde::Deserialize;
 
@@ -40,7 +40,7 @@ Hello World!
 ```
 ## Handling Multiple Query Parameters
 For APIs that require multiple query parameters, you can set them up similarly:
-```rust
+```rust compile
 use volga::{App, Query, ok};
 use serde::Deserialize;
 
@@ -77,7 +77,7 @@ For the example above if we run the `curl` command by ignoring some parameter, e
 Query parsing error: missing field `email`
 ```
 However, if we want to keep some of the parameters as optional, we can wrap them in [`Option<T>`](https://doc.rust-lang.org/std/option/) as follows:
-```rust
+```rust compile
 use volga::{App, Query, ok};
 use serde::Deserialize;
 

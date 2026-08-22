@@ -4,7 +4,7 @@
 
 ## Получение JSON
 Чтобы принять JSON в теле запроса и десериализовать его в строго типизированную сущность, используйте структуру [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html). Тип `T` должен быть десериализуемой структурой, поэтому убедитесь, что он реализует типаж [`Deserialize`](https://docs.rs/serde/latest/serde/trait.Deserialize.html) из [serde](https://crates.io/crates/serde):
-```rust
+```rust compile
 use volga::{App, Json, ok};
 use serde::Deserialize;
 
@@ -38,7 +38,7 @@ curl -X POST "http://127.0.0.1:7878/hello" -H "Content-Type: application/json" -
 
 ## Отправка JSON
 Для отправки ответов в формате JSON Волга предоставляет макрос [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html):
-```rust
+```rust compile
 use volga::{App, ok};
 use serde::Serialize;
 
@@ -87,7 +87,7 @@ async fn main() -> std::io::Result<()> {
 ```
 ### Указание статуса вместе с JSON
 Вы также можете включать HTTP-статусы в ваши JSON-ответы с помощью макроса [`status!`](https://docs.rs/volga/latest/volga/macro.status.html):
-```rust
+```rust compile
 use volga::{App, status};
 use serde::Serialize;
 

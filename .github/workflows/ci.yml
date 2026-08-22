@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build site
+    # on main the Deploy Docs workflow already builds it
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run docs:build
+
+  snippets:
+    name: Compile Rust snippets
+    runs-on: ubuntu-latest
+    env:
+      VOLGA_VERSION: "0.9"
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.snippet-target
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo registry and snippet target dir
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ env.CARGO_TARGET_DIR }}
+          key: snippets-${{ runner.os }}-volga${{ env.VOLGA_VERSION }}-${{ hashFiles('ci/check-snippets.py') }}
+          restore-keys: |
+            snippets-${{ runner.os }}-volga${{ env.VOLGA_VERSION }}-
+      - name: docs/ - the marked snippets
+        run: python3 ci/check-snippets.py

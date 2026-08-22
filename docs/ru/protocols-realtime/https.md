@@ -78,7 +78,7 @@ openssl req -x509 -newkey rsa:4096 -nodes -keyout key.pem -out cert.pem -days 36
 
 ### Код для использования сертификата и закрытого ключа
 Если вы сгенерировали сертификат и закрытый ключ в папке, где находится ваш `Cargo.toml`, вы можете просто сделать следующее:
-```rust
+```rust compile
 use volga::{App, tls::TlsConfig};
 
 #[tokio::main]

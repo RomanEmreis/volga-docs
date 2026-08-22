@@ -8,7 +8,7 @@
 
 [`App::with_shutdown()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_shutdown) возвращает приложение вместе со свежим хэндлом:
 
-```rust
+```rust compile
 use std::time::Duration;
 use volga::App;
 
@@ -31,7 +31,7 @@ async fn main() -> std::io::Result<()> {
 
 Если хэндл принадлежит другому коду — создан при старте, хранится в состоянии приложения, разделяется с фоновыми задачами — зарегистрируйте его на уже созданном приложении через [`with_shutdown_signal()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_shutdown_signal):
 
-```rust
+```rust compile
 use volga::{App, ShutdownHandle};
 
 #[tokio::main]
@@ -55,7 +55,7 @@ async fn main() -> std::io::Result<()> {
 
 [`shutdown_on()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.shutdown_on) инициирует плавное завершение, когда переданный future завершается. Это удобно для всего, что уже сигнализирует о себе асинхронно: канал `oneshot`, внешний вотчдог, уведомление о перезагрузке конфигурации, неудавшееся продление аренды.
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -81,7 +81,7 @@ Future запускается в рантайме Tokio в момент стар
 
 Поскольку хэндл — это обычное клонируемое значение, его можно передать через [внедрение зависимостей](/volga-docs/ru/advanced-patterns/di.html) и получить административный эндпоинт остановки:
 
-```rust
+```rust compile
 use volga::{App, ShutdownHandle, di::Dc, ok};
 
 #[tokio::main]

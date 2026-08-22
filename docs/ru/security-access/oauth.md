@@ -22,7 +22,7 @@ volga = { version = "...", features = ["oauth-client"] }
 
 Опишите эмитента через [`with_oauth(...)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_oauth) и явно активируйте через [`use_oauth()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_oauth):
 
-```rust
+```rust compile
 use serde::Deserialize;
 use volga::{
     App, ok,
@@ -80,7 +80,7 @@ Claim `iss` автоматически ограничивается настро
 
 Эмитент обязателен; у всего остального есть безопасные для продакшена значения по-умолчанию.
 
-```rust
+```rust compile-fragment
 use std::time::Duration;
 use volga::App;
 
@@ -96,7 +96,7 @@ let app = App::new()
 
 Для локального эмитента, работающего по обычному HTTP, ослабьте транспортную политику:
 
-```rust
+```rust compile-fragment
 let app = App::new()
     .with_oauth(|oauth| oauth
         .with_issuer("http://127.0.0.1:5000")
@@ -123,7 +123,7 @@ max_redirects = 5            # опционально
 
 Настройте через [`with_oauth_resource_metadata`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_oauth_resource_metadata) (или [`set_oauth_resource_metadata`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_oauth_resource_metadata) для передачи значения целиком, включая сокращение через `&str`-идентификатор) и отдайте через [`use_oauth_resource_metadata`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_oauth_resource_metadata):
 
-```rust
+```rust compile-fragment
 let mut app = App::new()
     .with_oauth_resource_metadata(|metadata| metadata
         .with_resource("https://api.example.com")
@@ -141,7 +141,7 @@ app.use_oauth_resource_metadata();
 
 Приложения, которые сами являются сервером авторизации, публикуют свои эндпоинты через [`with_oauth_server_metadata`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_oauth_server_metadata) и отдают документ по одному или обоим discovery-путям:
 
-```rust
+```rust compile-fragment
 let mut app = App::new()
     .with_oauth_server_metadata(|metadata| metadata
         .with_issuer("https://auth.example.com")
@@ -160,7 +160,7 @@ app.use_oauth_server_metadata()  // GET /.well-known/oauth-authorization-server
 
 Два поля, которые стоит назвать отдельно, стали типизированными построителями в **v0.9.6** и **v0.9.8**:
 
-```rust
+```rust compile-fragment
 let mut app = App::new()
     .with_oauth_server_metadata(|metadata| metadata
         .with_issuer("https://auth.example.com")
@@ -175,7 +175,7 @@ let mut app = App::new()
 
 Оба документа также могут приходить из секций `[oauth.resource]` / `[oauth.server]` файла конфигурации (feature `config`); файл переопределяет предыдущие вызовы построителя. Сокращение `set_*` настраивает минимальный документ только по идентификатору:
 
-```rust
+```rust compile-fragment
 let mut app = App::new()
     .set_oauth_resource_metadata("https://api.example.com")
     .set_oauth_server_metadata("https://auth.example.com");
@@ -188,7 +188,7 @@ app.use_oauth_server_metadata().use_oidc_metadata();
 
 Собирая всё вместе, серверу ресурсов нужно всего несколько строк — валидация токенов напрямую привязана к опубликованным ключам эмитента, и нигде не настроен ни один секрет:
 
-```rust
+```rust compile
 use volga::{App, auth::{AuthClaims, roles}, ok};
 use serde::Deserialize;
 

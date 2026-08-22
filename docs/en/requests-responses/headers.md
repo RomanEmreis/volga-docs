@@ -7,7 +7,7 @@ Volga makes it possible to easily manage HTTP headers, both for reading from req
 To read headers from an incoming request, you can use [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) to extract a specific header from the request or [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) to get the full [`HeaderMap`](https://docs.rs/http/latest/http/header/struct.HeaderMap.html) read-only snapshot.
 
 ### Using `Header<T>`
-```rust
+```rust compile
 use volga::{App, ok};
 use volga::headers::{Header, ContentType};
 
@@ -65,7 +65,7 @@ Received x-api-key: 123-321
 ```
 ### Simplifying custom headers handling with `headers!` macro
 The code above can be simplified by using the [`headers!`](https://docs.rs/volga/latest/volga/macro.headers.html) macro, especially if you need to add multiple headers:
-```rust
+```rust compile
 use volga::{App, ok};
 use volga::headers::{
     Header,
@@ -97,7 +97,7 @@ Received x-api-key: 123-321; correlation-id: 456-654
 
 ### Using `HttpHeaders`
 The same can be achieved also by using [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) struct:
-```rust
+```rust compile
 use volga::{App, ok};
 use volga::headers::HttpHeaders;
 

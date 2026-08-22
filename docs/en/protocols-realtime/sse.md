@@ -6,7 +6,7 @@ Volga includes built-in support for [Server-Sent Events (SSE)](https://developer
 
 The example below demonstrates how to create a simple SSE endpoint. It maps a `GET` request to `/events`, sets the `text/event-stream` content type, and continuously sends the message `"Hello, world!"` once per second until the client disconnects:
 
-```rust
+```rust compile
 use volga::{App, http::sse::Message, sse_stream};
 use std::time::Duration;
 
@@ -35,7 +35,7 @@ Volga provides the [`Message`](https://docs.rs/volga/latest/volga/http/endpoints
 
 For simple text messages, use the [`data()`](https://docs.rs/volga/latest/volga/http/endpoints/args/sse/struct.Message.html#method.data) method as shown above. If you need to send structured data, such as JSON, use the [`json()`](https://docs.rs/volga/latest/volga/http/endpoints/args/sse/struct.Message.html#method.json) method, which accepts any type that implements the [`serde::Serialize`](https://docs.rs/serde/1.0.219/serde/ser/trait.Serialize.html) trait:
 
-```rust
+```rust compile-fragment
 use volga::http::sse::Message;
 use serde::Serialize;
 

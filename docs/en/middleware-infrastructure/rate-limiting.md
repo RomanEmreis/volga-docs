@@ -59,7 +59,7 @@ Rate limiting middleware can be attached at three levels:
 
 A token bucket starts full (up to `capacity` tokens) and refills at a constant rate. Each request consumes one token. When the bucket is empty, requests are rejected until tokens are replenished.
 
-```rust
+```rust compile-fragment
 use volga::rate_limiting::TokenBucket;
 
 let bucket = TokenBucket::new(10, 5.0);
@@ -110,7 +110,7 @@ At this point, the policies exist but are **not yet active** — you still need 
 
 Apply rate limiting to all incoming requests:
 
-```rust
+```rust compile-fragment
 use volga::rate_limiting::by;
 
 app.use_token_bucket(by::ip());
@@ -205,7 +205,7 @@ For distributed scenarios (e.g. multiple instances behind a load balancer), you 
 
 Store traits are defined in the `volga_rate_limiter` crate and each requires a single atomic operation:
 
-```rust
+```rust compile
 use volga::rate_limiting::TokenBucketStore;
 use volga::rate_limiting::TokenBucketParams;
 

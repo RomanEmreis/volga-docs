@@ -13,7 +13,7 @@ volga = { version = "...", features = ["middleware"] }
 
 The following example demonstrates a permissive CORS configuration:
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -37,7 +37,7 @@ By default, CORS is disabled. To avoid a runtime panic, you must call [`with_cor
 
 If you need a stricter configuration, you can specify allowed origins, headers, and methods:
 
-```rust
+```rust compile
 use volga::{App, http::Method};
 
 #[tokio::main]
@@ -76,7 +76,7 @@ Volga separates **CORS configuration** from **where it is applied**:
 
 If you configure only a named policy, routes will **not** get CORS unless you explicitly attach that policy via [`cors_with(...)`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.cors_with).
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -110,7 +110,7 @@ async fn main() -> std::io::Result<()> {
 
 You can attach a policy to a single endpoint:
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]

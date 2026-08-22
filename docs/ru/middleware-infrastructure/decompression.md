@@ -21,7 +21,7 @@ volga = { version = "...", features = ["decompression-brotli", "decompression-gz
 
 Чтобы использовать распаковку в вашем приложении, используйте метод [`use_decompression()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_decompression) в вашем `main.rs`:
 
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]

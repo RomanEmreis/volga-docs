@@ -13,7 +13,7 @@ tracing-subscriber = "0.3"
 ```
 
 ## Базовая конфигурация
-```rust
+```rust compile
 use volga::{App, tracing::TracingConfig};
 use tracing::trace;
 use tracing_subscriber::prelude::*;

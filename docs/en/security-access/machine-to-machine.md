@@ -18,7 +18,7 @@ These grants need [client authentication](/volga-docs/en/security-access/oauth-c
 
 The plain machine-to-machine grant. There is no authorization request to carry scopes here, so they go on the token request itself — or are omitted, leaving the server to apply the client's default grant:
 
-```rust
+```rust compile
 use volga_oauth_client::{AuthorizationServerMetadata, ClientError, OAuthClient};
 
 async fn run(metadata: &AuthorizationServerMetadata) -> Result<(), ClientError> {
@@ -39,7 +39,7 @@ async fn run(metadata: &AuthorizationServerMetadata) -> Result<(), ClientError> 
 
 RFC 6749 §4.4.3 issues **no refresh token** for this grant, so there is nothing for [`OAuthClient::token`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.token) to renew a stored token *with* — re-running the grant is the renewal. That is what [`ClientCredentialsRequest::token`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientCredentialsRequest.html#method.token) does: it serves the stored token while it is fresh and runs the grant again — with the same scopes and resource indicators — when it is not.
 
-```rust
+```rust compile
 use std::sync::Arc;
 use volga_oauth_client::{
     AuthorizationServerMetadata, ClientError, InMemoryTokenStore, OAuthClient,
@@ -72,7 +72,7 @@ The method **panics** when no [`TokenStore`](https://docs.rs/volga-oauth-client/
 
 Presents a JWT as an authorization grant. The assertion is supplied by the caller rather than minted here: it is what some other authority already issued — a workload identity token from the platform the client runs on, or an identity assertion obtained from a prior exchange.
 
-```rust
+```rust compile
 use volga_oauth_client::{AuthorizationServerMetadata, ClientError, OAuthClient};
 
 async fn run(
@@ -101,7 +101,7 @@ A failure here is final: the assertion is either accepted or it is not. Do not r
 
 Trades one token for another (RFC 8693) — the delegation and impersonation grant. `subject_token` represents the party the new token is requested for, and `subject_token_type` identifies what it is: one of the [`token_type`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/protocol/token_type/index.html) constants, or any URI the server understands.
 
-```rust
+```rust compile
 use volga_oauth_client::{
     AuthorizationServerMetadata, ClientError, OAuthClient, token_type,
 };

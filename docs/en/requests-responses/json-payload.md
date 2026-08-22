@@ -4,7 +4,7 @@ Volga simplifies the process of dealing with JSON data in your web applications,
 
 ## Receiving JSON Data
 To accept a JSON body in a request and deserialize it into a strongly-typed entity, use the [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html) struct. Where `T` should be a deserializable struct, so ensure it derives from [`Deserialize`](https://docs.rs/serde/latest/serde/trait.Deserialize.html) from [serde](https://crates.io/crates/serde):
-```rust
+```rust compile
 use volga::{App, Json, ok};
 use serde::Deserialize;
  
@@ -38,7 +38,7 @@ You can wrap your struct fields into [`Option<T>`](https://doc.rust-lang.org/std
 
 ## Sending JSON Responses
 To send responses as JSON, Volga provides the [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html) macro
-```rust
+```rust compile
 use volga::{App, ok};
 use serde::Serialize;
  
@@ -87,7 +87,7 @@ async fn main() -> std::io::Result<()> {
 ```
 ### Using Status with JSON
 You can also include HTTP status codes in your JSON responses using the [`status!`](https://docs.rs/volga/latest/volga/macro.status.html) macro:
-```rust
+```rust compile
 use volga::{App, status};
 use serde::Serialize;
  

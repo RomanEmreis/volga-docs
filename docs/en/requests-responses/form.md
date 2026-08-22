@@ -4,7 +4,7 @@ Volga can help to easily handle a form data in your web applications, both for i
 
 ## Receiving Form Data
 To accept a form data body in a request and deserialize it into a strongly-typed entity, use the [`Form<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/form/struct.Form.html) struct. Where `T` should be a deserializable struct or [`HashMap`](https://doc.rust-lang.org/std/collections/struct.HashMap.html). For the struct ensure it derives from [`Deserialize`](https://docs.rs/serde/latest/serde/trait.Deserialize.html) from [serde](https://crates.io/crates/serde):
-```rust
+```rust compile
 use volga::{App, Form, ok};
 use serde::Deserialize;
  
@@ -38,7 +38,7 @@ Similarly to [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/
 
 ## Sending Form Data
 To send a form data response you can leverage the [`form!`](https://docs.rs/volga/latest/volga/macro.form.html) macro:
-```rust
+```rust compile
 use volga::{App, Form, form};
 use serde::Serialize;
  
@@ -65,7 +65,7 @@ async fn main() -> std::io::Result<()> {
 ```
 Alternatively, by specifying a [`Form<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/form/struct.Form.html) as a return type you can return a struct of your type directly, thanks to [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) trait:
 
-```rust
+```rust compile
 use volga::{App, Form};
 use serde::Serialize;
  

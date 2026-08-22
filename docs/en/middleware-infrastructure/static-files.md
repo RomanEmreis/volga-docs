@@ -32,7 +32,7 @@ project/
 
 After creating `html`, `css`, and `js` files, you can set up a minimal static file server in `main.rs`:
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -60,7 +60,7 @@ If you have subfolders inside the content root, routes to their contents will al
 
 To serve a custom fallback file (e.g., `404.html`), use [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file), which internally calls [`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) to handle unknown paths.
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -84,7 +84,7 @@ Since fallback files are disabled by default, we explicitly set the `404.html` f
 
 A more concise version of the above code is:
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -112,7 +112,7 @@ You can set [`with_fallback_file("index.html")`](https://docs.rs/volga/latest/vo
 
 Like fallback files, directory browsing is disabled by default. You can enable it using [`with_files_listing()`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_files_listing). However, this is not recommended for production environments.
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -137,7 +137,7 @@ For more advanced scenarios, you can use the [`HostEnv`](https://docs.rs/volga/l
 
 Here’s how you can achieve the same configuration with `HostEnv`:
 
-```rust
+```rust compile
 use volga::{App, File, app::HostEnv};
 
 #[tokio::main]

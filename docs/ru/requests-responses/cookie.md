@@ -20,7 +20,7 @@ cookie = "0.18.1"
 
 ## Пример использования
 
-```rust
+```rust compile
 use volga::{
     App, HttpResult,
     http::Cookies,
@@ -122,7 +122,7 @@ volga = { version = "...", features = ["cookie-full", "di"] }
 
 Подписанные и закрыте файлы cookie требуют секретных ключей, предоставляемых через DI:
 
-```rust
+```rust compile-fragment
 use volga::http::SignedKey;
 
 app.add_singleton(SignedKey::generate());
@@ -130,7 +130,7 @@ app.add_singleton(SignedKey::generate());
 
 Alternatively, for private cookies:
 
-```rust
+```rust compile-fragment
 use volga::http::PrivateKey;
 
 app.add_singleton(PrivateKey::generate());

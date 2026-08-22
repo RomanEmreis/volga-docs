@@ -17,7 +17,7 @@ The feature is off by default because signing is the only part of the crate that
 
 [`Dpop`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.Dpop.html) is the key plus the nonce state of the servers it talks to. [`generate()`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.Dpop.html#method.generate) mints a throwaway `ES256` key — the algorithm every DPoP implementation supports:
 
-```rust
+```rust compile
 use volga_oauth_client::{ClientError, Dpop, OAuthClient};
 
 fn build() -> Result<(), ClientError> {
@@ -48,7 +48,7 @@ Cloning a [`Dpop`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/
 * a `use_dpop_nonce` refusal (§8.2) is answered by repeating the request exactly once with the nonce that refusal demanded;
 * the tokens come back as `token_type: DPoP`.
 
-```rust
+```rust compile
 use volga_oauth_client::{AuthorizationServerMetadata, ClientError, Dpop, OAuthClient};
 
 async fn tokens(metadata: &AuthorizationServerMetadata) -> Result<(), ClientError> {
@@ -78,7 +78,7 @@ A token that does **not** come back as `DPoP` is refused rather than handed to t
 
 Requests to the resource stay yours to make: this crate mints proofs and owns the nonce state, it does not become an HTTP client for you. [`authorize`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.Dpop.html#method.authorize) fills in both headers — the `Authorization: DPoP <token>` credential and the `DPoP` proof covering it:
 
-```rust
+```rust compile
 use http::{HeaderMap, Method};
 use volga_oauth_client::{ClientError, Dpop, TokenSet};
 
@@ -106,7 +106,7 @@ Two lower-level pieces are available when `authorize` is not the right shape:
 
 A server may demand that proofs carry a nonce of its choosing. The token endpoint's round is handled internally; the resource's round is yours, because you send those requests:
 
-```rust
+```rust compile
 use http::{HeaderMap, Method};
 use volga_oauth_client::{ClientError, Dpop, TokenSet};
 
@@ -139,7 +139,7 @@ Nonces are remembered per origin **and** per namespace: a token endpoint (§8) a
 
 A DPoP-protected resource answers `401` with a `WWW-Authenticate: DPoP ...` challenge whose `error` and `error_description` are the RFC 6750 ones. Since **v0.9.8**, [`BearerChallenge::parse_scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.parse_scheme) reads a challenge under any scheme:
 
-```rust
+```rust compile
 use volga_oauth_client::{BearerChallenge, OAuthError, auth_scheme};
 
 fn read(header: &str) -> Result<(), OAuthError> {

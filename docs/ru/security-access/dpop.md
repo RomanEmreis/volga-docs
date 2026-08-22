@@ -17,7 +17,7 @@ volga-oauth-client = { version = "...", features = ["dpop"] }
 
 [`Dpop`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.Dpop.html) — это ключ плюс состояние nonce тех серверов, с которыми он общается. [`generate()`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.Dpop.html#method.generate) создаёт одноразовый ключ `ES256` — алгоритм, который поддерживает любая реализация DPoP:
 
-```rust
+```rust compile
 use volga_oauth_client::{ClientError, Dpop, OAuthClient};
 
 fn build() -> Result<(), ClientError> {
@@ -48,7 +48,7 @@ fn build() -> Result<(), ClientError> {
 * отказ `use_dpop_nonce` (§8.2) отрабатывается ровно одним повтором запроса с тем nonce, которого этот отказ потребовал;
 * токены возвращаются с `token_type: DPoP`.
 
-```rust
+```rust compile
 use volga_oauth_client::{AuthorizationServerMetadata, ClientError, Dpop, OAuthClient};
 
 async fn tokens(metadata: &AuthorizationServerMetadata) -> Result<(), ClientError> {
@@ -78,7 +78,7 @@ async fn tokens(metadata: &AuthorizationServerMetadata) -> Result<(), ClientErro
 
 Запросы к ресурсу остаются за вами: крейт выпускает доказательства и владеет состоянием nonce, но не становится HTTP-клиентом вместо вас. [`authorize`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.Dpop.html#method.authorize) заполняет оба заголовка — учётные данные `Authorization: DPoP <token>` и доказательство `DPoP`, покрывающее их:
 
-```rust
+```rust compile
 use http::{HeaderMap, Method};
 use volga_oauth_client::{ClientError, Dpop, TokenSet};
 
@@ -106,7 +106,7 @@ fn protect(dpop: &Dpop, url: &str, tokens: &TokenSet) -> Result<(), ClientError>
 
 Сервер может потребовать, чтобы доказательства несли выбранный им nonce. Раунд с token-эндпоинтом обрабатывается внутри, а раунд с ресурсом — за вами, ведь эти запросы отправляете вы:
 
-```rust
+```rust compile
 use http::{HeaderMap, Method};
 use volga_oauth_client::{ClientError, Dpop, TokenSet};
 
@@ -139,7 +139,7 @@ Nonce запоминаются по origin **и** по пространству 
 
 Защищённый по DPoP ресурс отвечает `401` с челленджем `WWW-Authenticate: DPoP ...`, у которого `error` и `error_description` — те же, что в RFC 6750. Начиная с **v0.9.8**, [`BearerChallenge::parse_scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.parse_scheme) читает челлендж для любой схемы:
 
-```rust
+```rust compile
 use volga_oauth_client::{BearerChallenge, OAuthError, auth_scheme};
 
 fn read(header: &str) -> Result<(), OAuthError> {

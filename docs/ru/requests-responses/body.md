@@ -13,7 +13,7 @@ tokio = { version = "...", features = ["full"] }
 http-body-util = "0.1"
 ```
 
-```rust
+```rust compile
 use http_body_util::BodyExt;
 use volga::{App, HttpBody, ok};
 
@@ -44,7 +44,7 @@ async fn main() -> std::io::Result<()> {
 
 [`HttpBody`](https://docs.rs/volga/latest/volga/http/body/struct.HttpBody.html) можно и возвращать, поэтому обработчик-транзит сводится к перемещению тела в ответ — ничего не буферизуется:
 
-```rust
+```rust compile
 use volga::{App, HttpBody, HttpResponse, headers::ContentType};
 
 #[tokio::main]
@@ -73,7 +73,7 @@ tokio = { version = "...", features = ["full"] }
 futures-util = "0.3"
 ```
 
-```rust
+```rust compile
 use futures_util::StreamExt;
 use volga::{App, http::HttpBodyStream, ok};
 

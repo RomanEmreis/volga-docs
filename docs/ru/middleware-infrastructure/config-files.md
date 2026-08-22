@@ -37,7 +37,7 @@ msg = "World"
 
 Определите структуру для вашей секции и привяжите её при настройке приложения:
 
-```rust
+```rust compile
 use volga::{App, Config, ok};
 use serde::Deserialize;
 
@@ -71,7 +71,7 @@ async fn main() -> std::io::Result<()> {
 
 Самый простой вариант — [`with_default_config()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_default_config) автоматически ищет `app_config.toml` или `app_config.json` в текущей рабочей директории:
 
-```rust
+```rust compile-fragment
 let app = App::new().with_default_config();
 ```
 
@@ -160,7 +160,7 @@ let app = App::new().with_config(|cfg| {
 
 Используйте экстрактор [`Config<T>`](https://docs.rs/volga/latest/volga/config/struct.Config.html) для доступа к привязанной секции в любом обработчике запросов. Он выполняет одну атомарную загрузку + `Arc::clone` на каждый запрос — без десериализации во время выполнения:
 
-```rust
+```rust compile
 use volga::{App, Config, ok};
 use serde::Deserialize;
 

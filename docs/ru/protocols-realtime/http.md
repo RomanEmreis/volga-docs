@@ -17,7 +17,7 @@ volga = { version = "...", features = ["full"] }
 ## HTTP-методы
 Для каждого стандартного глагола в Волге есть именованный метод `map_*` — он регистрируется на [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) или на [`RouteGroup`](https://docs.rs/volga/latest/volga/routing/struct.RouteGroup.html):
 
-```rust
+```rust compile-fragment
 app.map_get("/items", || async { ok!("list") });
 app.map_post("/items", || async { ok!("created") });
 app.map_put("/items/{id}", || async { ok!("updated") });
@@ -37,7 +37,7 @@ app.map_trace("/items", || async { ok!() });
 
 Обработчик регистрируется через [`map_query()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_query):
 
-```rust
+```rust compile
 use volga::{App, Json, ok};
 use serde::Deserialize;
 
@@ -75,7 +75,7 @@ async fn main() -> std::io::Result<()> {
 ### Произвольный метод
 Также с **v0.9.4** метод [`map()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map) регистрирует маршрут для любого HTTP-метода. Это удобно, когда глагол известен только во время выполнения, когда один обработчик обслуживает несколько методов, или для нестандартных глаголов:
 
-```rust
+```rust compile
 use volga::{App, ok};
 use volga::http::Method;
 

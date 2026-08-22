@@ -4,7 +4,7 @@ Volga offers robust routing configurations allowing you to harness dynamic route
 ## Example: Single Route Parameter
 
 Here's how to set up a simple dynamic route that greets a user by name:
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]
@@ -34,7 +34,7 @@ Hello sun!
 ```
 ## Example: Multiple Route Parameters
 You can also configure multiple parameters in a route. Here’s an example:
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]
@@ -60,7 +60,7 @@ So for the `hello/{descr}/{name}` it is supposed to be `|descr: String, name: St
 
 ## Using `NamedPath<T>`
 Alternatively, use the [`NamedPath<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.NamedPath.html) to wrap the route parameters into a dedicated struct. Where `T` should be either deserializable struct or `HashMap`. Make sure that you also have [serde](https://crates.io/crates/serde) installed:
-```rust
+```rust compile
 use volga::{App, NamedPath, ok};
 use serde::Deserialize;
  
