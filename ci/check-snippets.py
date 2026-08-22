@@ -135,10 +135,14 @@ def collect(
             if mode is None or mode == "skip":
                 continue
             line = text.count("\n", 0, m.start()) + 1
-            locale = md.relative_to(docs_dir).parts[0]
+            # the whole relative path, not just the stem: two pages sharing a
+            # file name in different sections would otherwise write the same
+            # bin and one of them would go unchecked without a word
+            page = md.relative_to(docs_dir).with_suffix("").as_posix()
+            slug = re.sub(r"[^a-z0-9]+", "_", page.lower())
             snippets.append(
                 {
-                    "name": f"{locale}_{md.stem}_{idx}".replace("-", "_"),
+                    "name": f"{slug}_{idx}",
                     "origin": f"{md}:{line}",
                     "features": d_features
                     or features
@@ -180,6 +184,15 @@ def write_crate(crate: Path, features: str, group: list[dict]) -> None:
     for s in group:
         (crate / "src" / "bin" / f"{s['name']}.rs").write_text(
             f"// from {s['origin']}\n{s['source']}", encoding="utf-8"
+        )
+
+    # a snippet that never reached the crate is a snippet nobody checked, and
+    # a silent pass is worse than no check at all
+    written = len(list((crate / "src" / "bin").glob("*.rs")))
+    if written != len(group):
+        raise SystemExit(
+            f"internal error: {len(group)} snippet(s) collected but {written} "
+            f"file(s) written for features = {features}"
         )
 
 
