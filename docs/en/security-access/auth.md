@@ -156,6 +156,8 @@ let mut app = App::new()
 
 ::: info
 `EncodingKey`, `DecodingKey`, and `Algorithm` are now native Volga types (no longer re-exported from `jsonwebtoken`). Import paths remain the same (`volga::auth::{EncodingKey, DecodingKey}`), but `jsonwebtoken::ErrorKind` is no longer available — use the PEM / base64 / secret / env / file constructors provided by Volga instead. Token validation settings live on [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html); the previous `BearerTokenService::validation()` accessor has been removed.
+
+Since **v0.9.8**, `volga::auth::Algorithm` is a re-export of [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) from `volga-oauth-core` — the variants, the `HS256` default and the behaviour are unchanged, but the type is now shared with the client crates, so a `private_key_jwt` assertion and a bearer token the server issues are described in one vocabulary. It is also re-exported from `volga::auth::oauth`, where it can be named without the `jwt-auth` feature.
 :::
 
 ### JWT Usage
@@ -208,7 +210,7 @@ This secret is used to sign the token during generation and to verify the signat
 
 Rather than configuring a static key, a resource server can validate bearer tokens against an OAuth 2.1 / OIDC issuer's published keys — no shared secret required. Describe the issuer with [`with_oauth(...)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_oauth) and opt in with [`use_oauth()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_oauth):
 
-```rust
+```rust compile-fragment
 let mut app = App::new()
     .with_bearer_auth(|auth| auth.with_aud(["https://api.example.com"]))
     .with_oauth(|oauth| oauth.with_issuer("https://auth.example.com"));

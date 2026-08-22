@@ -78,7 +78,7 @@ openssl req -x509 -newkey rsa:4096 -nodes -keyout key.pem -out cert.pem -days 36
 
 ### Adjusting code to use certificate and private key
 If you generated a certificate and private key in the folder where your `Cargo.toml` is located, you can simply do the following:
-```rust
+```rust compile
 use volga::{App, tls::TlsConfig};
 
 #[tokio::main]
@@ -184,7 +184,7 @@ Because HSTS is enforced by the client, it has some limitations:
 * The application must check every HTTP request and redirect or reject the HTTP request.
 
 HSTS in Volga is enabled by default, however you may configure it by leveraging [`with_hsts()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_hsts) method:
-```rust
+```rust compile
 use volga::{App, tls::TlsConfig};
 
 #[tokio::main]

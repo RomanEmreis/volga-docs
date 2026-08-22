@@ -13,7 +13,7 @@ tracing-subscriber = "0.3"
 ```
 
 ## Basic configuration
-```rust
+```rust compile
 use volga::{App, tracing::TracingConfig};
 use tracing::trace;
 use tracing_subscriber::prelude::*;
@@ -52,7 +52,7 @@ Then, if you'll hit the `GET http://127.0.0.1:7878/tracing` endpoint multiple ti
 ## Enabling tracing middleware
 With the above example, however, if you check the response headers, you won't find anything related to span id, etc.
 To include it you may want to leverage the [`with_tracing()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_tracing) or [`set_tracing`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_tracing) methods that enable the low-level middleware that adds this header.
-```rust
+```rust compile
 use volga::{App, tracing::TracingConfig};
 use tracing::trace;
 use tracing_subscriber::prelude::*;

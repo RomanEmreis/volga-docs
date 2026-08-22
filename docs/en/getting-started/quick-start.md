@@ -26,7 +26,7 @@ tokio = { version = "...", features = ["full"] }
 ## Setup
 Create your main application in `main.rs`:
 
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]
@@ -45,14 +45,30 @@ async fn main() -> std::io::Result<()> {
 ```
 ## Detailed Walkthrough
 When the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) struct is instantiated, it represents your API and by default binds it to `http://localhost:7878`:
-```rust
+```rust compile-fragment
 let mut app = App::new();
 ```
 Or if you need to bind it to another socket, you can use the [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind) method like this:
-```rust
+```rust compile-fragment
 // Binds the server to http://localhost:5000
 let mut app = App::new().bind("localhost:5000");
 ```
+Since **v0.9.7**, [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind) accepts the full address grammar of [`tokio::net::TcpListener::bind`](https://docs.rs/tokio/latest/tokio/net/struct.TcpListener.html#method.bind):
+```rust compile-fragment
+let app = App::new().bind("127.0.0.1:7878");      // IPv4 literal
+let app = App::new().bind("[::1]:7878");          // IPv6 literal
+let app = App::new().bind("::1:7878");            // unbracketed IPv6 literal
+let app = App::new().bind("[fe80::1%eth0]:7878"); // zone-scoped IPv6 literal
+let app = App::new().bind("localhost:7878");      // host name
+let app = App::new().bind(([127, 0, 0, 1], 7878)); // anything that converts into a SocketAddr
+```
+Host names are resolved when the server starts — asynchronously, so the runtime is never blocked. If a name resolves to several addresses, they are tried in resolution order and the first one that can be bound wins.
+
+:::warning
+Before **v0.9.7**, an address that could not be parsed as a `SocketAddr` was silently replaced with `0.0.0.0:7878` on non-Windows targets. That included `localhost:3000` and `::1:3000` — so a server meant to stay on loopback listened on *every* interface with no error and no log line.
+
+An unusable address is now reported instead: [`run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) returns an `io::Error`, and [`run_blocking()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run_blocking) logs it and starts no server. If you rely on a loopback bind for security, upgrade.
+:::
 Next, map a specific handler to a route. For instance, mapping our handler to `GET /hello`:
 ```rust
 app.map_get("/hello", || {
@@ -104,7 +120,7 @@ volga = { version = "..." }
 
 Your `main.rs` might then look like this:
 
-```rust
+```rust compile
 use volga::{App, ok};
 
 fn main() {

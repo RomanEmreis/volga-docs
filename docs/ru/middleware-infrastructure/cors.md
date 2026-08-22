@@ -13,7 +13,7 @@ volga = { version = "...", features = ["middleware"] }
 
 Следующий пример демонстрирует максимально разрешительную конфигурацию CORS:  
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -37,7 +37,7 @@ async fn main() -> std::io::Result<()> {
 
 Если требуется более строгая конфигурация, можно указать конкретные разрешённые источники, заголовки и методы:  
 
-```rust
+```rust compile
 use volga::{App, http::Method};
 
 #[tokio::main]
@@ -76,7 +76,7 @@ async fn main() -> std::io::Result<()> {
 
 Если вы настроите только именованную политику, маршруты **не** получат CORS, если вы явно не прикрепите эту политику с помощью [`cors_with(...)`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.cors_with).
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -110,7 +110,7 @@ async fn main() -> std::io::Result<()> {
 
 Вы можете прикрепить политику к одному маршруту:
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]

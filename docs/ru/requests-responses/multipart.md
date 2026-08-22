@@ -17,7 +17,7 @@ volga = { version = "...", features = ["multipart"] }
 ## Возврат multipart-ответа
 
 Самый простой способ собрать исходящий multipart — функция [`Multipart::from_parts`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html#method.from_parts), принимающая любой `IntoIterator<Item = Part>`:
-```rust
+```rust compile
 use volga::{App, Multipart, multipart::Part};
 
 #[tokio::main]
@@ -53,7 +53,7 @@ async fn main() -> std::io::Result<()> {
 У каждого билдера есть отказоустойчивый аналог `try_*` (`try_text`, `try_bytes`, `try_file`, `try_stream`, `try_with_disposition`) — конструкторы для статических входных данных паникуют при некорректных байтах в заголовках, а варианты `try_*` стоит использовать, когда имя поля или имя файла приходят из недоверенных источников.
 
 Типичный пример со смешанным содержимым — текстовое поле и файл в памяти:
-```rust
+```rust compile
 use bytes::Bytes;
 use volga::{App, Multipart, multipart::Part};
 
@@ -75,7 +75,7 @@ async fn main() -> std::io::Result<()> {
 ## Потоковые части
 
 Если тело части большое или формируется постепенно, используйте [`Part::stream`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Part.html#method.stream) — оно отправится без буферизации. Тело должно быть `Stream<Item = Result<Bytes, volga::error::Error>>`:
-```rust
+```rust compile
 use bytes::Bytes;
 use futures_util::{StreamExt, stream};
 use volga::{App, Multipart, multipart::Part};
@@ -110,7 +110,7 @@ async fn main() -> std::io::Result<()> {
 ## Выбор подтипа
 
 По умолчанию исходящий multipart использует подтип `multipart/form-data`. Чтобы переключиться на `mixed`, `byteranges` или любой другой подтип из RFC 2046, вызовите [`Multipart::with_subtype`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html#method.with_subtype):
-```rust
+```rust compile
 use bytes::Bytes;
 use volga::{App, Multipart, multipart::{MultipartSubtype, Part}};
 use volga::headers::{ContentType, HeaderName, HeaderValue};
@@ -150,7 +150,7 @@ async fn main() -> std::io::Result<()> {
 ## Свой boundary
 
 Boundary генерируется автоматически и соответствует RFC 2046 §5.1.1. Чтобы зафиксировать его (полезно в тестах или при работе со строгими клиентами), используйте [`Multipart::with_boundary`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html#method.with_boundary). Метод проверяет значение и возвращает ошибку, если boundary некорректен:
-```rust
+```rust compile
 use volga::{App, Multipart, multipart::Part};
 
 #[tokio::main]
@@ -169,7 +169,7 @@ async fn main() -> std::io::Result<()> {
 ## Проксирование входящего multipart
 
 Когда нужно проксировать или переслать входящее multipart-тело обратно клиенту, используйте [`Multipart::into_outgoing`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html#method.into_outgoing). Метод перекодирует входящий multipart в исходящий потоковый — каждое поле превращается в `Part` с потоковым телом:
-```rust
+```rust compile
 use volga::{App, Multipart};
 
 #[tokio::main]

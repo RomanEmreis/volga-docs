@@ -5,7 +5,7 @@
 Функция принимает объект типа [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) и должна вернуть ответ, реализующий типаж [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html).
 
 ### Пример:
-```rust
+```rust compile
 use volga::{App, error::Error, status};
 
 #[tokio::main]
@@ -42,7 +42,7 @@ status!(error.status.as_u16(), "{:?}", error)
 volga = { version = "...", features = ["problem-details"] }
 ```
 Затем вы можете вернуть структуру [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) из обработчика запроса:
-```rust
+```rust compile
 use volga::{App, error::Problem};
 use serde::Serialize;
 
@@ -99,7 +99,7 @@ Content-Type: application/problem+json
 ## Центральная обработка ошибок с Problem Details
 
 Кроме того, вы можете комбинировать [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) с [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err), используя метод [`use_problem_details()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_problem_details):
-```rust
+```rust compile
 use volga::{App, error::Error};
 
 #[tokio::main]

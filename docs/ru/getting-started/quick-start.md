@@ -29,7 +29,7 @@ tokio = { version = "...", features = ["full"] }
 
 Создайте стартовую точку приложения в файле `main.rs`:
 
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]
@@ -51,16 +51,32 @@ async fn main() -> std::io::Result<()> {
 
 Структура [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) представляет ваше API и по умолчанию привязывается к адресу `http://localhost:7878`:
 
-```rust
+```rust compile-fragment
 let mut app = App::new();
 ```
 
 Если требуется привязать сервер к другому сокету, можно использовать метод [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind), например:
 
-```rust
+```rust compile-fragment
 // Привязка сервера к http://localhost:5000
 let mut app = App::new().bind("localhost:5000");
 ```
+Начиная с **v0.9.7**, метод [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind) принимает полную грамматику адресов [`tokio::net::TcpListener::bind`](https://docs.rs/tokio/latest/tokio/net/struct.TcpListener.html#method.bind):
+```rust compile-fragment
+let app = App::new().bind("127.0.0.1:7878");      // литерал IPv4
+let app = App::new().bind("[::1]:7878");          // литерал IPv6
+let app = App::new().bind("::1:7878");            // литерал IPv6 без скобок
+let app = App::new().bind("[fe80::1%eth0]:7878"); // литерал IPv6 с зоной
+let app = App::new().bind("localhost:7878");      // имя хоста
+let app = App::new().bind(([127, 0, 0, 1], 7878)); // всё, что преобразуется в SocketAddr
+```
+Имена хостов резолвятся при старте сервера — асинхронно, без блокировки рантайма. Если имя резолвится в несколько адресов, они перебираются в порядке резолва, и побеждает первый, к которому удалось привязаться.
+
+:::warning
+До **v0.9.7** адрес, который не разбирался как `SocketAddr`, на не-Windows платформах молча заменялся на `0.0.0.0:7878`. Под это попадали в том числе `localhost:3000` и `::1:3000` — то есть сервер, который должен был остаться на loopback, слушал **все** интерфейсы, без ошибки и без записи в лог.
+
+Теперь непригодный адрес сообщается явно: [`run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) возвращает `io::Error`, а [`run_blocking()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run_blocking) логирует ошибку и не запускает сервер. Если вы полагаетесь на привязку к loopback как на меру безопасности — обновитесь.
+:::
 
 Далее, обработчик запроса `GET /hello` привязывается к маршруту:
 
@@ -120,7 +136,7 @@ volga = { version = "..." }
 
 Тогда `main.rs` может выглядеть так:
 
-```rust
+```rust compile
 use volga::{App, ok};
 
 fn main() {

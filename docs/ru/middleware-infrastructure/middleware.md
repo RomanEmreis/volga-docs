@@ -15,7 +15,7 @@ volga = { version = "...", features = ["middleware"] }
 
 Метод [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter) позволяет задать условную логику (например, проверку прав или валидацию) для конкретного маршрута или группы маршрутов.
 
-```rust
+```rust compile
 use volga::{App, Path};
 
 #[tokio::main]
@@ -44,7 +44,7 @@ async fn sum(x: i32, y: i32) -> i32 {
 
 Метод [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) позволяет получить доступ к [`HttpRequestMut`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html), чтобы модифицировать или исследовать запрос до обработки.
 
-```rust
+```rust compile
 use volga::{App, HttpRequestMut, headers};
 
 headers! {
@@ -70,7 +70,7 @@ async fn main() -> std::io::Result<()> {
 
 Метод [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok) позволяет изменить или дополнить HTTP-ответ после успешной обработки.
 
-```rust
+```rust compile
 use volga::{App, HttpResponse, HttpResult, headers};
 
 headers! {
@@ -135,7 +135,7 @@ async fn produce_err() -> IoError {
 ```
 
 ::: tip
-Если вызвать [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) у [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), вы настроите глобальный обработчик ошибок. Подробнее о глобальной обработке ошибок читайте [здесь](/volga-docs/ru/reliability-observability/errors).
+Если вызвать [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) у [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), вы настроите глобальный обработчик ошибок. Подробнее о глобальной обработке ошибок читайте [здесь](/volga-docs/ru/reliability-observability/errors.html).
 :::
 
 ## Примеры

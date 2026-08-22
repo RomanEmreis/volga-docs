@@ -8,7 +8,7 @@
 
 Пример, демонстрирующий использование групп маршрутов в приложении:
 
-```rust
+```rust compile
 use volga::{App, HttpResult, ok};
 
 #[tokio::main]

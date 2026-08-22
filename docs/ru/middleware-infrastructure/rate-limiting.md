@@ -59,7 +59,7 @@ Middleware для rate limiting можно подключить на трёх у
 
 Token bucket начинается заполненным (до `capacity` токенов) и пополняется с постоянной скоростью. Каждый запрос потребляет один токен. Когда корзина пуста, запросы отклоняются до тех пор, пока токены не пополнятся.
 
-```rust
+```rust compile-fragment
 use volga::rate_limiting::TokenBucket;
 
 let bucket = TokenBucket::new(10, 5.0);
@@ -110,7 +110,7 @@ let mut app = App::new()
 
 Применение rate limiting ко всем входящим запросам:
 
-```rust
+```rust compile-fragment
 use volga::rate_limiting::by;
 
 app.use_token_bucket(by::ip());
@@ -205,7 +205,7 @@ app.use_fixed_window(by::ip());
 
 Store trait'ы определены в крейте `volga_rate_limiter`, и каждый требует реализации одной атомарной операции:
 
-```rust
+```rust compile
 use volga::rate_limiting::TokenBucketStore;
 use volga::rate_limiting::TokenBucketParams;
 

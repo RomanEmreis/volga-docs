@@ -7,7 +7,7 @@
 Вы можете извлечь определённый заголовок из запроса с помощью [`Header<T>`](https://docs.rs/volga/latest/volga/headers/header/struct.Header.html) или получить все заголовки в виде [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) — снимка, доступного только для чтения.
 
 ### Использование `Header<T>`
-```rust
+```rust compile
 use volga::{App, ok};
 use volga::headers::{Header, ContentType};
 
@@ -65,7 +65,7 @@ Received x-api-key: 123-321
 
 ### Упрощение работы с кастомными заголовками с помощью макроса `headers!`
 Вместо реализации типажа вручную, вы можете использовать макрос [`headers!`](https://docs.rs/volga/latest/volga/macro.headers.html):
-```rust
+```rust compile
 use volga::{App, ok};
 use volga::headers::{
     Header,
@@ -97,7 +97,7 @@ Received x-api-key: 123-321; correlation-id: 456-654
 
 ### Использование `HttpHeaders`
 Альтернативный способ с помощью структуры [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html):
-```rust
+```rust compile
 use volga::{App, ok};
 use volga::headers::HttpHeaders;
 

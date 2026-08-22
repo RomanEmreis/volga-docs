@@ -32,7 +32,7 @@ project/
 
 После создания файлов HTML, CSS и JS можно настроить минимальный сервер в `main.rs`:
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -59,7 +59,7 @@ async fn main() -> std::io::Result<()> {
 
 Чтобы раздавать специальный файл (например, `404.html`) при неизвестных маршрутах, используйте [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file), внутри он использует другой метод - [`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) который, в свою очередь, настраивает специальный обработчик, вызываемый при обнаружении неизвестного маршрута:
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -83,7 +83,7 @@ async fn main() -> std::io::Result<()> {
 
 Для упрощения можно использовать [`use_static_files()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_static_files), который объединяет [`map_static_assets()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_static_assets) и [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file), Однако, последний метод будет задействован, только если указан специальный резервный файл:
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -109,7 +109,7 @@ async fn main() -> std::io::Result<()> {
 
 По умолчанию просмотр каталогов отключен. Его можно включить с помощью [`with_files_listing()`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_files_listing), однако это не рекомендуется для продакшн-сред.
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -135,7 +135,7 @@ async fn main() -> std::io::Result<()> {
 
 Вот как можно добиться той же конфигурации с помощью `HostEnv`:
 
-```rust
+```rust compile
 use volga::{App, File, app::HostEnv};
 
 #[tokio::main]

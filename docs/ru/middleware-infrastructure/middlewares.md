@@ -18,7 +18,7 @@ volga = { version = "...", features = ["middleware"] }
 ### Пример: Последовательное выполнение Middleware
 
 Практический пример настройки последовательного выполнения middleware в Volga:
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]

@@ -5,7 +5,7 @@ Volga provides a global error handling mechanism that catches all [`Error`](http
 The function receives an [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) object and should return a response that implements the [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) trait.  
 
 ### Example:
-```rust
+```rust compile
 use volga::{App, error::Error, status};
 
 #[tokio::main]
@@ -42,7 +42,7 @@ To enable this functionality, ensure that the `problem-details` feature is activ
 volga = { version = "...", features = ["problem-details"] }
 ```
 Then, you may return the [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) from request handler:
-```rust
+```rust compile
 use volga::{App, error::Problem};
 use serde::Serialize;
 
@@ -99,7 +99,7 @@ Content-Type: application/problem+json
 ## Global Error Handling With Problem Details
 
 Moreover, you can combine the [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) with [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) by using the [`use_problem_details()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_problem_details) method:
-```rust
+```rust compile
 use volga::{App, error::Error};
 
 #[tokio::main]

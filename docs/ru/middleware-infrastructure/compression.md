@@ -20,7 +20,7 @@ volga = { version = "...", features = ["compression-brotli", "compression-gzip"]
 ## Пример использования
 
 Чтобы использовать сжатие в вашем приложении, используйте метод [`use_compression()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_compression) в вашем `main.rs`:
-```rust
+```rust compile
 use volga::{App, ok};
 use serde::Serialize;
  

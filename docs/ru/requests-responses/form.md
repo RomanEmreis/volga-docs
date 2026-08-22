@@ -4,7 +4,7 @@
 
 ## Получение Form Data
 Для принятия данных формы в теле запросе и десериализации его в строго типизированную сущность, используйте структуру [`Form<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/form/struct.Form.html). Где `T` должен быть десериализуемый тип, либо [`HashMap`](https://doc.rust-lang.org/std/collections/struct.HashMap.html). В случае своей структуры убедитесь, что она реализует [`Deserialize`](https://docs.rs/serde/latest/serde/trait.Deserialize.html) из [serde](https://crates.io/crates/serde):
-```rust
+```rust compile
 use volga::{App, Form, ok};
 use serde::Deserialize;
  
@@ -38,7 +38,7 @@ Hello John!
 
 ## Отправка Form Data
 Чтобы отправить ответ с данными формы, вы можете использовать макрос [`form!`](https://docs.rs/volga/latest/volga/macro.form.html):
-```rust
+```rust compile
 use volga::{App, Form, form};
 use serde::Serialize;
  
@@ -65,7 +65,7 @@ async fn main() -> std::io::Result<()> {
 ```
 В качестве альтернативы, указав [`Form<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/form/struct.Form.html) в качестве возвращаемого типа, вы можете вернуть структуру вашего типа напрямую, благодаря типажу [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html):
 
-```rust
+```rust compile
 use volga::{App, Form};
 use serde::Serialize;
  

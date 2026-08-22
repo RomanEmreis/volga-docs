@@ -7,7 +7,7 @@ Volga's [`file!`](https://docs.rs/volga/latest/volga/macro.file.html) macro faci
 
 ### Using the `file!` macro
 The `file!` macro provides a short syntax for initiating file downloads:
-```rust
+```rust compile
 use volga::{App, file};
 use tokio::fs::File;
 
@@ -34,7 +34,7 @@ For file uploads, Volga has [`save()`](https://docs.rs/volga/latest/volga/http/e
 
 ### Example of File Upload
 This example demonstrates how to set up a route to handle file uploads:
-```rust
+```rust compile
 use volga::{App, File};
 
 #[tokio::main]
@@ -60,7 +60,7 @@ volga = { version = "...", features = ["multipart"] }
 ```
 ### Example of Multipart file uploading
 This example demonstrates how to upload multiple files:
-```rust
+```rust compile
 use volga::{App, Multipart};
 
 #[tokio::main]

@@ -17,7 +17,7 @@ volga = { version = "...", features = ["multipart"] }
 ## Returning a Multipart Response
 
 The simplest way to build an outgoing multipart is [`Multipart::from_parts`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html#method.from_parts), which accepts any `IntoIterator<Item = Part>`:
-```rust
+```rust compile
 use volga::{App, Multipart, multipart::Part};
 
 #[tokio::main]
@@ -53,7 +53,7 @@ The response gets a `Content-Type: multipart/form-data; boundary=...` header wit
 Each builder has a fallible `try_*` counterpart (`try_text`, `try_bytes`, `try_file`, `try_stream`, `try_with_disposition`) — the static-input constructors panic on invalid header bytes, and the `try_*` variants should be preferred when the name or filename comes from untrusted input.
 
 A typical mixed example combining a text field and an in-memory file:
-```rust
+```rust compile
 use bytes::Bytes;
 use volga::{App, Multipart, multipart::Part};
 
@@ -75,7 +75,7 @@ async fn main() -> std::io::Result<()> {
 ## Streaming Parts
 
 When a part's body is large or produced incrementally, use [`Part::stream`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Part.html#method.stream) to send it without buffering. The body must be a `Stream<Item = Result<Bytes, volga::error::Error>>`:
-```rust
+```rust compile
 use bytes::Bytes;
 use futures_util::{StreamExt, stream};
 use volga::{App, Multipart, multipart::Part};
@@ -110,7 +110,7 @@ If the parts themselves are produced lazily (e.g. enumerating files, computing b
 ## Choosing a Subtype
 
 By default, outgoing multiparts use the `multipart/form-data` subtype. To switch to `mixed`, `byteranges`, or any other RFC 2046 subtype, call [`Multipart::with_subtype`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html#method.with_subtype):
-```rust
+```rust compile
 use bytes::Bytes;
 use volga::{App, Multipart, multipart::{MultipartSubtype, Part}};
 use volga::headers::{ContentType, HeaderName, HeaderValue};
@@ -150,7 +150,7 @@ The supported variants are:
 ## Customizing the Boundary
 
 The boundary is generated automatically and is RFC 2046 §5.1.1 compliant. To pin it (useful in tests or when interoperating with a strict client), use [`Multipart::with_boundary`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html#method.with_boundary). It validates the input and returns an error if the boundary is malformed:
-```rust
+```rust compile
 use volga::{App, Multipart, multipart::Part};
 
 #[tokio::main]
@@ -169,7 +169,7 @@ async fn main() -> std::io::Result<()> {
 ## Forwarding an Incoming Multipart
 
 When you need to proxy or forward an incoming multipart body back to a client, use [`Multipart::into_outgoing`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html#method.into_outgoing). It re-encodes the request multipart as a streaming outgoing one — each field becomes a `Part` with a streaming body:
-```rust
+```rust compile
 use volga::{App, Multipart};
 
 #[tokio::main]

@@ -7,7 +7,7 @@
 
 В качестве примера, как получить доступ к параметрам запроса, можно рассмотреть следующий код:
 
-```rust
+```rust compile
 use volga::{App, Query, ok};
 use serde::Deserialize;
 
@@ -48,7 +48,7 @@ Hello World!
 
 Для API, которые требуют нескольких параметров запроса, настройка выполняется аналогично:
 
-```rust
+```rust compile
 use volga::{App, Query, ok};
 use serde::Deserialize;
 

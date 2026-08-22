@@ -18,7 +18,7 @@ volga = { version = "...", features = ["middleware"] }
 ### Example: Sequential Middleware Execution
 
 Here’s a practical example of how to configure sequential middleware in Volga:
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]
@@ -63,7 +63,7 @@ async fn main() -> std::io::Result<()> {
 ```
 ### Example: Middleware Short-Cutting Pipeline
 The following example demonstrates how to shortcut the middleware pipeline to prevent the request handler from being executed. This approach can be particularly useful for implementing authorization filters or pre-request validations that may terminate the request early:
-```rust
+```rust compile
 use volga::{App, ok, status};
 
 #[tokio::main]

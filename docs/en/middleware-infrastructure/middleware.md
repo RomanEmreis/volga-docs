@@ -15,7 +15,7 @@ volga = { version = "...", features = ["middleware"] }
 
 The [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter) method allows you to define conditional logic (such as validation or access control) for a specific route or a group of routes.
 
-```rust
+```rust compile
 use volga::{App, Path};
 
 #[tokio::main]
@@ -44,7 +44,7 @@ async fn sum(x: i32, y: i32) -> i32 {
 
 The [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) method gives you access to the [`HttpRequestMut`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html), allowing you to inspect or mutate request before request processing.
 
-```rust
+```rust compile
 use volga::{App, HttpRequestMut, headers};
 
 headers! {
@@ -70,7 +70,7 @@ async fn main() -> std::io::Result<()> {
 
 Use the [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok) method to transform or augment successful HTTP responses.
 
-```rust
+```rust compile
 use volga::{App, HttpResponse, HttpResult, headers};
 
 headers! {
@@ -136,7 +136,7 @@ async fn produce_err() -> IoError {
 ```
 
 ::: tip
-By attaching [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) to the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), you configure a global error handler. You can read more about advanced error handling [here](/volga-docs/en/reliability-observability/errors).
+By attaching [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) to the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), you configure a global error handler. You can read more about advanced error handling [here](/volga-docs/en/reliability-observability/errors.html).
 :::
 
 ## Examples

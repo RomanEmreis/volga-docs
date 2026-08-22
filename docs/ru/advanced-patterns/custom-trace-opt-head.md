@@ -36,7 +36,7 @@ async fn main() -> std::io::Result<()> {
 ## Метод OPTIONS
 
 Для специальной обработки запросов `OPTIONS` используйте метод [`map_options`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_options) для сопоставления этого метода HTTP:
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]

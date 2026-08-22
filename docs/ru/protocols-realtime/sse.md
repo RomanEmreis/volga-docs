@@ -6,7 +6,7 @@
 
 В примере ниже показано, как создать простую конечную точку SSE. Она сопоставляет запрос `GET` с маршрутом `/events`, устанавливает Content Type как `text/event-stream` и непрерывно отправляет сообщение `"Hello, world!"` раз в секунду, пока клиент не отключится:
 
-```rust
+```rust compile
 use volga::{App, http::sse::Message, sse_stream};
 use std::time::Duration;
 
@@ -35,7 +35,7 @@ async fn main() -> std::io::Result<()> {
 
 Для простых текстовых сообщений используйте метод [`data()`](https://docs.rs/volga/latest/volga/http/endpoints/args/sse/struct.Message.html#method.data), как показано выше. Если вам необходимо отправить структурированные данные, такие как JSON, используйте метод [`json()`](https://docs.rs/volga/latest/volga/http/endpoints/args/sse/struct.Message.html#method.json), который принимает любой тип, реализующий типаж [`serde::Serialize`](https://docs.rs/serde/1.0.219/serde/ser/trait.Serialize.html):
 
-```rust
+```rust compile-fragment
 use volga::http::sse::Message;
 use serde::Serialize;
 

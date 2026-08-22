@@ -22,7 +22,7 @@ volga = { version = "...", features = ["http2", "ws"] }
 
 After updating `Cargo.toml` with the `ws` feature flag, you can implement a basic message handler using the [`map_msg()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_msg) method. The following example responds with a formatted string containing the received message:
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -40,7 +40,7 @@ async fn main() -> std::io::Result<()> {
 
 This is a very simple example, to get more control over a particular connection you may choose another method - [`map_ws()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_ws).
 
-```rust
+```rust compile
 use volga::{App, ws::WebSocket};
 
 #[tokio::main]
@@ -100,7 +100,7 @@ This example sends a single message upon connection and logs incoming messages.
 
 For full control, for instance, to configure a connection or specify some sub-protocols, there is another method - [`map_conn()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_conn), you may use it like this:
 
-```rust
+```rust compile-fragment
 use volga::{App, ws::{WebSocketConnection, WebSocket}};
 
 #[tokio::main]

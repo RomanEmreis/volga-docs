@@ -6,7 +6,7 @@
 
 Вот как настроить простой динамический маршрут, который приветствует пользователя по имени:
 
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]
@@ -42,7 +42,7 @@ Hello sun!
 
 Вы также можете настроить маршруты с несколькими параметрами. Например:
 
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]
@@ -73,7 +73,7 @@ Hello beautiful world!
 
 Кроме того, вы можете использовать [`NamedPath<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.NamedPath.html), чтобы обернуть параметры маршрута в специализированную структуру. Где `T` — это либо десериализуемая структура, либо `HashMap`. Убедитесь, что у вас установлена библиотека [serde](https://crates.io/crates/serde):
 
-```rust
+```rust compile
 use volga::{App, NamedPath, ok};
 use serde::Deserialize;
 

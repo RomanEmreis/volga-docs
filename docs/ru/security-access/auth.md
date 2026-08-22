@@ -156,6 +156,8 @@ let mut app = App::new()
 
 ::: info
 `EncodingKey`, `DecodingKey` и `Algorithm` теперь являются собственными типами Волги (больше не реэкспортируются из `jsonwebtoken`). Пути импорта остались прежними (`volga::auth::{EncodingKey, DecodingKey}`), но `jsonwebtoken::ErrorKind` больше недоступен — используйте конструкторы PEM / base64 / secret / env / file, предоставляемые Волгой. Параметры валидации токена настраиваются через [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html); прежний доступ через `BearerTokenService::validation()` удалён.
+
+Начиная с **v0.9.8**, `volga::auth::Algorithm` — это реэкспорт [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) из `volga-oauth-core`: варианты, значение по-умолчанию `HS256` и поведение не изменились, но теперь тип общий с клиентскими крейтами — утверждение `private_key_jwt` и bearer-токен, который выпускает сервер, описываются одним словарём. Он также реэкспортируется из `volga::auth::oauth`, где его можно назвать без флага `jwt-auth`.
 :::
 
 ### Использование JWT
@@ -207,7 +209,7 @@ struct Claims {
 
 Вместо настройки статического ключа сервер ресурсов может валидировать Bearer-токены по опубликованным ключам OAuth 2.1 / OIDC-эмитента — без общего секрета. Опишите эмитента через [`with_oauth(...)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_oauth) и подключите через [`use_oauth()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_oauth):
 
-```rust
+```rust compile-fragment
 let mut app = App::new()
     .with_bearer_auth(|auth| auth.with_aud(["https://api.example.com"]))
     .with_oauth(|oauth| oauth.with_issuer("https://auth.example.com"));

@@ -22,7 +22,7 @@ volga = { version = "...", features = ["http2", "ws"] }
 
 После обновления `Cargo.toml` с флагом `ws` вы можете реализовать базовый обработчик сообщений с помощью метода [`map_msg()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_msg). Следующий пример отвечает отформатированной строкой, содержащей полученное сообщение:
 
-```rust
+```rust compile
 use volga::App;
 
 #[tokio::main]
@@ -40,7 +40,7 @@ async fn main() -> std::io::Result<()> {
 
 Это очень простой пример. Чтобы получить больше контроля над конкретным соединением, вы можете воспользоваться другим методом - [`map_ws()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_ws).
 
-```rust
+```rust compile
 use volga::{App, ws::WebSocket};
 
 #[tokio::main]
@@ -100,7 +100,7 @@ async fn main() -> std::io::Result<()> {
 
 Для полного контроля, например, для настройки подключения или указания некоторых подпротоколов есть еще один метод - [`map_conn()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_conn), вы можете использовать его следующим образом:
 
-```rust
+```rust compile-fragment
 use volga::{App, ws::{WebSocketConnection, WebSocket}};
 
 #[tokio::main]
