@@ -58,7 +58,7 @@ export default defineUserConfig({
           {
             text: 'Requests & Responses',
             prefix: '/en/requests-responses/',
-            children: ['headers', 'json-payload', 'form', 'files', 'multipart', 'cookie'],
+            children: ['headers', 'json-payload', 'form', 'files', 'multipart', 'body', 'cookie'],
           },
           {
             text: 'Middleware & Infrastructure',
@@ -68,12 +68,12 @@ export default defineUserConfig({
           {
             text: 'Security & Access',
             prefix: '/en/security-access/',
-            children: ['auth', 'oauth', 'oauth-client'],
+            children: ['auth', 'oauth', 'oauth-client', 'machine-to-machine', 'dpop'],
           },
           {
             text: 'Reliability & Observability',
             prefix: '/en/reliability-observability/',
-            children: ['errors', 'tracing', 'cancellation'],
+            children: ['errors', 'tracing', 'cancellation', 'graceful-shutdown'],
           },
           {
             text: 'Protocols & Realtime',
@@ -116,7 +116,7 @@ export default defineUserConfig({
           {
             text: 'Запросы и ответы',
             prefix: '/ru/requests-responses/',
-            children: ['headers', 'json-payload', 'form', 'files', 'multipart', 'cookie'],
+            children: ['headers', 'json-payload', 'form', 'files', 'multipart', 'body', 'cookie'],
           },
           {
             text: 'Middleware и инфраструктура',
@@ -126,12 +126,12 @@ export default defineUserConfig({
           {
             text: 'Безопасность и доступ',
             prefix: '/ru/security-access/',
-            children: ['auth', 'oauth', 'oauth-client'],
+            children: ['auth', 'oauth', 'oauth-client', 'machine-to-machine', 'dpop'],
           },
           {
             text: 'Надежность и наблюдаемость',
             prefix: '/ru/reliability-observability/',
-            children: ['errors', 'tracing', 'cancellation'],
+            children: ['errors', 'tracing', 'cancellation', 'graceful-shutdown'],
           },
           {
             text: 'Протоколы и realtime',

@@ -38,7 +38,7 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-Затем вы можете проверить это с помощью команды `curl`, предварительно создав и упаковав файл `users.json.gz`, который вы можете сделать из ответа [примера](/volga-docs/ru/getting-started/compression.html#пример-использования) предыдущей темы: Сжатие ответов:
+Затем вы можете проверить это с помощью команды `curl`, предварительно создав и упаковав файл `users.json.gz`, который вы можете сделать из ответа [примера](/volga-docs/ru/middleware-infrastructure/compression.html#пример-использования) предыдущей темы: Сжатие ответов:
 ```bash
 curl -v -X POST --location 'http://127.0.0.1:7878/users' \
     -H "Content-Type: application/json" \

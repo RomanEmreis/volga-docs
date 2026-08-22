@@ -5,8 +5,10 @@
 It provides three clients, all sharing the transport policy of [`ClientConfig`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientConfig.html) and the error model of [`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html):
 
 * [`DiscoveryClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.DiscoveryClient.html) — fetches Authorization Server Metadata (RFC 8414), Protected Resource Metadata (RFC 9728) and the OpenID Connect provider configuration.
-* [`OAuthClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html) — the Authorization Code flow with mandatory PKCE, refresh tokens and resource indicators, plus token persistence.
+* [`OAuthClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html) — the Authorization Code flow with mandatory PKCE, refresh tokens and resource indicators, plus token persistence. Since **v0.9.8** it also drives the grants that authenticate the *client itself* — see [Machine-to-Machine Grants](/volga-docs/en/security-access/machine-to-machine.html).
 * [`RegistrationClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.RegistrationClient.html) — Dynamic Client Registration (RFC 7591).
+
+Since **v0.9.8** the tokens they obtain can also be sender-constrained with [`Dpop`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.Dpop.html) (RFC 9449) — see [DPoP](/volga-docs/en/security-access/dpop.html).
 
 ## Dependencies
 
@@ -21,8 +23,14 @@ volga-oauth-client = { version = "..." }
 |---|---|
 | `http1` (default) | HTTP/1.1 via hyper |
 | `http2` | HTTP/2 via hyper; negotiated through TLS ALPN when combined with `http1`, used exclusively (prior knowledge over plaintext) without it |
+| `private-key-jwt` | `private_key_jwt` client authentication (RFC 7523 §2.2) — a client assertion signed with the client's own key |
+| `dpop` | DPoP sender-constrained tokens (RFC 9449) |
 
-At least one of the two must be enabled.
+At least one of `http1` / `http2` must be enabled.
+
+::: info
+`private-key-jwt` and `dpop` are off by default because they are the only parts of the crate that need a JWS signing backend (`jsonwebtoken` on `aws-lc-rs`). Every grant, the secret-based authentication methods and public clients work without them.
+:::
 
 ## Discovery
 
@@ -108,13 +116,39 @@ The request builder accepts [`with_scopes`](https://docs.rs/volga-oauth-client/l
 Always verify the callback `state` with [`matches_state`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.AuthorizationRequest.html#method.matches_state) **before** exchanging the code — it is your CSRF defence.
 :::
 
+### Validating the callback
+
+Since **v0.9.6**, [`validate_callback`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.AuthorizationRequest.html#method.validate_callback) checks the whole callback at once — the `state` *and* the RFC 9207 `iss` parameter — and is the recommended replacement for a bare `matches_state`:
+
+```rust
+use volga_oauth_client::{AuthorizationRequest, AuthorizationServerMetadata, ClientError};
+
+fn check(
+    request: &AuthorizationRequest,
+    metadata: &AuthorizationServerMetadata,
+    state: &str,
+    iss: Option<&str>,
+) -> Result<(), ClientError> {
+    request.validate_callback(metadata, state, iss)?;
+    Ok(())
+}
+```
+
+`iss` is the callback's `iss` query parameter, or `None` when the response carried none. It must match the issuer whenever it is present, and it is **required** once the server advertises `authorization_response_iss_parameter_supported`.
+
+::: warning
+Without the `iss` check, a callback can be replayed from a *different* authorization server — the mix-up attack RFC 9207 exists to prevent. If your provider advertises the parameter, use [`validate_callback`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.AuthorizationRequest.html#method.validate_callback); [`matches_state`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.AuthorizationRequest.html#method.matches_state) remains for the `state`-only check.
+:::
+
 ### Transparent refresh
 
 [`token(key, &metadata)`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.token) reads the stored tokens and refreshes a stale access token behind the scenes. It returns `Ok(None)` when interactive authorization is required — nothing is stored, the entry has no refresh token, or the server rejected the refresh token (`invalid_grant`); in the latter cases the dead entry is removed from the store. You can also refresh explicitly with [`refresh`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.refresh).
 
-### Confidential clients
+## Client Authentication
 
-Without a secret the client acts as a **public client** (PKCE is the protection). Attach a secret to authenticate to the token endpoint:
+Without a credential the client acts as a **public client** (PKCE is the protection OAuth 2.1 prescribes). A confidential client authenticates to the token endpoint with one of three methods, and the choice applies to every grant it sends.
+
+### Shared secret
 
 ```rust
 use volga_oauth_client::{ClientAuthMethod, OAuthClient};
@@ -124,6 +158,58 @@ let client = OAuthClient::new("my-client")
     // `client_secret_basic` (default) or `client_secret_post`
     .with_auth_method(ClientAuthMethod::Post);
 ```
+
+### `private_key_jwt`
+
+Since **v0.9.8** (feature `private-key-jwt`), the client can authenticate with an assertion signed by its own key (RFC 7523 §2.2), so no shared secret ever leaves it:
+
+```rust
+use volga_oauth_client::{ClientError, JwsAlgorithm, OAuthClient, PrivateKeyJwt};
+
+fn build() -> Result<OAuthClient, ClientError> {
+    let key = PrivateKeyJwt::from_pem_file("/etc/secrets/client.pem", JwsAlgorithm::RS256)?
+        .with_key_id("2026-08");
+
+    Ok(OAuthClient::new("my-client").with_private_key_jwt(key))
+}
+```
+
+[`PrivateKeyJwt`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html) loads the key ([`from_pem`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html#method.from_pem), [`from_pem_file`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html#method.from_pem_file), [`from_der`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html#method.from_der)) and carries the claims policy — [`with_key_id`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html#method.with_key_id), [`with_lifetime`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html#method.with_lifetime) (60 seconds by default) and [`with_audiences`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html#method.with_audiences). A fresh assertion with a random `jti` is minted per token request, so a captured one is not replayable for long. Attaching it supersedes any [`with_secret`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.with_secret) — the assertion is the credential.
+
+::: warning
+Symmetric algorithms are refused: an HMAC secret the server already holds proves nothing about who signed. The algorithm is also checked against the server's `token_endpoint_auth_signing_alg_values_supported` when it advertises one.
+:::
+
+### Publishing the public key
+
+The authorization server verifies assertions with the public half of the key, which it either fetches from a `jwks_uri` or received inline at registration. [`with_public_jwk`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html#method.with_public_jwk) attaches it and [`jwks()`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.PrivateKeyJwt.html#method.jwks) renders the document to publish:
+
+```rust
+use volga_oauth_client::{ClientError, JwsAlgorithm, PrivateKeyJwt, PublicJwk};
+
+fn publish(key: PrivateKeyJwt, public: PublicJwk) -> Result<(), ClientError> {
+    let key = key.with_public_jwk(public)?;
+
+    // serve this at your `jwks_uri`, or send it as the `jwks` member of a
+    // Dynamic Client Registration request
+    let document = key.jwks();
+    Ok(())
+}
+```
+
+[`PublicJwk`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/jwk/struct.PublicJwk.html) (RFC 7517, in `volga-oauth-core`) models **public** signing material exclusively — there is no way to represent the private members, and deserializing a document that carries them fails rather than silently dropping them. It also refuses combinations no verifier could act on: an RSA key declaring `ES256`, a P-384 key declaring `ES256`, a public key declaring an HMAC algorithm, or a curve that does not belong to the key type. `kid` and `alg` are filled in from the signing configuration, so the published document always agrees with what the assertions actually carry.
+
+::: info
+Supply the *public* key explicitly — the crate signs, it does not derive public keys from private ones. That is also what makes publishing the signing key by accident impossible.
+:::
+
+### What is checked before the request leaves
+
+Since **v0.9.8** the configured method is validated against `token_endpoint_auth_methods_supported` before a token request is sent: a method the server never announced would only earn an `invalid_client` over the network. Metadata listing no methods is not second-guessed — that is what a hand-built [`AuthorizationServerMetadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.AuthorizationServerMetadata.html) carries — but a *discovered* document always lists something, since RFC 8414 makes an omitted field mean `client_secret_basic`. A public client presents no credential and is never checked.
+
+::: info
+The registered wire identifiers both sides of the protocol agree on live in one place since **v0.9.8** — `volga_oauth_core::protocol`, as the `grant`, `client_auth`, `token_type` and `auth_scheme` constants, re-exported from both `volga::auth::oauth` and `volga_oauth_client`. A server advertises them in its metadata document and a client matches on them, so the two cannot drift.
+:::
 
 ## Token Store
 
@@ -174,6 +260,28 @@ async fn register() -> Result<(), ClientError> {
 
 For servers that do not allow open registration, attach an initial access token with [`with_initial_access_token`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.RegistrationClient.html#method.with_initial_access_token).
 
+Two [`ClientMetadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientMetadata.html) fields became first-class in **v0.9.6** and **v0.9.8** respectively:
+
+* [`with_application_type`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.ClientMetadata.html#method.with_application_type) — `"web"` or `"native"`. Desktop and CLI clients register as `"native"`, which is what makes loopback redirect URIs (`http://127.0.0.1:{port}/...`) acceptable to authorization servers.
+* [`with_token_endpoint_auth_signing_alg`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.ClientMetadata.html#method.with_token_endpoint_auth_signing_alg) — the algorithm this one client signs its assertions with, for a `private_key_jwt` registration.
+
+When the registration authenticates with `private_key_jwt`, adopt it with [`from_registration_with_key`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.from_registration_with_key), which also refuses a key the registration would not accept — one signing with an algorithm other than the registered `token_endpoint_auth_signing_alg`, or carrying a `kid` an inlined `jwks` cannot resolve:
+
+```rust
+use volga_oauth_client::{ClientError, ClientRegistrationResponse, OAuthClient, PrivateKeyJwt};
+
+fn adopt(
+    registered: &ClientRegistrationResponse,
+    key: PrivateKeyJwt,
+) -> Result<OAuthClient, ClientError> {
+    OAuthClient::from_registration_with_key(registered, key)
+}
+```
+
+::: warning
+Since **v0.9.8**, a client built by [`from_registration`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.from_registration) refuses a grant its registration did not approve — before reaching the network, rather than as an `unauthorized_client` from the token endpoint. An omitted `grant_types` means `authorization_code` alone (RFC 7591 §2), not carte blanche; only a client that never went through a registration is unconstrained. `refresh_token` is never refused, since RFC 6749 §6 makes it the continuation of a grant already held.
+:::
+
 ::: info
 The RFC 7592 management protocol (reading, updating and deleting a registration) is not implemented, but the `registration_access_token` / `registration_client_uri` pair from the response is surfaced for applications that need it.
 :::
@@ -194,7 +302,38 @@ let config = ClientConfig::new()
 let client = OAuthClient::new("my-client").with_config(config);
 ```
 
-[`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html) separates a parsed OAuth error response (`Protocol`, carrying the RFC 6749 §5.2 [`OAuthError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthError.html)) from transport, decode, insecure-URL and validation failures — so you can distinguish "the server said `invalid_grant`" from "the connection dropped".
+[`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html) separates a parsed OAuth error response (`Protocol`, carrying the RFC 6749 §5.2 [`OAuthError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthError.html)) from transport, decode, insecure-URL and validation failures — so you can distinguish "the server said `invalid_grant`" from "the connection dropped". Since **v0.9.8** it also carries `Signing`, for a signing configuration that cannot produce the JWS a request needs — a `private_key_jwt` assertion or a DPoP proof.
+
+### Propagating errors from a handler
+
+Since **v0.9.8**, with the `oauth-client` feature enabled on `volga`, a [`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html) converts into a [`volga::Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html), so a handler that talks to an authorization server can propagate the failure with `?`:
+
+```rust
+use volga::{HttpResult, ok};
+use volga_oauth_client::{DiscoveryClient};
+
+async fn metadata() -> HttpResult {
+    let metadata = DiscoveryClient::new()
+        .fetch_server_metadata("https://auth.example.com")
+        .await?; // ClientError -> volga::Error
+
+    ok!(metadata.issuer)
+}
+```
+
+The status describes **where** the failure sits rather than echoing what the authorization server answered — this application was the *client* of the call that failed:
+
+| Failure | Status |
+|---|---|
+| the server could not be reached (`Transport`) | `503 Service Unavailable` |
+| it answered unusably — a protocol error, an unexpected status, an unparseable body | `502 Bad Gateway` |
+| this application's own configuration — an insecure URL, metadata that fails validation, a key that cannot sign | `500 Internal Server Error` |
+
+To surface the authorization server's own error code to your caller, match on `ClientError::Protocol` instead of relying on the conversion.
+
+## What's next
+* [Machine-to-Machine Grants](/volga-docs/en/security-access/machine-to-machine.html) — `client_credentials`, JWT bearer and token exchange, for flows with no user involved.
+* [DPoP](/volga-docs/en/security-access/dpop.html) — binding tokens to a key the client holds, so a stolen token is worth nothing.
 
 ## Examples
 * [OAuth Flow](https://github.com/RomanEmreis/volga/blob/main/examples/oauth_flow/src/main.rs) — a full discovery → authorization → code exchange → protected call flow driven by `volga-oauth-client`.

@@ -158,6 +158,21 @@ app.use_oauth_server_metadata()  // GET /.well-known/oauth-authorization-server
 Замыкание для метаданных сервера предзаполняется значениями OAuth 2.1: `response_types_supported = ["code"]` и `grant_types_supported = ["authorization_code"]`. OIDC-специфичные поля, обязательные для совместимого документа провайдера (`subject_types_supported`, `id_token_signing_alg_values_supported`, `userinfo_endpoint`, …), можно задать через [`with_additional_field(...)`](https://docs.rs/volga/latest/volga/auth/oauth/struct.AuthorizationServerMetadata.html#method.with_additional_field).
 :::
 
+Два поля, которые стоит назвать отдельно, стали типизированными построителями в **v0.9.6** и **v0.9.8**:
+
+```rust
+let mut app = App::new()
+    .with_oauth_server_metadata(|metadata| metadata
+        .with_issuer("https://auth.example.com")
+        // RFC 9207: параметр `iss` возвращается в ответах авторизации,
+        // что позволяет клиентам обнаружить подмену сервера авторизации
+        .with_authorization_response_iss_parameter(true)
+        // RFC 9449: алгоритмы, принимаемые в доказательствах DPoP
+        .with_dpop_signing_algs(["ES256"]));
+```
+
+Объявление поддержки RFC 9207 делает её **обязательной** для клиентов: [валидация callback](/volga-docs/ru/security-access/oauth-client.html#валидация-callback) в `volga-oauth-client` после этого отклонит ответ без `iss`. Метод `with_authorization_response_iss_parameter` также принимается в секции `[oauth.server]` файла конфигурации. Клиентская половина второго описана в разделе [DPoP](/volga-docs/ru/security-access/dpop.html); на стороне ресурса поле `dpop_signing_alg_values_supported` доступно у [`ProtectedResourceMetadata`](https://docs.rs/volga/latest/volga/auth/oauth/struct.ProtectedResourceMetadata.html) под тем же именем.
+
 Оба документа также могут приходить из секций `[oauth.resource]` / `[oauth.server]` файла конфигурации (feature `config`); файл переопределяет предыдущие вызовы построителя. Сокращение `set_*` настраивает минимальный документ только по идентификатору:
 
 ```rust
