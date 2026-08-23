@@ -16,7 +16,7 @@ A **Singleton** ensures a single instance of a dependency is created and shared 
 
 #### Example: Singleton Dependency
 
-```rust
+```rust compile
 use volga::{App, di::Dc, ok, not_found};
 use std::{
     collections::HashMap,
@@ -37,7 +37,7 @@ async fn main() -> std::io::Result<()> {
 
     // Inject the shared cache instance into the route handlers
     app.map_get("/user/{id}", |id: String, cache: Dc<InMemoryCache>| async move {
-        let user = cache.inner.lock().unwrap().get(&id);
+        let user = cache.inner.lock().unwrap().get(&id).cloned();
         match user {
             Some(user) => ok!(user),
             None => not_found!("User not found"),
@@ -67,8 +67,8 @@ A **Scoped** dependency creates a new instance for each HTTP request. The instan
 
 #### Example: Scoped Dependency
 
-```rust
-use volga::{App, di::{Container, Dc, Error, Inject}, ok, not_found};
+```rust compile
+use volga::{App, di::{Container, Dc, Inject, error::Error}, ok, not_found};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
@@ -80,7 +80,7 @@ struct InMemoryCache {
 }
 
 impl Inject for InMemoryCache {
-    fn inject(_container: Container) -> Result<Self, Error> {
+    fn inject(_container: &Container) -> Result<Self, Error> {
         Ok(Self { inner: Default::default() })
     }
 }
@@ -94,7 +94,7 @@ async fn main() -> std::io::Result<()> {
 
     // Inject a request-specific cache instance
     app.map_get("/user/{id}", |id: String, cache: Dc<InMemoryCache>| async move {
-        let user = cache.inner.lock().unwrap().get(&id);
+        let user = cache.inner.lock().unwrap().get(&id).cloned();
         match user {
             Some(user) => ok!(user),
             None => not_found!("User not found"),

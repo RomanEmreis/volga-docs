@@ -15,7 +15,7 @@ volga = { version = "...", features = ["basic-auth"] }
 
 ### Пример
 
-```rust
+```rust compile
 use volga::{
     App, HttpResult,
     headers::WWW_AUTHENTICATE,
@@ -35,7 +35,7 @@ async fn protected(auth: Basic) -> HttpResult {
     if auth.validate(&expected_user, &expected_pass) {
         ok!("Access granted")
     } else {
-        status!(401, "Unauthorized", [
+        status!(401, "Unauthorized"; [
             (WWW_AUTHENTICATE, "Basic realm=\"Restricted area\"")
         ])
     }

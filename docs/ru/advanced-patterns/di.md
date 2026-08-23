@@ -16,14 +16,14 @@ volga = { version = "...", features = ["di"] }
 
 #### Пример: Singleton
 
-```rust
+```rust compile
 use volga::{App, di::Dc, ok, not_found};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 struct InMemoryCache {
     inner: Arc<Mutex<HashMap<String, String>>>,
 }
@@ -37,7 +37,7 @@ async fn main() -> std::io::Result<()> {
 
     // Использование общего экземпляра в обработчиках маршрутов
     app.map_get("/user/{id}", |id: String, cache: Dc<InMemoryCache>| async move {
-        let user = cache.inner.lock().unwrap().get(&id);
+        let user = cache.inner.lock().unwrap().get(&id).cloned();
         match user {
             Some(user) => ok!(user),
             None => not_found!("Пользователь не найден"),
@@ -67,8 +67,8 @@ async fn main() -> std::io::Result<()> {
 
 #### Пример: Scoped
 
-```rust
-use volga::{App, di::{Container, Dc, Error, Inject}, ok, not_found};
+```rust compile
+use volga::{App, di::{Container, Dc, Inject, error::Error}, ok, not_found};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
@@ -80,7 +80,7 @@ struct InMemoryCache {
 }
 
 impl Inject for InMemoryCache {
-    fn inject(_container: Container) -> Result<Self, Error> {
+    fn inject(_container: &Container) -> Result<Self, Error> {
         Ok(Self { inner: Default::default() })
     }
 }
@@ -94,7 +94,7 @@ async fn main() -> std::io::Result<()> {
 
     // Использование отдельного экземпляра для каждого запроса
     app.map_get("/user/{id}", |id: String, cache: Dc<InMemoryCache>| async move {
-        let user = cache.inner.lock().unwrap().get(&id);
+        let user = cache.inner.lock().unwrap().get(&id).cloned();
         match user {
             Some(user) => ok!(user),
             None => not_found!("Пользователь не найден"),

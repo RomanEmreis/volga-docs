@@ -28,7 +28,7 @@ In this example, we intentionally create a request handler that produces an erro
 
 For convenience, the [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) struct includes a `status` field that covers common cases (400, 401, 403, 404, etc.), allowing the macro usage to be updated as follows:  
 ```rust
-status!(error.status.as_u16(), "{:?}", error)
+status!(error.status().as_u16(), "{:?}", error)
 ```
 In fact, this is how the default error handler is implemented. If we remove the [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) method, the response remains unchanged. However, defining a custom error handler offers greater flexibility for advanced logging and tracing.  
 

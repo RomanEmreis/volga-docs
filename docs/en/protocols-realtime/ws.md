@@ -66,7 +66,7 @@ This example functions similarly to the first but offers greater control over th
 
 For advanced use cases, you can split the WebSocket into separate sender and receiver components using [`split()`](https://docs.rs/volga/latest/volga/ws/websocket/struct.WebSocket.html#method.split):
 
-```rust
+```rust compile
 use volga::{App, ws::{WebSocket, WsEvent}};
 
 #[tokio::main]
@@ -79,14 +79,16 @@ async fn main() -> std::io::Result<()> {
         let (mut sender, mut receiver) = ws.split();
 
         tokio::spawn(async move {
-            let _ = sender.send("Hello from WebSockets server!".into()).await;
+            // `Message: TryFrom<&str>`, so the string goes in as it is
+            let _ = sender.send("Hello from WebSockets server!").await;
         });
-        
+
         tokio::spawn(async move {
             while let Some(Ok(msg)) = receiver.recv::<String>().await {
-                match msg { 
-                    WsEvent::Data(msg) => println!("received: {msg}; msg #{value}"),
+                match msg {
+                    WsEvent::Data(msg) => println!("received: {msg}"),
                     WsEvent::Close(frame) => println!("close: {frame:?}"),
+                    _ => (),
                 }
             }
         });

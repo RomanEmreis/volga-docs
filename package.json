@@ -5,8 +5,12 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "build-skill": "python3 ci/build-skill.py",
+    "predocs:build": "npm run build-skill",
     "docs:build": "vuepress build docs",
+    "predocs:clean-dev": "npm run build-skill",
     "docs:clean-dev": "vuepress dev docs --clean-cache",
+    "predocs:dev": "npm run build-skill",
     "docs:dev": "vuepress dev docs",
     "docs:update-package": "npx vp-update"
   },

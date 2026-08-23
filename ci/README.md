@@ -1,5 +1,21 @@
 # CI helpers
 
+## `build-skill.py`
+
+Packages `skill/volga/` as `docs/.vuepress/public/volga-skill.zip`, the archive
+the [Agent Skill](../docs/en/agent-skill.md) page hands out. It runs from npm's
+`predocs:build` / `predocs:dev` hooks, so any docs build ships an archive
+matching the tree in git; the zip itself is generated, not committed.
+
+```bash
+python3 ci/build-skill.py
+```
+
+Entries are written in sorted order with a fixed timestamp, so rebuilding an
+unchanged tree produces a byte-identical archive. The `volga/` prefix is kept
+deliberately — the directory name has to match the skill's `name`, so
+unzipping must produce `volga/` rather than loose files.
+
 ## `check-snippets.py`
 
 Compiles the Rust snippets on the site against the published `volga` crates, so
@@ -64,6 +80,32 @@ page never defines. Keep the fence plain and the checker skips it.
 
 `--default-mode compile` is how the current markers were chosen: run it, and
 every block that compiles unmarked is a candidate for a marker.
+
+### The Agent Skill
+
+`skill/` is read by a model rather than rendered, so its markdown carries no
+info-string markers and the default is inverted instead — most of its blocks
+are statement fragments:
+
+```bash
+python3 ci/check-snippets.py \
+  --docs-dir skill \
+  --default-mode compile-fragment \
+  --default-features "full auth-full macros dev-cert test"
+```
+
+CI runs exactly that. A block that cannot be self-contained — one showing a
+shape rather than a program — opts out with the HTML comment on the line
+above it:
+
+```markdown
+<!-- snippet: skip -->
+```
+
+The extra features are the ones `full` leaves out but the skill documents:
+`auth-full` for `#[derive(Claims)]`, `macros` for `#[http_header]`,
+`dev-cert` for the development certificate helper, and `test` for
+`TestServer`.
 
 `VOLGA_VERSION` (default `0.9`) selects the version the snippets are compiled
 against.

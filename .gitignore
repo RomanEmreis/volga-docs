@@ -4,3 +4,6 @@ docs/.vuepress/.temp
 docs/.vuepress/.dist
 docs/.vuepress/dist
 .snippet-target
+
+# Built from skill/ by ci/build-skill.py on every docs build
+docs/.vuepress/public/volga-skill.zip
