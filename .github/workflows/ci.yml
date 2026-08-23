@@ -46,3 +46,10 @@ jobs:
             snippets-${{ runner.os }}-volga${{ env.VOLGA_VERSION }}-
       - name: docs/ - the marked snippets
         run: python3 ci/check-snippets.py
+
+      - name: skill/ - the Agent Skill's snippets
+        run: |
+          python3 ci/check-snippets.py \
+            --docs-dir skill \
+            --default-mode compile-fragment \
+            --default-features "full auth-full macros dev-cert test"

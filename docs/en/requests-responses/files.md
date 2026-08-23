@@ -78,7 +78,7 @@ async fn main() -> std::io::Result<()> {
 ```
 
 If you need more control or do some job per each file you can use the [`next_field()`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html#method.next_field) method:
-```rust
+```rust compile
 use std::path::Path;
 use volga::{App, Multipart, ok};
 
@@ -87,7 +87,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // POST /upload
-    app.map_post("/upload", |files: Multipart| async move {
+    app.map_post("/upload", |mut files: Multipart| async move {
         let path = Path::new("path/to/folder");
         while let Some(field) = files.next_field().await? {
             // do something...

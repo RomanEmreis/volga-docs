@@ -44,7 +44,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 ## Detailed Walkthrough
-When the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) struct is instantiated, it represents your API and by default binds it to `http://localhost:7878`:
+When the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) struct is instantiated, it represents your API. Unless [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind) says otherwise it listens on port `7878` on **every interface** (`0.0.0.0:7878`), and on `127.0.0.1:7878` on Windows:
 ```rust compile-fragment
 let mut app = App::new();
 ```

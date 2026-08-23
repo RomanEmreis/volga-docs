@@ -70,7 +70,7 @@ const codeTabs = [
       '    app.add_singleton(InMemoryCache::default());',
       '',
       '    app.map_get("/user/{id}", |id: String, cache: Dc<InMemoryCache>| async move {',
-      '        let user = cache.inner.lock().unwrap().get(&id);',
+      '        let user = cache.inner.lock().unwrap().get(&id).cloned();',
       '        match user {',
       '            Some(user) => ok!(user),',
       '            None => not_found!("User not found"),',

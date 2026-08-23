@@ -164,7 +164,7 @@ volga = { version = "...", features = ["macros"] }
 ## Writing Response Headers
 
 The easiest way to respond with HTTP headers using the [`ok!`](https://docs.rs/volga/latest/volga/macro.ok.html) macro:
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]
@@ -172,7 +172,7 @@ async fn main() -> std::io::Result<()> {
    let mut app = App::new();
 
    app.map_get("/hello", || async {
-       ok!("Hello World!", [
+       ok!("Hello World!"; [
            ("Content-Type", "text/plain"),
            ("x-api-key", "some api key")
        ])

@@ -37,6 +37,10 @@ export default defineUserConfig({
             link: '/en/',
           },
           {
+            text: 'Agent Skill',
+            link: '/en/agent-skill',
+          },
+          {
             text: 'API Docs',
             link: 'https://docs.rs/volga/latest/volga/',
           },
@@ -85,6 +89,10 @@ export default defineUserConfig({
             prefix: '/en/advanced-patterns/',
             children: ['di', 'custom-trace-opt-head'],
           },
+          {
+            text: 'Agent Skill',
+            link: '/en/agent-skill',
+          },
         ],
       },
       '/ru/': {
@@ -93,6 +101,10 @@ export default defineUserConfig({
           {
             text: 'Главная',
             link: '/ru/',
+          },
+          {
+            text: 'Agent Skill',
+            link: '/ru/agent-skill',
           },
           {
             text: 'API Docs',
@@ -142,6 +154,10 @@ export default defineUserConfig({
             text: 'Продвинутые паттерны',
             prefix: '/ru/advanced-patterns/',
             children: ['di', 'custom-trace-opt-head'],
+          },
+          {
+            text: 'Agent Skill',
+            link: '/ru/agent-skill',
           },
         ],
       },

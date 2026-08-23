@@ -49,7 +49,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Подробное руководство
 
-Структура [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) представляет ваше API и по умолчанию привязывается к адресу `http://localhost:7878`:
+Структура [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) представляет ваше API. Если не вызвать [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind), сервер слушает порт `7878` на **всех интерфейсах** (`0.0.0.0:7878`), а на Windows — на `127.0.0.1:7878`:
 
 ```rust compile-fragment
 let mut app = App::new();

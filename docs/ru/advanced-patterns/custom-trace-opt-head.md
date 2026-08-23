@@ -7,7 +7,7 @@
 Метод `HEAD` возвращает заголовки без тела.
 
 Чтобы настроить поведение метода `HEAD`, явно определите его с помощью метода [`map_head`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_head):
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]
@@ -23,7 +23,7 @@ async fn main() -> std::io::Result<()> {
 
     // GET /resource
     app.map_get("/resource", || async {
-        ok!("Hello World!", [
+        ok!("Hello World!"; [
             ("x-custom-header", "some-value-get")
         ])
     });
@@ -64,7 +64,7 @@ async fn main() -> std::io::Result<()> {
 
 Метод `TRACE` полезен для отладки, так как он позволяет отслеживать путь запроса к серверу и возвращает сообщение запроса для диагностических целей:
 
-```rust
+```rust compile
 use volga::{App, HttpRequest, stream};
 
 #[tokio::main]
@@ -73,8 +73,8 @@ async fn main() -> std::io::Result<()> {
 
     // TRACE /
     app.map_trace("/", |req: HttpRequest| async move {
-        let boxed_body = req.into_boxed_body();
-        stream!(boxed_body, [
+        let body = req.into_body().into_data_stream();
+        stream!(body; [
             ("content-type", "message/http")
         ])
     });

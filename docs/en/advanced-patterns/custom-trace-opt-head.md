@@ -7,7 +7,7 @@ By default, when you map a handler to the `GET` method, Volga also maps it to th
 The `HEAD` method will return the headers without the body.
 
 To customize the behavior for the `HEAD` method, explicitly define it using the [`map_head`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_head) method:
-```rust
+```rust compile
 use volga::{App, ok};
 
 #[tokio::main]
@@ -23,7 +23,7 @@ async fn main() -> std::io::Result<()> {
 
     // GET /resource
     app.map_get("/resource", || async {
-        ok!("Hello World!", [
+        ok!("Hello World!"; [
             ("x-custom-header", "some-value-get")
         ])
     });
@@ -64,7 +64,7 @@ The example above includes the `Allow` header to indicate supported HTTP methods
 
 The `TRACE` method is useful for debugging, as it enables tracing the request path to the server and returns the request message for diagnostic purposes:
 
-```rust
+```rust compile
 use volga::{App, HttpRequest, stream};
 
 #[tokio::main]
@@ -73,8 +73,8 @@ async fn main() -> std::io::Result<()> {
 
     // TRACE /
     app.map_trace("/", |req: HttpRequest| async move {
-        let boxed_body = req.into_boxed_body();
-        stream!(boxed_body, [
+        let body = req.into_body().into_data_stream();
+        stream!(body; [
             ("content-type", "message/http")
         ])
     });
