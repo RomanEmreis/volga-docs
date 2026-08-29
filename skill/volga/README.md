@@ -4,13 +4,14 @@ A model-neutral [Agent Skill](https://agentskills.io/specification) for
 building HTTP services in Rust with the
 [volga](https://github.com/RomanEmreis/volga) web framework.
 
-Covers volga **0.9.8** (MSRV 1.90, edition 2024).
+Covers volga **0.9.9** (MSRV 1.90, edition 2024).
 
 ```
 volga/
 ├── SKILL.md                    the entrypoint the agent loads
 └── references/
     ├── routing.md              routes, groups, extractors, bodies, raw body, headers, cookies
+    ├── validation.md           Validate, Valid<E>, #[derive(Validate)], ValidationError
     ├── responses.md            response macros, IntoResponse, errors, Problem Details
     ├── middleware.md           with/wrap/attach/filter, CORS, compression, static files, rate limiting
     ├── di-config.md            dependency injection lifetimes, configuration files, hot reload

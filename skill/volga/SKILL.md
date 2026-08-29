@@ -1,9 +1,9 @@
 ---
 name: volga
-description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
+description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.9.8"
+  volga-version: "0.9.9"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -45,7 +45,9 @@ In an existing project, read `Cargo.toml` before touching anything:
 `full` covering almost everything is what makes the exceptions bite:
 `#[derive(Claims)]` needs `jwt-auth-full` (or `auth-full`), `#[http_header]`
 needs `macros`, self-signed dev certificates need `dev-cert`, and
-`TestServer` needs `test` as a **dev-dependency**. Adding one of those to
+`TestServer` needs `test` as a **dev-dependency**. `#[derive(Validate)]` is
+**not** one of them — `validation-derive` is in `full`, and the `Validate`
+trait and `Valid<E>` need no feature at all. Adding one of those to
 the `features` list of a `full` build is additive and always correct.
 
 ## Step 2 — route to the reference you need
@@ -55,6 +57,7 @@ Each file is self-contained; load only what the task calls for.
 | The task | Read |
 |---|---|
 | Routes, groups, path/query/JSON/form/file/multipart/header/cookie/raw-body extraction | `references/routing.md` |
+| Validating an extracted payload — `Validate`, `Valid<E>`, `#[derive(Validate)]`, `ValidationError` | `references/validation.md` |
 | Returning a response, status codes, streaming, errors, Problem Details | `references/responses.md` |
 | `with` / `wrap` / `attach` / `filter` / `tap_req` / `map_ok` / `map_err`, CORS, compression, static files, rate limiting | `references/middleware.md` |
 | Dependency injection, lifetimes, configuration files, hot reload | `references/di-config.md` |
@@ -158,7 +161,9 @@ One handler picks **one** style for path parameters:
 ```
 
 `Path<T>` is a **tuple**; `NamedPath<T>` is the named-struct one. Reaching
-for `Path<Params>` with a struct is the usual slip.
+for `Path<Params>` with a struct is the usual slip. The same distinction
+makes `ValidPath<T>` an alias for `Valid<NamedPath<T>>` — a tuple is not a
+type your crate can implement `Validate` for.
 
 ### 4. Bearer auth requires HTTPS and strips the token, by default
 

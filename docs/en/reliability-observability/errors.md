@@ -26,7 +26,7 @@ async fn main() -> std::io::Result<()> {
 ```
 In this example, we intentionally create a request handler that produces an error and define an error handler that generates an HTTP response with a `500` status code based on the error message.  
 
-For convenience, the [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) struct includes a `status` field that covers common cases (400, 401, 403, 404, etc.), allowing the macro usage to be updated as follows:  
+For convenience, the [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) struct exposes a [`status()`](https://docs.rs/volga/latest/volga/error/struct.Error.html#method.status) method that covers common cases (400, 401, 403, 404, etc.), allowing the macro usage to be updated as follows:  
 ```rust
 status!(error.status().as_u16(), "{:?}", error)
 ```
