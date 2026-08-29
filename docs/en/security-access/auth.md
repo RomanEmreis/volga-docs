@@ -241,10 +241,11 @@ claims! {
 
 ### Manual Implementation
 
-```rust
+```rust compile
+use serde::Deserialize;
 use volga::auth::AuthClaims;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 struct Claims {
     sub: String,
     role: String,
@@ -274,16 +275,23 @@ Volga provides a powerful [`Authorizer`](https://docs.rs/volga/latest/volga/auth
 * [`permissions(["read", "write"])`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.permissions.html): multiple permissions.
 * [`predicate(|claims| ...)`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.predicate.html): custom logic.
 
+::: info
+Since **v0.9.9**, `permission` is re-exported from `volga::auth` alongside its four siblings. On **0.9.8 and earlier**
+it was the only one of the five missing from that module, so the import below did not compile — reach for the full path
+[`volga::auth::authorizer::permission`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.permission.html) on those
+versions. The compiler's suggestion, `permissions`, is a different function.
+:::
+
 ### Example
 
-```rust
+```rust compile
 use serde::Deserialize;
 use volga::auth::{
     AuthClaims, Authorizer,
     role, roles, permission, permissions, predicate
 };
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 struct MyClaims {
     role: String,
     permissions: Vec<String>,

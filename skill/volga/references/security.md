@@ -122,8 +122,11 @@ Authorizers compose:
 
 <!-- snippet: skip -->
 ```rust
-use volga::auth::{role, roles, permissions, predicate};
-use volga::auth::authorizer::permission;   // note: not re-exported at volga::auth
+use volga::auth::{role, roles, permission, permissions, predicate};
+// `permission` is re-exported at `volga::auth` since 0.9.9. On 0.9.8 and
+// earlier it was the one of the five that was missing — reach for
+// `volga::auth::authorizer::permission` there. `permissions` is a different
+// function, whatever the compiler suggests.
 
 let policy = role("admin")
     .or(roles(["editor", "contributor"]))

@@ -240,10 +240,11 @@ claims! {
 
 ### Ручная реализация
 
-```rust
+```rust compile
+use serde::Deserialize;
 use volga::auth::AuthClaims;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 struct Claims {
     sub: String,
     role: String,
@@ -272,13 +273,24 @@ impl AuthClaims for Claims {
 * [`permissions(["read", "write"])`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.permissions.html) - по списку разрешений.
 * [`predicate(|claims| ...)`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.predicate.html) - кастомная логика.
 
+::: info
+Начиная с **v0.9.9** функция `permission` реэкспортируется из `volga::auth` наравне с четырьмя остальными. В **0.9.8 и
+раньше** она была единственной из пяти, отсутствовавшей в этом модуле, поэтому импорт из примера ниже не компилировался —
+на тех версиях используйте полный путь
+[`volga::auth::authorizer::permission`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.permission.html).
+Подсказка компилятора, `permissions`, — это другая функция.
+:::
+
 ### Пример
 
-```rust
-use volga::auth::{AuthClaims, role, roles, permission, permissions, predicate, Authorizer};
+```rust compile
 use serde::Deserialize;
+use volga::auth::{
+    AuthClaims, Authorizer,
+    role, roles, permission, permissions, predicate
+};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 struct MyClaims {
     role: String,
     permissions: Vec<String>,

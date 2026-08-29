@@ -10,6 +10,8 @@ is rejected for no obvious reason, look here before rewriting anything.
 | `argument never used` on an `ok!` / `status!` call | headers passed after a comma | use `;` before the header array |
 | `no method named map_get found for struct App` | `App` bound without `mut`, or a `with_*` called after routing | `let mut app = App::new()...;` then routes |
 | `cannot find derive macro Claims` | `jwt-derive` is not enabled (`full` does not include it) | add `jwt-auth-full` or `auth-full` |
+| `cannot find function permission in volga::auth` | it was not re-exported before 0.9.9 | upgrade, or use `volga::auth::authorizer::permission` — **not** `permissions`, which the compiler suggests and which is a different function |
+| `cannot find derive macro Validate` | `validation-derive` is not enabled | add it (it *is* in `full`) |
 | `cannot find attribute http_header` | `macros` is not enabled | add `macros` |
 | `cannot find function with_default_cors` | removed in 0.9.1 | `.set_cors(CorsConfig::default())` |
 | `cannot find function with_default_tracing` | removed in 0.9.1 | `.set_tracing(TracingConfig::default())` |
@@ -50,6 +52,22 @@ is rejected for no obvious reason, look here before rewriting anything.
 | everything under `/api` 404s after adding a filter | a `filter` returning `false` answers `404` |
 
 ## Version-by-version
+
+### 0.9.9
+Input validation: the `Validate` trait, the `Valid<E>` extractor with its
+`ValidJson` / `ValidQuery` / `ValidForm` / `ValidPath` aliases,
+`ValidationError`, `Invalid<E>` and `#[derive(Validate)]` (feature
+`validation-derive`, in `full`). Purely additive — see
+`references/validation.md`.
+
+`volga::auth::permission` is re-exported alongside `role`, `roles`,
+`permissions` and `predicate`; it was the only one of the five missing, so a
+copy of the built-in authorizer list did not compile before this.
+
+Fixed: query parameters vanished from the OpenAPI spec for any handler whose
+query struct had a typed optional field (`Option<String>`, `Option<u32>`, ...)
+— the operation was published with **no** parameters at all. `f32` / `f64` now
+publish `format: "float"` / `"double"` instead of a bare `number`.
 
 ### 0.9.8
 DPoP sender-constrained tokens in the client (RFC 9449). `TokenSet` gained
