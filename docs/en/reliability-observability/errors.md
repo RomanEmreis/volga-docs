@@ -32,6 +32,37 @@ status!(error.status().as_u16(), "{:?}", error)
 ```
 In fact, this is how the default error handler is implemented. If we remove the [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) method, the response remains unchanged. However, defining a custom error handler offers greater flexibility for advanced logging and tracing.  
 
+## The Fallback Handler
+
+[`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) registers the handler that answers a request no route matched. It takes the same arguments [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) does — anything implementing [`FromRequestParts`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestParts.html): headers, the URI, cookies, [`ClientIp`](https://docs.rs/volga/latest/volga/struct.ClientIp.html), [`Dc<T>`](https://docs.rs/volga/latest/volga/di/struct.Dc.html). Not the body: nothing matched, so there is no route to say how a body should be read, and path parameters are out for the same reason.
+
+```rust compile
+use volga::{App, ClientIp, http::Uri, error::Error, not_found, status};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_fallback(|uri: Uri, ip: ClientIp| async move {
+        not_found!("no route for {uri} (from {ip})")
+    });
+
+    // An error out of the fallback lands here, like any other
+    app.map_err(|error: Error| async move {
+        status!(error.status().as_u16(), "{:?}", error)
+    });
+
+    app.run().await
+}
+```
+
+::: warning Changed in 0.10.0
+* **The per-request scope is built for unmatched requests.** `ClientIp`, `CancellationToken`, `Config<T>`, `HostEnv` and `Dc<T>` now work inside a fallback handler instead of failing it with a `500`, and the configured request body limit applies there too — a fallback used to receive the connection's body unmetered.
+* **An error returned by a fallback handler is answered by the application's `map_err` handler**, as an error from any other handler is. It used to go to the built-in one, so a service that shaped its errors got one response for a failing route and a different one for a failing fallback.
+* **`FallbackHandler::call` takes an `HttpRequest`** rather than a `Request<Incoming>`, so a hand-written `impl FallbackHandler` has to take the new argument type. Every closure-shaped fallback that compiled before still compiles.
+* **`FromRawRequest` is removed.** It existed only to describe what a fallback handler could take, and it accepted exactly what `FromRequestParts` accepts, so `map_fallback` takes the same set without it. The `Cookies`, `SignedCookies` and `PrivateCookies` impls of it went with it; all three still implement `FromRequestParts`, `FromRequestRef` and `FromPayload`, so every use of them as an extractor is unchanged.
+:::
+
 ## Problem Details
 
 Volga fully supports the [Problem Details](https://www.rfc-editor.org/rfc/rfc9457) format, which provides machine-readable error details in HTTP responses. This eliminates the need to define custom error formats for HTTP APIs.  

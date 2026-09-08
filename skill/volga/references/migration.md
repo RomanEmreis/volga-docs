@@ -13,6 +13,10 @@ is rejected for no obvious reason, look here before rewriting anything.
 | `cannot find function permission in volga::auth` | it was not re-exported before 0.9.9 | upgrade, or use `volga::auth::authorizer::permission` — **not** `permissions`, which the compiler suggests and which is a different function |
 | `cannot find derive macro Validate` | `validation-derive` is not enabled | add it (it *is* in `full`) |
 | `cannot find attribute http_header` | `macros` is not enabled | add `macros` |
+| `no method named map_static_assets found for struct App` | renamed in 0.10.0 | `use_static_assets()` — there is no route to map any more |
+| `no method named without_implicit_head found for struct App` | removed in 0.10.0 | delete the call; a `GET` route answers `HEAD` itself, and mapping `map_head` overrides it |
+| `cannot find trait FromRawRequest` | removed in 0.10.0 | `map_fallback` takes `FromRequestParts`, which is the same set |
+| a hand-written `impl FallbackHandler` no longer compiles | `call` takes `HttpRequest` instead of `Request<Incoming>` in 0.10.0 | change the argument type |
 | `cannot find function with_default_cors` | removed in 0.9.1 | `.set_cors(CorsConfig::default())` |
 | `cannot find function with_default_tracing` | removed in 0.9.1 | `.set_tracing(TracingConfig::default())` |
 | `cannot find macro problem` | removed in 0.9.2 | `volga::error::Problem::new(..)` |
@@ -50,8 +54,75 @@ is rejected for no obvious reason, look here before rewriting anything.
 | the server listens on every interface | that is `App::new()`'s default off Windows. `bind` explicitly |
 | the process hangs or panics on start | `run_blocking()` called inside a Tokio runtime |
 | everything under `/api` 404s after adding a filter | a `filter` returning `false` answers `404` |
+| a route that answered `200` now answers `401` / `403` / `429` | 0.10.0: its group's `authorize` / `token_bucket` was registered *after* it and used to be skipped; a group is now a scope |
+| a `HEAD` health check that answered `200` now answers `401` / `403` | 0.10.0: `HEAD` travels through the `GET` route's middleware instead of a second bare route |
+| an unknown path answers `401` instead of `404` | 0.10.0: global short-circuiting middleware (`filter`, `authorize`, an early-returning `with`) now runs for unmatched requests |
+| clients hit the rate limit sooner than before | 0.10.0: a global limiter counts requests that match no route |
+| a route stopped answering after `use_static_files()` was added | 0.10.0: a file on disk answers before a route for the same path. Mount under a group prefix |
+| static files stopped being compressed, or lost their CORS headers | 0.10.0: the mount sits where it was registered. Call it after `use_compression()` / `use_cors()` |
+| `app.group("/{tenant}", \|g\| g.use_static_files())` serves nothing | 0.10.0: a mount matches a literal prefix; the accidental parameter-folding it relied on is gone. It warns at startup |
+| `NamedPath<T>` fails to deserialize, or reads `None` for a name in the pattern | 0.10.0: each endpoint binds the names its own pattern was written with, not the first route's through that position |
+| panic at registration: `ambiguous route` | one verb naming its own route twice under two parameter names, or a `GET` and a `HEAD` disagreeing. Name them identically or part on a literal segment |
+| `GET /` serves a stale `index.html` after a deploy | pre-0.9.11: the shell was served `immutable`. Upgrade, or `with_shell_cache_control(..)` |
 
 ## Version-by-version
+
+### 0.10.0 — routing, middleware and static files
+The largest behavioural release of the line. Nothing here is opt-in.
+
+* **Global middleware runs for requests that match no route.** `wrap`,
+  `with`, `filter`, `map_ok`, CORS, compression, tracing and **rate
+  limiting** were all skipped for a `404` or a `405` and now are not. A
+  global authorizer answers `401` where the router answered `404`; a global
+  limiter's budget is spent by traffic that never touched it before.
+  `HttpContext::matched_route()` tells a matched request from an unmatched
+  one. The per-request scope is built for these requests, so `ClientIp`,
+  `CancellationToken`, `Config<T>`, `HostEnv` and `Dc<T>` work in a
+  fallback; an error out of a fallback goes to the application's `map_err`.
+* **Static files are middleware, not routing.** `map_static_assets` →
+  `use_static_assets`; `use_static_files` keeps its name. No startup walk,
+  no depth ceiling, nothing in the router — so `use_static_assets()` and
+  `map_get("/{id}", ..)` coexist. A file answers before a route for the
+  same path. Where the call sits in the pipeline is where the mount sits. A
+  group prefix must be literal, and a group's CORS policy does not reach
+  the files. `static-files` implies `middleware`.
+* **A route group is a scope.** Its middleware, CORS policy and OpenAPI
+  config apply to every route it registered, whatever the order inside the
+  closure — a route mapped above `g.authorize(..)` used to escape it. The
+  `must be called before any map_*` warning is gone with the hazard.
+* **`HEAD` goes through the `GET` route.** No second bare route, so route
+  and group middleware and CORS now apply. `App::without_implicit_head` is
+  removed.
+* **Parameter names are per-endpoint.** `POST /users/{name}` beside
+  `GET /users/{id}` binds `name`, not `id`. Two spellings that cannot be
+  told apart — one verb naming its own route twice, or a `GET` and a `HEAD`
+  disagreeing — panic at registration.
+* **Re-mapping a route replaces it**, middleware included. `/x`, `/x/` and
+  `//x` are one route everywhere.
+* `FromRawRequest` removed; `FallbackHandler::call` takes an `HttpRequest`.
+* `HttpContext::matched_route`, `App::use_static_assets` and
+  `RouteGroup::use_static_assets` are the new API surface.
+
+### 0.9.11
+`HostEnv::with_asset_cache_control` / `with_shell_cache_control` and the
+matching getters: the static file server's `Cache-Control` is configured
+by the role of the file. **The index and the fallback file stopped being
+served `immutable`** — `GET /` answered `max-age=86400, public, immutable`
+and now answers `no-cache`, so a user who reloaded after a deploy no longer
+keeps yesterday's shell for a day. Assets are unchanged.
+`CacheControl::ASSET` / `SHELL` / `EMPTY` constants, `CacheControl::asset()`
+/ `shell()` header presets, `ResponseCaching::with_cache_control`.
+Conditional requests on static files were fixed in five ways, all on the
+hot path that change creates. Registering a group-level setting after a
+route in that group started warning (0.10.0 removed the hazard instead).
+
+### 0.9.10
+Static files nested more than one level deep were served
+non-deterministically — the handler folded over `HashMap` iteration order,
+so `GET /assets/app.css` reached the filesystem as `assets/app.css` or
+`app.css/assets` depending on the request. It hit every Vite/webpack/Parcel
+build. A `+` in a request target is now the literal character, and a
+malformed `%XX` answers `400`.
 
 ### 0.9.9
 Input validation: the `Validate` trait, the `Valid<E>` extractor with its
@@ -132,6 +203,31 @@ Header mutation methods return `&mut Self`; `append_header` is infallible.
 `MapOkHandler` → `MapOk`, `MapErrHandler` → `MapErr`, and `type Future` was
 removed from each. CORS, JWT auth and rate limiting were reimplemented on
 top of `attach`.
+
+## Upgrading 0.9.x → 0.10.x, in order
+
+1. Bump the version and run `cargo check`. Only four things fail to
+   compile: `map_static_assets`, `without_implicit_head`, `FromRawRequest`,
+   and a hand-written `impl FallbackHandler`.
+2. **Then read the behaviour changes, because nothing else will fail to
+   compile.** Walk every route group and check what its middleware now
+   reaches: a route mapped above the group's `authorize`, `token_bucket` or
+   `cors_with` used to escape it and no longer does.
+3. Check every `HEAD` consumer — health checks especially. A `HEAD` behind
+   an authorized route now answers `401` / `403`.
+4. Audit global middleware for what it does to a `404`. A global `filter`
+   or `authorize` now decides unmatched requests, and a global rate limiter
+   counts them: re-size the budget against real traffic, not against the
+   route count.
+5. Move the `use_static_files()` / `use_static_assets()` call to where it
+   belongs in the pipeline — after `use_compression()` and `use_cors()`.
+   Confirm no route shares a path with a file on disk, since the file now
+   wins, and that no group serving files has a parameter in its prefix.
+6. Grep for `NamedPath` and any by-name parameter read on a route whose
+   pattern shares a position with another verb's. The name it receives is
+   now its own pattern's.
+7. Start the app. Two spellings that used to be silently merged now panic
+   at registration, and the message names both patterns and the fix.
 
 ## Upgrading 0.8.x → 0.9.x, in order
 

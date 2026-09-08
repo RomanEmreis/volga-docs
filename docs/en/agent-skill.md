@@ -4,7 +4,7 @@ A packaged [Agent Skill](https://agentskills.io/specification) that teaches a
 coding assistant to write Volga correctly — the same material as this site,
 reorganised for a model rather than a reader.
 
-<SkillDownload href="/volga-skill.zip" label="Download volga-skill.zip" note="~31 KiB · MIT · tracks volga 0.9.8" />
+<SkillDownload href="/volga-skill.zip" label="Download volga-skill.zip" note="~44 KiB · MIT · tracks volga 0.10.0" />
 
 Source: [`skill/volga`](https://github.com/RomanEmreis/volga-docs/tree/main/skill/volga).
 
@@ -12,12 +12,14 @@ Source: [`skill/volga`](https://github.com/RomanEmreis/volga-docs/tree/main/skil
 
 Assistants are confidently wrong about Volga, and for a specific reason: the
 0.9 line changed security defaults and removed a family of helper methods,
-while most Volga code a model has seen predates it. So the failure mode is
-not a forgotten method name. It is an assistant writing
-`ok!("hi", [("x-key", "v")])` with a comma instead of a semicolon, reaching
-for `with_default_cors()`, calling `use_cors()` on an app that never
-configured CORS, or shipping a bearer-auth setup that answers `400` to every
-request once it sits behind a TLS-terminating proxy.
+0.10.0 rebuilt how requests reach middleware and how route groups apply
+what they hold, while most Volga code a model has seen predates all of it.
+So the failure mode is not a forgotten method name. It is an assistant
+writing `ok!("hi", [("x-key", "v")])` with a comma instead of a semicolon,
+reaching for `with_default_cors()`, calling `use_cors()` on an app that
+never configured CORS, mapping static files with `map_static_assets()`, or
+shipping a bearer-auth setup that answers `400` to every request once it
+sits behind a TLS-terminating proxy.
 
 The skill front-loads exactly those traps, then routes to detail on demand.
 
@@ -33,7 +35,7 @@ The skill front-loads exactly those traps, then routes to detail on demand.
 | `references/security.md` | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, the client crate, TLS, HSTS |
 | `references/realtime.md` | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events |
 | `references/operations.md` | Feature flags, graceful shutdown, cancellation, tracing, OpenAPI, `TestServer` |
-| `references/migration.md` | Symptom → cause, and the 0.8.x → 0.9.x upgrade path |
+| `references/migration.md` | Symptom → cause, and the 0.9.x → 0.10.x and 0.8.x → 0.9.x upgrade paths |
 
 `SKILL.md` stays short on purpose: an entrypoint an agent always reads, and
 eight references it loads only when the task needs one.
@@ -111,12 +113,12 @@ python3 ci/check-snippets.py --docs-dir skill --default-mode compile-fragment --
 
 ## Version
 
-The skill tracks volga **0.9.8** on MSRV **1.90**. The frontmatter records
+The skill tracks volga **0.10.0** on MSRV **1.90**. The frontmatter records
 both, so an assistant can tell whether the skill matches the crate in front
 of it:
 
 ```yaml
 metadata:
-  volga-version: "0.9.8"
+  volga-version: "0.10.0"
   msrv: "1.90"
 ```

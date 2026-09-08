@@ -143,4 +143,14 @@ When using only named policies, endpoints without an explicitly attached policy 
 CORS can be explicitly disabled on a route (or group) using [`disable_cors()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.disable_cors).
 This is especially useful when you have a **default** policy enabled globally, but need to opt out for specific endpoints.
 
+## CORS on Unmatched Requests
+
+Since **0.10.0** a `404` and a `405` carry the CORS headers the configured policy would have put on a `200`. Global middleware now runs for requests that matched no route, so a browser gets a usable CORS error instead of an opaque one.
+
+A **preflight** is still answered `204` only for a route that exists — answering one for a path or a method the router did not match would advertise an endpoint that is not there. Those requests fall through to the `404` / `405` and pick the headers up on the way out. The CORS middleware tells the two apart with [`matched_route()`](https://docs.rs/volga/latest/volga/middleware/struct.HttpContext.html#method.matched_route).
+
+::: warning Static files
+A [route group's](/volga-docs/en/getting-started/route-groups.html) CORS policy does not reach the files that group serves. A policy is resolved from the route that matched, and a static file is served without one, so the policy that applies to files is the **application's** — the one configured with [`with_cors()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_cors). For the same reason a preflight aimed at a file's path is answered as one for an unmatched path: a `404` carrying the policy's headers rather than a `204`. Cross-origin `GET`s of static content never send one anyway.
+:::
+
 A complete example is available [here](https://github.com/RomanEmreis/volga/blob/main/examples/cors/src/main.rs).

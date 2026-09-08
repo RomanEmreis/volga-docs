@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.9.9"
+  volga-version: "0.10.0"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -18,13 +18,15 @@ server configuration. Handlers are plain async functions or closures whose
 arguments are extractors and whose return value is anything that implements
 `IntoResponse`.
 
-**This skill describes volga 0.9.x.** The 0.9 line changed security
-defaults and removed a set of `with_default_*` helpers, and the response
-macros use a **semicolon** before custom headers. Most volga code a model
-has seen predates that. The [Non-negotiables](#non-negotiables) below are
-the places where writing pre-0.9 volga still *looks* right and does not
-compile — or compiles and rejects every request in production. Read them
-before writing code, every time.
+**This skill describes volga 0.10.x.** The 0.9 line changed security
+defaults and removed a set of `with_default_*` helpers; 0.10.0 rebuilt how
+requests reach middleware, renamed the static file mount and made route
+groups a real scope. The response macros use a **semicolon** before custom
+headers. Most volga code a model has seen predates all of it. The
+[Non-negotiables](#non-negotiables) below are the places where writing
+older volga still *looks* right and does not compile — or compiles and
+rejects every request in production. Read them before writing code, every
+time.
 
 ## Step 1 — establish the version and the features
 
@@ -37,8 +39,9 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.9"` | This skill applies as written |
-| `volga = "0.8"` or older | Different auth defaults and helper methods. Read `references/migration.md` first |
+| `volga = "0.10"` | This skill applies as written |
+| `volga = "0.9"` | Static files, route groups, `HEAD` and unmatched requests all behave differently. Read `references/migration.md` first |
+| `volga = "0.8"` or older | Different auth defaults and helper methods too. Read `references/migration.md` first |
 | no `features` key | Only `http1` is on. Nearly everything below needs a feature — check the table in `references/operations.md` |
 | `features = ["full"]` | Everything except `dev-cert`, `macros`, `jwt-derive` and `test`. Those four are **not** in `full` |
 
@@ -64,7 +67,7 @@ Each file is self-contained; load only what the task calls for.
 | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, DPoP, machine-to-machine grants, TLS, HSTS | `references/security.md` |
 | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events | `references/realtime.md` |
 | Feature flags, tracing, cancellation, graceful shutdown, OpenAPI, tests, deployment | `references/operations.md` |
-| A compile error on code that "used to work", or upgrading from 0.8.x | `references/migration.md` |
+| A compile error on code that "used to work", or upgrading from 0.9.x / 0.8.x | `references/migration.md` |
 
 ## An app that works
 
@@ -113,7 +116,7 @@ reachable from the network, `bind` explicitly.
 
 ## Non-negotiables
 
-Each one is a real difference between 0.9.x and what older code or an
+Each one is a real difference between 0.10.x and what older code or an
 untrained guess produces.
 
 ### 1. Custom headers come after a semicolon
@@ -238,6 +241,35 @@ Since 0.9.7 an address that cannot be resolved is an `io::Error` out of
 unbracketed IPv6 (`::1:7878`) and zone-scoped IPv6 are all accepted and
 resolved when the server starts.
 
+### 13. `map_static_assets` is `use_static_assets`, and files answer before routes
+
+Since 0.10.0 the static file server is middleware, not routing.
+`map_static_assets()` no longer exists — the call is `use_static_assets()`,
+and `use_static_files()` (mount + fallback file) keeps its name. Where you
+put the call is where it sits in the pipeline: after `use_compression()` and
+`use_cors()`, before anything that should not run for a file. A `GET` or
+`HEAD` whose target names a file on disk is answered by the mount before
+routing sees it.
+
+### 14. Global middleware runs for requests that match no route
+
+Since 0.10.0 a `404` and a `405` travel through the global chain. A global
+`filter`, an early-returning `with`, or `authorize` now decides those
+requests — a global authorizer answers `401` where the router used to answer
+`404` — and a global rate limiter **counts** them. `ctx.matched_route()` is
+how middleware tells a matched request from an unmatched one.
+
+### 15. A route group is a scope, and `without_implicit_head` is gone
+
+A group applies its middleware, CORS policy and OpenAPI config to every
+route it registered, whatever the order inside the closure — a route mapped
+above `g.authorize(..)` used to escape it and no longer does. `HEAD` is
+answered by the `GET` route itself rather than by a second bare route, so it
+now travels through that route's middleware; `App::without_implicit_head()`
+is removed. Two routes that reach one position under **different parameter
+names** panic at registration when they are the same verb, or a `GET` and a
+`HEAD`.
+
 ## Checklist before handing code back
 
 - [ ] Every custom-header array is preceded by `;`, not `,`
@@ -245,4 +277,6 @@ resolved when the server starts.
 - [ ] Every optional API used is covered by a feature in `Cargo.toml`
 - [ ] Each `with_*` that needs it has its matching `use_*`
 - [ ] No `.unwrap()` in a handler — return `HttpResult` and use `?`
+- [ ] `use_static_assets()`, not `map_static_assets()`; the mount is registered where it belongs in the pipeline
+- [ ] Global middleware that should not see unmatched requests checks `ctx.matched_route()`
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean

@@ -21,15 +21,38 @@ app.map_connect("/", connect);
 app.map("PURGE", "/cache/{key}", purge);
 ```
 
-`map_get` also answers `HEAD` for the same path — headers, no body. Disable
-that with `App::without_implicit_head()`, or override it by mapping
-`map_head` explicitly for the path.
+`map_get` also answers `HEAD` for the same path — headers, no body. Since
+0.10.0 there is no second route behind that: routing hands a `HEAD` request
+with no route of its own to the `GET` route, so it travels through that
+route's middleware, group middleware and CORS policy. A `HEAD` health check
+against a route behind `authorize` now answers `401` / `403` where it used
+to answer `200`. `App::without_implicit_head()` is **removed**; map
+`map_head` explicitly to override the path, which takes precedence and runs
+its own middleware and none of the `GET` route's.
+
+Two routes reaching one position under **different parameter names** panic
+at registration in two cases — one verb naming its own route twice
+(`map_get("/users/{id}")` then `map_get("/users/{name}")`), and a `GET` and
+a `HEAD` disagreeing. Any other verb may name the position whatever it
+likes. See "Path parameters" below.
+
+Mapping a route that is already mapped **replaces** it, along with the
+middleware bound to the registration being replaced. `/x`, `/x/` and `//x`
+are one route everywhere it is remembered.
 
 Unmatched paths go to the fallback:
 
 ```rust
 app.map_fallback(|| async { not_found!("no such route") });
 ```
+
+A fallback takes anything implementing `FromRequestParts` — headers, the
+URI, cookies, `ClientIp`, `Dc<T>`, `HostEnv`, `Config<T>` — but not the
+body and not path parameters. Since 0.10.0 the per-request scope is built
+for these requests, so those extractors work rather than failing with a
+`500`, and an error out of a fallback is answered by the application's
+`map_err`. `FromRawRequest` is removed; `FallbackHandler::call` now takes
+an `HttpRequest`.
 
 ## Route groups
 
@@ -45,6 +68,15 @@ app.group("/api/v1", |api| {
 A group is the unit that middleware, CORS policies, rate-limit policies and
 authorization attach to — anything callable on a `Route` is callable on the
 group, and applies to every route inside it.
+
+Since 0.10.0 a group is a real **scope**: it applies what it holds once its
+closure returns, so a `g.with(require_api_key)` written *below* a route
+reaches that route too. Before 0.10.0 the group read its configuration at
+each `map_*`, and anything registered after a route silently missed it —
+which is how routes ended up escaping their group's `authorize` or
+`token_bucket`. Middleware still *runs* in registration order, an outer
+scope wraps an inner one, and a CORS policy chosen by a route or a nested
+group is not replaced by the enclosing group's.
 
 ## Handlers
 
@@ -101,6 +133,14 @@ app.map_get("/hello/{name}/{age}", |NamedPath(p): NamedPath<Params>| async move 
 
 Any type implementing `FromStr` works as a positional parameter; a value
 that fails to parse answers `400` before the handler runs.
+
+Since 0.10.0 each endpoint binds the names **its own pattern** was written
+with, so `POST /users/{name}` mapped beside `GET /users/{id}` binds `name`.
+Before 0.10.0 the whole position took whichever name reached it first, so
+`NamedPath<T>` on the `POST` was handed `id` and failed to deserialize —
+and a handler written around that, reading `id` from a route that says
+`{name}`, now reads nothing. Positional extractors never looked at the name
+and are unaffected.
 
 ## Query parameters
 

@@ -84,6 +84,48 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
+## Parameter Names Are Per-Route
+
+Since **0.10.0** every endpoint carries the parameter names its own pattern was written with, and the request reaching it is labelled from those.
+
+```rust compile
+use volga::{App, NamedPath, HttpResult, ok};
+use std::collections::HashMap;
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_get("/users/{id}", by_id);
+    app.map_post("/users/{name}", by_name); // binds `name`, not `id`
+
+    app.run().await
+}
+
+async fn by_id(NamedPath(p): NamedPath<HashMap<String, String>>) -> HttpResult {
+    ok!("{:?}", p.get("id"))
+}
+
+async fn by_name(NamedPath(p): NamedPath<HashMap<String, String>>) -> HttpResult {
+    ok!("{:?}", p.get("name"))
+}
+```
+
+::: warning Fixed in 0.10.0
+A node in the route tree holds a single dynamic child, because a parameter is matched by the position it sits at and not by what it is called — and that child used to hold the name as well, the one whichever route reached the position first was written with. Every other route through that position was then labelled with that name: the `POST /users/{name}` above answered correctly but bound its parameter as `id`, so `NamedPath<T>` and everything else reading a parameter by name read a key nobody wrote, and the startup route listing printed `POST /users/{id}`.
+
+**A handler written around the old behaviour — reading `id` from a route that says `{name}` — now reads nothing.** Positional extractors (`id: i32`, `Path<(A, B)>`) never looked at the name and are unaffected.
+:::
+
+### Two cases that panic at registration
+
+Two spellings cannot be told apart that way, so they are reported where they are written instead of being swallowed. Both panic at registration, naming the two patterns with their verbs and what to write instead:
+
+* **One verb naming its own route twice** — `map_get("/users/{id}", ..)` followed by `map_get("/users/{name}", ..)`. The second registration replaces the first and takes its middleware with it: one route ends up mapped rather than two, and the differing name says that was not the intention.
+* **A `GET` and a `HEAD` disagreeing.** A `HEAD` request with no route of its own is answered by the `GET` route (RFC 9110 §9.3.2), so the two describe one resource and cannot name what identifies it differently.
+
+Any other verb may name the position whatever it likes, and two routes on one verb that part at a position — `/users/{id}/posts` beside `/users/{name}/comments` — never meet at an endpoint and keep their own names too. A group prefix counts the same way, being a route pattern like any other.
+
 Using these examples, you can add dynamic routing to your Volga-based web server, enhancing the flexibility and functionality of your applications.
 
 Check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/route_params/src/main.rs)

@@ -72,8 +72,12 @@ App::new()
     .with_http2_limits(|l| l /* ... */)
     .with_no_delay()
     .without_greeter()          // no startup banner
-    .without_implicit_head()    // stop GET routes answering HEAD
 ```
+
+`without_implicit_head()` is **removed** in 0.10.0. A `GET` route answers
+`HEAD` itself rather than through a second bare route, so there is nothing
+left to switch off, and `HEAD` is required of a general-purpose server
+(RFC 9110 §9.1). Map a `HEAD` route that says so if some path must fail.
 
 ## Graceful shutdown
 

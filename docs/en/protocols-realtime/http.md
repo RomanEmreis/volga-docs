@@ -29,7 +29,7 @@ app.map_trace("/items", || async { ok!() });
 ```
 
 ::: tip
-`HEAD` is mapped implicitly for every `GET` route, so you only need [`map_head`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_head) for a custom implementation. See [Custom Handling of HEAD, OPTIONS, and TRACE](/volga-docs/en/advanced-patterns/custom-trace-opt-head.html).
+A `HEAD` request with no route of its own is answered by the `GET` route for the same path — through that route's middleware and CORS policy since 0.10.0 — so you only need [`map_head`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_head) for a custom implementation. See [Custom Handling of HEAD, OPTIONS, and TRACE](/volga-docs/en/advanced-patterns/custom-trace-opt-head.html).
 :::
 
 ### The `QUERY` method
