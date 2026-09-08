@@ -32,6 +32,37 @@ status!(error.status().as_u16(), "{:?}", error)
 ```
 Фактически, именно так реализован обработчик ошибок по умолчанию. Если мы удалим метод [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err), ответ останется неизменным. Однако переопределение пользовательского обработчика ошибок обеспечивает большую гибкость для логирования и трассировки.
 
+## Fallback-обработчик
+
+[`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) регистрирует обработчик, который отвечает на запрос, не совпавший ни с одним маршрутом. Он принимает те же аргументы, что и [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) — всё, что реализует [`FromRequestParts`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestParts.html): заголовки, URI, куки, [`ClientIp`](https://docs.rs/volga/latest/volga/struct.ClientIp.html), [`Dc<T>`](https://docs.rs/volga/latest/volga/di/struct.Dc.html). Но не тело: ничего не совпало, значит нет маршрута, который сказал бы, как это тело читать; по той же причине недоступны и параметры пути.
+
+```rust compile
+use volga::{App, ClientIp, http::Uri, error::Error, not_found, status};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_fallback(|uri: Uri, ip: ClientIp| async move {
+        not_found!("no route for {uri} (from {ip})")
+    });
+
+    // Ошибка из fallback попадёт сюда, как и любая другая
+    app.map_err(|error: Error| async move {
+        status!(error.status().as_u16(), "{:?}", error)
+    });
+
+    app.run().await
+}
+```
+
+::: warning Изменено в 0.10.0
+* **Скоуп запроса создаётся и для несовпавших запросов.** `ClientIp`, `CancellationToken`, `Config<T>`, `HostEnv` и `Dc<T>` теперь работают внутри fallback-обработчика, а не роняют его в `500`, и настроенный лимит тела запроса там тоже действует — раньше fallback получал тело соединения без ограничений.
+* **Ошибку, возвращённую fallback-обработчиком, обрабатывает `map_err` приложения**, как и ошибку любого другого обработчика. Раньше она уходила во встроенный обработчик, поэтому сервис, формировавший свои ошибки, получал один ответ для упавшего маршрута и другой — для упавшего fallback.
+* **`FallbackHandler::call` принимает `HttpRequest`**, а не `Request<Incoming>`, поэтому написанный вручную `impl FallbackHandler` должен принимать новый тип аргумента. Все fallback-обработчики в виде замыканий, которые компилировались раньше, компилируются и сейчас.
+* **`FromRawRequest` удалён.** Он существовал только чтобы описать, что может принимать fallback-обработчик, и принимал ровно то же, что принимает `FromRequestParts`, поэтому `map_fallback` принимает тот же набор и без него. Вместе с ним удалены его реализации для `Cookies`, `SignedCookies` и `PrivateCookies`; все три по-прежнему реализуют `FromRequestParts`, `FromRequestRef` и `FromPayload`, поэтому их использование в качестве экстракторов не изменилось.
+:::
+
 ## Problem Details
 
 Волга полностью поддерживает формат [Problem Details](https://www.rfc-editor.org/rfc/rfc9457), который предоставляет машиночитаемые сведения об ошибках в ответах HTTP. Это устраняет необходимость определять пользовательские форматы ошибок для API.

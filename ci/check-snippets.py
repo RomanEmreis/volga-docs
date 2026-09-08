@@ -56,7 +56,7 @@ since Cargo unifies features across a workspace.
 Usage: python3 ci/check-snippets.py [--docs-dir docs] [--keep]
                                     [--default-mode {none,compile,compile-fragment}]
                                     [--default-features FEATURES]
-Env:   VOLGA_VERSION (default "0.9")
+Env:   VOLGA_VERSION (default "0.10")
 """
 
 from __future__ import annotations
@@ -75,7 +75,7 @@ FENCE = re.compile(r"^```rust([^\n]*)\n(.*?)^```", re.S | re.M)
 # An optional directive on the line immediately above a fence. Wins over the
 # info string, and is how a block opts out of a tree checked by default.
 DIRECTIVE = re.compile(r"<!--\s*snippet:([^>]*?)-->\s*\n\Z", re.S)
-VOLGA_VERSION = os.environ.get("VOLGA_VERSION", "0.9")
+VOLGA_VERSION = os.environ.get("VOLGA_VERSION", "0.10")
 DEFAULT_FEATURES = "full"
 
 FRAGMENT_HEAD = (

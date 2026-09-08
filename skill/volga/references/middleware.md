@@ -56,6 +56,42 @@ Inside `wrap` there is no extractor injection — resolve dependencies from
 the context: `ctx.resolve::<T>()` (needs `T: Clone`) or
 `ctx.resolve_shared::<T>()` (gives `Arc<T>`).
 
+### Unmatched requests reach global middleware
+
+Since 0.10.0 routing's three outcomes — the matched route, the fallback,
+and a `405` with its `Allow` header — all travel through the **global**
+chain. Before that, a request nothing matched skipped the pipeline
+entirely: no `wrap`, no `with`, no CORS headers, no compression, and **no
+rate limiting** — a global `use_token_bucket(by::ip())` was bypassed
+completely by asking for a path that does not exist.
+
+Three consequences:
+
+* A short-circuiting global middleware (`filter`, an early-returning
+  `with`, `authorize`) now decides unmatched requests too — a global
+  authorizer answers `401` where the router used to answer `404`.
+* A global rate limiter **counts** unmatched requests, so a budget sized
+  against the service's own routes is spent sooner than before.
+* The per-request scope exists for them, so `ClientIp`,
+  `CancellationToken`, `Config<T>`, `HostEnv` and `Dc<T>` work in a
+  fallback handler.
+
+`ctx.matched_route()` is `true` only when routing matched an endpoint, and
+answers the same at every layer:
+
+<!-- snippet: skip -->
+```rust
+app.wrap(|ctx, next| async move {
+    if !ctx.matched_route() {
+        return next(ctx).await;      // nothing to meter here
+    }
+    next(ctx).await
+});
+```
+
+Per-route and per-group middleware are unaffected — those belong to a route
+that by definition matched.
+
 ### `attach` — reusable middleware as a type
 
 <!-- snippet: skip -->
@@ -147,6 +183,11 @@ app.use_cors();                        // required; panics if nothing was config
   `cors_with("api")` is called on a route or group — routes without it emit
   no CORS headers at all, with no warning.
 * `disable_cors()` opts a route or group out of the default policy.
+* Since 0.10.0 a `404` and a `405` carry the policy's headers. A
+  **preflight** is still answered `204` only for a route that exists;
+  everything else falls through and picks the headers up on the way out.
+* A group's policy does not reach the static files that group serves — the
+  application's does.
 * `with_credentials()` cannot be combined with `with_any_origin()`,
   `with_any_header()` or `with_any_method()` — `use_cors()` panics on that
   combination.
@@ -178,17 +219,65 @@ let mut app = App::new()
         .with_content_root("/static")
         .with_fallback_file("404.html"));
 
-app.use_static_files();    // = map_static_assets() + map_fallback_to_file()
+app.use_compression();     // files are compressed
+app.use_cors();            // files carry the CORS headers
+app.use_static_files();    // = use_static_assets() + map_fallback_to_file()
 ```
 
-`map_static_assets()` maps `GET` and `HEAD` for everything under the content
-root, with `/` serving the index file. The fallback is only wired if a
-fallback file was configured — pointing it at `index.html` is the SPA
-setup. `with_files_listing()` enables directory browsing; leave it off in
+Since 0.10.0 this is **middleware, not routing**. `map_static_assets()` is
+renamed `use_static_assets()` — nothing is mapped any more — and it answers
+`GET` and `HEAD` for everything under the content root, with `/` serving the
+index file, at any depth. The fallback is only wired if a fallback file was
+configured — pointing it at `index.html` is the SPA setup.
+`with_files_listing()` enables directory browsing; leave it off in
 production.
+
+What follows from the mount being middleware:
+
+* **Where you call it is where it sits.** Register it after
+  `use_compression()` and `use_cors()`, before anything that should not run
+  for a request answered from disk.
+* **A file answers before a route does.** A `GET`/`HEAD` naming a file on
+  disk is served even where a route was mapped for the same path. Any other
+  method falls through to routing.
+* **Nothing reaches the router**, so no route is shadowed, none of it shows
+  up in the route listing or an OpenAPI spec, and `use_static_assets()`
+  beside `map_get("/{id}", ..)` now works.
+* **`static-files` implies `middleware`.**
+
+Mount under a group prefix to keep files to one part of the URL space —
+`app.group("/static", |g| g.use_static_files())`. The prefix must be
+**literal**: `group("/{tenant}", ..)` serves nothing and warns at startup.
+The group's middleware wraps the files; the group's **CORS policy does
+not** — a file is served without a matched route, so the application's
+policy applies.
+
+Traversal is refused by construction: a `.`, a `..`, an encoded separator
+(`%2F`) or an embedded NUL is declined rather than looked up.
 
 `HostEnv` can also be built standalone (`HostEnv::new("/static")`, then
 `set_host_env(env)`) and extracted in handlers and middleware.
+
+### Caching
+
+A file's `Cache-Control` is chosen by the role its name gives it: **assets**
+(content-hashed names) get `max-age=86400, public, immutable`, and the
+**shell** (the index and the fallback file) gets `no-cache`. Since 0.9.11
+the shell is no longer served `immutable` — it used to be, so a user who
+reloaded after a deploy kept yesterday's `index.html` for up to a day.
+
+<!-- snippet: skip -->
+```rust
+App::new().with_host_env(|env| env
+    .with_asset_cache_control(|cc| cc.with_max_age(60 * 60))
+    .with_shell_cache_control(|cc| cc.with_no_store()));
+```
+
+Read back with `asset_cache_control()` / `shell_cache_control()`; the two
+defaults are the `CacheControl::ASSET` / `CacheControl::SHELL` constants,
+and `CacheControl::asset()` / `CacheControl::shell()` are the ready header
+presets for a handler. `App::with_cache_control` does **not** reach the
+static file server.
 
 ## Rate limiting (feature `rate-limiting`)
 
@@ -232,6 +321,11 @@ the real client rather than the proxy.
 
 Registering a policy does not activate it — the matching `use_*` or
 per-route call is what applies it.
+
+Since 0.10.0 a **global** limiter also counts requests that match no route,
+so a budget sized against the service's own routes is spent sooner than it
+used to be. A **group** limiter now reaches every route the group
+registered, whatever the order inside the closure.
 
 The default store is an in-memory `DashMap`. For multi-instance
 deployments implement `TokenBucketStore` / `FixedWindowStore` /

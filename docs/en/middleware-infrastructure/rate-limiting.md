@@ -55,6 +55,14 @@ Rate limiting middleware can be attached at three levels:
 * **Route group** — a set of routes sharing a prefix
 * **Individual route** — a single endpoint
 
+::: warning Changed in 0.10.0
+**Global** now really does mean all incoming requests, including the ones that match no route. Before 0.10.0 the global middleware pipeline was entered from a single arm of the dispatcher, so `use_token_bucket(by::ip())` was bypassed completely by asking for a path that does not exist — which is what a scanner or a naive flood does by default. For an app whose fallback serves an SPA shell, each of those unmetered requests was a filesystem read plus a full HTML body rather than a cheap `404`.
+
+A limiter's budget is now spent by traffic that previously did not touch it, so **a service sized against its own routes may see clients hit the limit sooner than before**. Middleware that should skip unmatched requests can check [`matched_route()`](https://docs.rs/volga/latest/volga/middleware/struct.HttpContext.html#method.matched_route).
+
+Rate limiting attached to a **route group** also now reaches every route that group registered, whatever the order inside the closure — a route mapped before its group's `token_bucket` used to behave as if it did not exist.
+:::
+
 ## Defining a Token Bucket Policy
 
 A token bucket starts full (up to `capacity` tokens) and refills at a constant rate. Each request consumes one token. When the bucket is empty, requests are rejected until tokens are replenished.
