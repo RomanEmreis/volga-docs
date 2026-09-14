@@ -176,13 +176,7 @@ The `Location` is built from the host the request was **addressed to**, with the
 
 A request with no usable host — none at all, more than one `Host`, or one that is not a valid authority — is answered `400`, as RFC 9112 §3.2 requires. There is nowhere to send it.
 
-::: warning Fixed in 0.10.1
-Three bugs in one listener, all of which showed up as "the redirect just doesn't happen":
-
-* With the `http2` feature on (`full` includes it), the redirect listener accepted **only** HTTP/2, so a browser — which speaks HTTP/1.1 to a plaintext port — got no redirect. It now serves both.
-* The host was read from the `Host` header alone, so an HTTP/2 request to the redirect listener was answered `404`.
-* A request without a usable host was answered `404` rather than `400`, and a `Host: [::1]` with no port failed the redirect with a `500`.
-:::
+The listener itself serves HTTP/1.1 and HTTP/2, so a browser — which speaks HTTP/1.1 to a plaintext port — is redirected whatever the `http2` feature is set to.
 
 ## HTTP Strict Transport Security Protocol (HSTS)
 
@@ -243,12 +237,8 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-A host is matched by its **name alone**, on any port: a browser keeps an HSTS policy per host name and applies it whatever port that host is reached on, so there is no port for the list to distinguish. Case, surrounding whitespace, a `user@` prefix and a trailing dot are all ignored, so `localhost` also covers `LOCALHOST:8443` and `localhost.`.
+A host is matched by its **name alone**, on any port: a browser keeps an HSTS policy per host name and applies it whatever port that host is reached on, so there is no port for the list to distinguish. A port written in an entry is ignored, as are case, surrounding whitespace, a `user@` prefix and a trailing dot — `localhost` covers `LOCALHOST:8443` and `localhost.` alike.
 
-::: warning Changed in 0.10.1
-Only `:443` and `:80` used to be stripped from an entry, so the port decided the match: `example.com:8443` excluded that host on port 8443 and nowhere else, while a plain `example.com` excluded it everywhere *but* 8443. A browser draws no such line — it keeps one policy per host name — so whichever of the two you wrote, some of the requests you meant to exclude were still told to enforce HTTPS. And a list read from a [configuration file](../middleware-infrastructure/config-files.md) — `exclude_hosts` under `[tls.hsts_config]` — never went through the normalizing builder at all, so an entry with any port, a trailing dot or an uppercase letter matched nothing. Every entry is normalized the same way now, wherever it was written.
-
-Over HTTP/2, `exclude_hosts` never matched at all: the host was read from the `Host` header, which HTTP/2 does not send. It is now read from the request target first, as for redirection.
-:::
+The same list can come from a [configuration file](../middleware-infrastructure/config-files.md), as `exclude_hosts` under `[tls.hsts_config]`, and is read the same way. The request's own host is taken from its target before the `Host` header, so the list applies over HTTP/2 as well.
 
 You can find more examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/tls/src/main.rs).

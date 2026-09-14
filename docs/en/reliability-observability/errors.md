@@ -56,12 +56,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-::: warning Changed in 0.10.0
-* **The per-request scope is built for unmatched requests.** `ClientIp`, `CancellationToken`, `Config<T>`, `HostEnv` and `Dc<T>` now work inside a fallback handler instead of failing it with a `500`, and the configured request body limit applies there too — a fallback used to receive the connection's body unmetered.
-* **An error returned by a fallback handler is answered by the application's `map_err` handler**, as an error from any other handler is. It used to go to the built-in one, so a service that shaped its errors got one response for a failing route and a different one for a failing fallback.
-* **`FallbackHandler::call` takes an `HttpRequest`** rather than a `Request<Incoming>`, so a hand-written `impl FallbackHandler` has to take the new argument type. Every closure-shaped fallback that compiled before still compiles.
-* **`FromRawRequest` is removed.** It existed only to describe what a fallback handler could take, and it accepted exactly what `FromRequestParts` accepts, so `map_fallback` takes the same set without it. The `Cookies`, `SignedCookies` and `PrivateCookies` impls of it went with it; all three still implement `FromRequestParts`, `FromRequestRef` and `FromPayload`, so every use of them as an extractor is unchanged.
-:::
+A fallback runs inside a full per-request scope, so it takes the same extractors any other handler takes — `ClientIp`, `CancellationToken`, `Config<T>`, `HostEnv`, `Dc<T>` — and the configured request body limit applies to it. An error it returns is answered by the application's `map_err` handler, as an error from any other handler is, so a service that shapes its errors shapes them here too.
 
 ## Problem Details
 

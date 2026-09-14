@@ -86,7 +86,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Parameter Names Are Per-Route
 
-Since **0.10.0** every endpoint carries the parameter names its own pattern was written with, and the request reaching it is labelled from those.
+Every endpoint carries the parameter names **its own pattern** was written with, and the request reaching it is labelled from those. Two routes through the same position may name it differently — a parameter is matched by position, and only the name a handler reads by is its own route's.
 
 ```rust compile
 use volga::{App, NamedPath, HttpResult, ok};
@@ -111,15 +111,9 @@ async fn by_name(NamedPath(p): NamedPath<HashMap<String, String>>) -> HttpResult
 }
 ```
 
-::: warning Fixed in 0.10.0
-A node in the route tree holds a single dynamic child, because a parameter is matched by the position it sits at and not by what it is called — and that child used to hold the name as well, the one whichever route reached the position first was written with. Every other route through that position was then labelled with that name: the `POST /users/{name}` above answered correctly but bound its parameter as `id`, so `NamedPath<T>` and everything else reading a parameter by name read a key nobody wrote, and the startup route listing printed `POST /users/{id}`.
-
-**A handler written around the old behaviour — reading `id` from a route that says `{name}` — now reads nothing.** Positional extractors (`id: i32`, `Path<(A, B)>`) never looked at the name and are unaffected.
-:::
-
 ### Two cases that panic at registration
 
-Two spellings cannot be told apart that way, so they are reported where they are written instead of being swallowed. Both panic at registration, naming the two patterns with their verbs and what to write instead:
+Two spellings cannot be told apart that way, so they are reported where they are written. Both panic at registration, naming the two patterns with their verbs and what to write instead:
 
 * **One verb naming its own route twice** — `map_get("/users/{id}", ..)` followed by `map_get("/users/{name}", ..)`. The second registration replaces the first and takes its middleware with it: one route ends up mapped rather than two, and the differing name says that was not the intention.
 * **A `GET` and a `HEAD` disagreeing.** A `HEAD` request with no route of its own is answered by the `GET` route (RFC 9110 §9.3.2), so the two describe one resource and cannot name what identifies it differently.
@@ -136,10 +130,6 @@ app.map_get("/files/shared/latest", || async { ok!("the shared one") });
 ```
 
 `GET /files/shared/latest` is the literal route. `GET /files/shared` is not — `/files/shared` names no route of its own — so the lookup backtracks and the request is answered by `/files/{name}` with `name = "shared"`.
-
-::: warning Fixed in 0.10.1
-The lookup used to commit to the first literal it matched and never look back, so `/files/{name}` stopped answering `/files/shared` the moment `/files/shared/latest` was mapped. A route that worked started answering `404` because a longer route was added beside it — and nothing about the two patterns says they have anything to do with each other.
-:::
 
 A literal still takes precedence wherever it *does* lead to a route, and a literal that carries a handler for another method still answers `405` rather than falling through to a parameter. A lookup visits each node at most once, so nothing pays for backtracking in the shapes where it never happens.
 

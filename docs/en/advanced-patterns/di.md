@@ -154,17 +154,17 @@ A **Transient** dependency creates a **new instance every time it is resolved**,
 * [`add_transient_factory::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_factory)
 * [`add_transient_default::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_default)
 
-The behavior is similar to **Scoped**, with the key difference that **a new instance is created for every injection**, not once per request or scope.
+The behavior is similar to **Scoped**, with the key difference that **a new instance is created for every injection**, not once per request or scope. A transient resolved through [`Container::resolve`](https://docs.rs/volga/latest/volga/di/struct.Container.html#method.resolve) is moved out of the container rather than cloned, which is worth knowing for a type whose `Clone` or `Drop` has side effects.
 
 ## The Graph Is Checked at Startup
 
-Since **0.10.1** [`App::run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) checks the dependency graph before it starts anything, and returns an `Err` naming every problem at once rather than the first one:
+[`App::run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) checks the dependency graph before it starts anything, and returns an `Err` naming every problem at once rather than the first one:
 
 ```text
 dependency injection: dependency cycle: myapp::Repo -> myapp::Db -> myapp::Repo; `myapp::Api` depends on `myapp::Clock`, which is not registered
 ```
 
-Nothing is bound, spawned or announced until that check passes — no background task, no HTTPS redirect listener, no greeter line — so a caller that handles the error and tries again finds the port free. Before 0.10.1 a service nobody registered was found by the first request that resolved it, as a `500` on that route alone.
+Nothing is bound, spawned or announced until that check passes — no background task, no HTTPS redirect listener, no greeter line — so a caller that handles the error and tries again finds the port free, and a service nobody registered is a startup failure rather than a `500` on one route.
 
 What gets checked is what a registration **declares**. A factory declares its arguments, so the container already knows what this resolves:
 
@@ -197,13 +197,9 @@ impl Inject for Session {
 }
 ```
 
-[`dependencies()`](https://docs.rs/volga/latest/volga/di/trait.Inject.html#method.dependencies) is a provided method whose default declares nothing: that keeps a type out of the startup check without making it wrong, and is why the trait gained it without breaking a single existing `impl`. Declare exactly what `inject` resolves — a dependency declared here but never resolved is checked all the same.
+[`dependencies()`](https://docs.rs/volga/latest/volga/di/trait.Inject.html#method.dependencies) is a provided method whose default declares nothing, which keeps a type out of the startup check without making it wrong. Declare exactly what `inject` resolves — a dependency declared here but never resolved is checked all the same.
 
-A type that declares nothing is checked when it is constructed instead, and that check is the second half of the change:
-
-::: warning Fixed in 0.10.1
-A dependency cycle used to **deadlock the worker thread** when it ran through scoped services, and to overflow the stack and abort the process when it ran through transient ones. A cycle reached while resolving now panics naming the path it found, `A -> B -> A`.
-:::
+A type that declares nothing is checked when it is constructed instead: a cycle reached while resolving panics naming the path it found, `A -> B -> A`.
 
 The same check runs on [`ContainerBuilder`](https://docs.rs/volga/latest/volga/di/struct.ContainerBuilder.html) directly, for a container built outside an `App`:
 
@@ -220,12 +216,6 @@ fn main() {
     let _ = container;
 }
 ```
-
-::: tip Faster, with nothing to change
-0.10.1 also cut what DI costs per request. Creating a request's scope no longer copies the registration map — its cost follows the number of *scoped* registrations only (404 ns → 20 ns for a scope over 50 singletons and 3 scoped services; one atomic increment when nothing is scoped). [`resolve`](https://docs.rs/volga/latest/volga/di/struct.Container.html#method.resolve) clones a shared instance in place instead of taking an `Arc` to it, and `Dc<T>` borrows the container instead of cloning it: with 8 threads resolving at once, a plain-data singleton went 190 ns → 2 ns and a cookie key 270 ns → 4 ns.
-
-One behavioural edge: a **transient** resolved through `Container::resolve` is moved out rather than cloned, so a `Clone` or a `Drop` with side effects runs one time less per resolution.
-:::
 
 ## DI in middleware
 If you need to request/inject a dependency in middleware, if you're using method [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), you may leverage the [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) extractor similarly to request handlers. For the [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) use either [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) or [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) methods of [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).

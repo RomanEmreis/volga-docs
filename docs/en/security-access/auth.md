@@ -155,7 +155,7 @@ let mut app = App::new()
 ```
 
 ::: info
-`EncodingKey`, `DecodingKey`, and `Algorithm` are now native Volga types (no longer re-exported from `jsonwebtoken`). Import paths remain the same (`volga::auth::{EncodingKey, DecodingKey}`), but `jsonwebtoken::ErrorKind` is no longer available — use the PEM / base64 / secret / env / file constructors provided by Volga instead. Token validation settings live on [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html); the previous `BearerTokenService::validation()` accessor has been removed.
+`EncodingKey`, `DecodingKey` and `Algorithm` are Volga's own types at `volga::auth::*` rather than re-exports of `jsonwebtoken`, so `jsonwebtoken::ErrorKind` and its key constructors are not reachable — build keys with the PEM / base64 / secret / env / file constructors Volga provides. Token validation settings live on [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html).
 
 Since **v0.9.8**, `volga::auth::Algorithm` is a re-export of [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) from `volga-oauth-core` — the variants, the `HS256` default and the behaviour are unchanged, but the type is now shared with the client crates, so a `private_key_jwt` assertion and a bearer token the server issues are described in one vocabulary. It is also re-exported from `volga::auth::oauth`, where it can be named without the `jwt-auth` feature.
 :::
@@ -224,14 +224,8 @@ See the [OAuth 2.1 & OpenID Connect](./oauth.md) page for the full flow (issuer-
 
 The `jwt-auth-full` feature enables the [`Claims`](https://docs.rs/volga/latest/volga/auth/derive.Claims.html) derive macro for defining JWT claims. Alternatively, you can define claims using:
 
-::: warning Changed in 0.10.1
-The derive is for **structs** only. A JWT payload is a JSON object, and an enum or a union could never carry `role`, `roles` or `permissions` — the derive used to accept one and expand to an empty `AuthClaims` impl, so every authorizer silently said no. It is now a compile error:
-
-```text
-error: `Claims` can only be derived for structs
-```
-
-A struct carrying none of the three recognised fields is still fine: every method of the trait has a default.
+::: warning
+The derive is for **structs** only — a JWT payload is a JSON object, so `#[derive(Claims)]` on an enum or a union is a compile error. A struct carrying none of `role` / `roles` / `permissions` is fine: every method of the trait has a default.
 :::
 
 ### `claims!` macro
@@ -286,10 +280,7 @@ Volga provides a powerful [`Authorizer`](https://docs.rs/volga/latest/volga/auth
 * [`predicate(|claims| ...)`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.predicate.html): custom logic.
 
 ::: info
-Since **v0.9.9**, `permission` is re-exported from `volga::auth` alongside its four siblings. On **0.9.8 and earlier**
-it was the only one of the five missing from that module, so the import below did not compile — reach for the full path
-[`volga::auth::authorizer::permission`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.permission.html) on those
-versions. The compiler's suggestion, `permissions`, is a different function.
+All five are re-exported from `volga::auth`; the full path, [`volga::auth::authorizer::permission`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.permission.html) and its siblings, works too. On **0.9.8 and earlier** `permission` is only reachable by the full path — the compiler's suggestion there, `permissions`, is a different function.
 :::
 
 ### Example
@@ -350,12 +341,8 @@ Every rejection the bearer middleware makes carries the status and the `WWW-Auth
 | A valid token that does not carry the role or permission the route asks for | `403` | `insufficient_scope` |
 | A validation that could not be completed — an unreadable verification key, an issuer that cannot be reached | `503` | none: the caller has nothing to fix |
 
-::: warning Changed in 0.10.1, without an opt-in
-A token that failed validation used to be answered `403`, and a malformed one — a credential that is not valid base64, whose payload is not JSON, or which is not UTF-8 — used to be answered `400`. Both are `401` now.
-
-`403` told a client holding a stale token that refreshing it could not help, which is exactly what would have helped, and it disagreed with the `invalid_token` code the challenge beside it already carried. `400` said the *request* was malformed when what was malformed was the credential in it. `403` is now reserved for the one case RFC 6750 gives it: a token that is valid and does not carry enough authority.
-
-Anything that checks for `403` on an expired token — a test, a client's refresh trigger, an alert — needs to check for `401` instead.
+::: warning Upgrading from 0.10.0
+A token that failed validation was answered `403`, and a malformed one `400`. Both are `401` now, so anything that reads `403` as "this token cannot be refreshed" — a test, a client's refresh trigger, an alert — has to read `401` instead.
 :::
 
 ## Examples

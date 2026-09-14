@@ -60,22 +60,22 @@ Then [`use_static_assets()`](https://docs.rs/volga/latest/volga/app/struct.App.h
 - `/` → the index file (`index.html` by default)
 - `/{any path}` → the file of that name under the content root, at any depth
 
-::: warning Renamed in 0.10.0
-This method used to be called `map_static_assets()`. It no longer maps anything — see [Middleware, not routing](#middleware-not-routing) below — so `map_*`, which in this crate means *a route was registered*, was the wrong prefix for it. Rename the call; nothing else about it changed.
+::: tip
+On **0.9.x** this call is spelled `map_static_assets()`. It registers no route — see [Middleware, not routing](#middleware-not-routing) below — so it lost the `map_` prefix, which in this crate means *a route was registered*. Nothing else about it differs.
 :::
 
 ## Middleware, not routing
 
-Since **0.10.0** the static file server is a middleware rather than a set of routes. It reads the request target, answers it from the content root when something is there, and declines otherwise. The router knows nothing about static content.
+The static file server is a middleware rather than a set of routes. It reads the request target, answers it from the content root when something is there, and declines otherwise. The router knows nothing about static content.
 
 What follows from that:
 
 * **No startup walk and no depth limit.** The content root is read when a request asks for something, not walked while the server starts, so a directory created while the server is running is served like any other.
-* **Nothing is registered in the router.** No route is shadowed by static content, none of it shows up in the route listing printed at startup, and none of it has to be described in an OpenAPI spec. Static files and a dynamic route now coexist: `use_static_assets()` no longer claims the router's dynamic slot, so `app.map_get("/{id}", ..)` works beside it.
-* **A file answers before a route does.** The mount is the first thing a `GET` or `HEAD` under it reaches, so a file that exists on disk is served even where a route was mapped for the same path. Any other method, and any path with nothing behind it, reaches routing as before.
+* **Nothing is registered in the router.** No route is shadowed by static content, none of it shows up in the route listing printed at startup, and none of it has to be described in an OpenAPI spec. Static files and a dynamic route coexist: `app.map_get("/{id}", ..)` works beside `use_static_assets()`.
+* **A file answers before a route does.** The mount is the first thing a `GET` or `HEAD` under it reaches, so a file that exists on disk is served even where a route was mapped for the same path. Any other method, and any path with nothing behind it, reaches routing.
 * **Position in the pipeline matters** — see below.
 
-A request that nothing under the content root answers goes on to routing, so [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file) still answers it and an SPA shell behaves exactly as it did.
+A request that nothing under the content root answers goes on to routing, so [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file) answers it and an SPA shell works as usual.
 
 ### Where to put the call
 
@@ -188,7 +188,7 @@ async fn main() -> std::io::Result<()> {
 The group's middleware — `wrap`, `with`, `filter`, `map_ok`, `authorize`, a rate limiter — wraps the files this mount serves, exactly as it wraps the routes the group registered, nested groups included.
 
 :::warning Two limits of a group mount
-* **The prefix must be literal.** `app.group("/{tenant}", |g| g.use_static_files())` does not serve static files and says so at startup: a mount matches the request target as it is written, while a parameter is matched by the router, which knows nothing about the mount. Before 0.10.0 that spelling folded every bound parameter into the filesystem path, which was an accident of the path reassembly that has since been removed.
+* **The prefix must be literal.** `app.group("/{tenant}", |g| g.use_static_files())` does not serve static files and says so at startup: a mount matches the request target as it is written, while a parameter is matched by the router, which knows nothing about the mount.
 * **A group's CORS policy does not reach the files.** A policy is resolved from the route that matched, and a file is served without one, so the policy that applies is the application's — configured with [`with_cors()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_cors). For the same reason a preflight aimed at a file's path is answered as one for an unmatched path.
 :::
 
@@ -228,17 +228,7 @@ Which policy a file gets is decided by the **role** the name it is addressed by 
 
 An asset never changes under the same URL, so it is taken on trust and never revalidated. The shell does change under the same URL, so it is revalidated on every navigation — which costs a `304` and no body while it is unchanged, and picks a deploy up on the next request rather than a day later.
 
-::: warning Changed in 0.9.11, without an opt-in
-Every static file used to be served `max-age=86400, public, immutable`, the shell included. Since `immutable` tells a browser not to revalidate even on a reload, a user who reloaded after a deploy kept yesterday's `index.html` for up to a day — pointing at asset URLs that no longer existed. `GET /` now answers `no-cache`; assets keep the policy they had.
-:::
-
-0.9.11 also fixed conditional requests on static files, all of which sit on the hot path the change above creates:
-
-* The index file and the fallback file ignored `If-None-Match` / `If-Modified-Since` entirely, so `GET /` always answered with a full body.
-* `If-Modified-Since` was compared against a nanosecond `mtime`, so a client echoing back the very `Last-Modified` it had been served looked strictly older than the file.
-* `If-Modified-Since` was read even when `If-None-Match` was present, which RFC 9110 §13.1.3 forbids.
-* Validators were evaluated whatever the request method was, so a conditional `POST` to an unknown path could be answered `304`.
-* A `304` carried no `Cache-Control`, so a cache kept serving a file under the policy it was first stored with.
+Conditional requests follow RFC 9110: `If-None-Match` wins over `If-Modified-Since` when both are present, `Last-Modified` is compared at whole-second precision so a client's echo of it still matches, validators are read for `GET` and `HEAD` only, and a `304` carries the same `Cache-Control` as the full response.
 
 ### Configuring the policies
 
@@ -263,9 +253,9 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-[`with_asset_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_cache_control) and [`with_shell_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_cache_control) were added in **0.9.11**, and are read back with `asset_cache_control()` / `shell_cache_control()`. The two defaults are named by the [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) and `CacheControl::SHELL` constants for anyone building a policy from scratch; `CacheControl::EMPTY` is the `const` equivalent of `CacheControl::default()`.
+[`with_asset_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_cache_control) and [`with_shell_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_cache_control) need **0.9.11** or newer, and are read back with `asset_cache_control()` / `shell_cache_control()`. The two defaults are named by the [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) and `CacheControl::SHELL` constants for anyone building a policy from scratch; `CacheControl::EMPTY` is the `const` equivalent of `CacheControl::default()`.
 
-To restore the pre-0.9.11 behaviour on a deployment that wants it:
+To put the shell on the asset policy anyway — a deployment that never reuses a shell URL:
 
 ```rust compile
 use volga::App;
@@ -296,9 +286,7 @@ A tag is derived either from what the filesystem says about a file or from the b
 
 `Metadata` hashes the file's byte length and the whole-second part of its `mtime` — what nginx, Apache and ASP.NET Core tag with, and free, because the server has already made that `stat`. `Content` hashes the bytes themselves: identical wherever one build is deployed, different as soon as a single byte is.
 
-::: warning Changed in 0.10.1, without an opt-in
-The index and the fallback file used to be tagged from their metadata like everything else, and two versions of a file collide there whenever they have the same length and an `mtime` in the same second. That is the ordinary case for the `index.html` of a content-hashed build: its `<script src="/assets/index-a1b2c3.js">` keeps its byte length across deploys, and a deployment that pins timestamps (`SOURCE_DATE_EPOCH`, `tar -p`, `rsync -t`) keeps the second too — so a client holding the old tag was answered `304` for changed content. The shell is now tagged from its bytes, which makes every client revalidate it once after the upgrade. Asset tags are unchanged.
-:::
+That difference is why the shell defaults to `Content`. Two versions of one file carry the same `Metadata` tag whenever they have the same length and an `mtime` in the same second, which is the ordinary case for the `index.html` of a content-hashed build: its `<script src="/assets/index-a1b2c3.js">` keeps its byte length across deploys, and a deployment that pins timestamps (`SOURCE_DATE_EPOCH`, `tar -p`, `rsync -t`) keeps the second too. A client holding the old tag would then be answered `304` for changed content.
 
 Both sources are configurable, on the same `HostEnv`:
 
@@ -323,7 +311,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-[`with_asset_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_etag) and [`with_shell_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_etag) arrived in **0.10.1** and read back with `asset_etag()` / `shell_etag()`. The pairing to keep in mind is with `Cache-Control`: narrow [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) so assets start revalidating, and `ETagSource::Content` is what makes their answers trustworthy.
+[`with_asset_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_etag) and [`with_shell_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_etag) need **0.10.1** or newer, and are read back with `asset_etag()` / `shell_etag()`. The pairing to keep in mind is with `Cache-Control`: narrow [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) so assets start revalidating, and `ETagSource::Content` is what makes their answers trustworthy.
 
 A content tag costs **one read per file version**, not per request: it is remembered against the file's length and its `mtime` at full precision, plus whatever the platform can say about the file rather than its contents — the inode and change time on Unix, the creation time on Windows. A restart starts from an empty cache, and the cache is bounded, so a content root with a file per user does not grow an entry per file and keep it.
 

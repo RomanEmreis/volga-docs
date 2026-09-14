@@ -153,12 +153,8 @@ curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321"
 Received x-api-key: 123-321
 ```
 
-::: warning Changed in 0.10.1
-The struct has to be **unit-like**. A typed header is its name — the value it carries lives in `Header<T>`, never in `T` — so a field here is read by nothing, and the constructors the macro generates would quietly ignore it. `#[http_header]` on a struct with fields used to compile; it is now
-
-```text
-error: `#[http_header]` can only be applied to a unit-like struct
-```
+::: warning
+The struct has to be **unit-like**. A typed header is its name — the value it carries lives in `Header<T>`, never in `T` — so `#[http_header]` on a struct with fields is a compile error.
 :::
 
 :::info
