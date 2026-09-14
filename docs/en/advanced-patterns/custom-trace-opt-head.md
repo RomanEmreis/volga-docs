@@ -5,13 +5,7 @@ Implementing HTTP methods such as `HEAD`, `OPTIONS`, and `TRACE` with the Volga 
 ## HEAD Method
 By default, a handler mapped to the `GET` method also answers `HEAD`: routing hands a `HEAD` request that has no route of its own to the `GET` route, and the body is dropped on the way out.
 
-::: warning Changed in 0.10.0
-`map_get` used to register a *second* route under `HEAD` carrying the handler and nothing else, so route middleware, group middleware and the route's CORS policy went to the `GET` alone. A route behind a group's `authorize` answered `403` to `GET /admin/report` and `200` to `HEAD /admin/report`, with rate limiting and filters skipped along with it.
-
-There is no second route any more, so a `HEAD` request travels through everything its `GET` route travels through. **A `HEAD`-based health check against a route behind `authorize` is the likeliest thing to notice**: it now answers `401` / `403` where it answered `200`.
-
-[`App::without_implicit_head`](https://docs.rs/volga/latest/volga/app/struct.App.html) is removed with it. There is no second route left to stop registering, and what it turned off was `HEAD` support, which RFC 9110 §9.1 requires of a general-purpose server. A service that wants `HEAD` on some path to fail can map one that says so.
-:::
+A `HEAD` request therefore travels through everything its `GET` route travels through — the route's middleware, its group's, and its CORS policy. A `HEAD`-based health check against a route behind `authorize` is answered `401` / `403` like the `GET` beside it; a path where `HEAD` should fail needs a `map_head` of its own that says so.
 
 To customize the behavior for the `HEAD` method, explicitly define it using the [`map_head`](https://docs.rs/volga/latest/volga/app/router/trait.Router.html#tymethod.map_head) method. `map_head` still takes precedence and runs its own middleware and none of the `GET` route's:
 ```rust compile

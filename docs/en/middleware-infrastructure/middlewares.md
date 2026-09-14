@@ -103,21 +103,17 @@ async fn main() -> std::io::Result<()> {
 
 ## Requests That Match No Route
 
-::: warning Changed in 0.10.0
-Global middleware used to be entered from a single arm of the dispatcher, so a request that matched no route — and one that matched a path but not a method — skipped the pipeline entirely. `wrap`, `with`, `filter` and `map_ok` never ran, CORS headers were not emitted, compression and tracing were absent, and **rate limiting did not apply at all**: a global `use_token_bucket(by::ip())` was bypassed completely by asking for a path that does not exist, which is what a scanner or a naive flood does by default.
+Routing runs first and decides *what* answers a request. All three of its outcomes — the matched route, the fallback handler, and a `405` carrying its `Allow` header — travel through the same global chain.
 
-Routing still runs first and still decides *what* answers a request. What changed is that all three of its outcomes — the matched route, the fallback handler, and a `405` carrying its `Allow` header — now travel through the same global chain.
-:::
+Three things follow from that:
 
-Three consequences are worth planning for:
-
-* **A short-circuiting global middleware now decides unmatched requests too.** `filter`, a `with` that returns early, and `authorize` run before routing's answer is known, so a global authorization middleware answers `401` where the router alone used to answer `404`. That leaks less about which paths exist, but it is a change in what a client sees. Per-route and per-group middleware are unaffected — those belong to a route that by definition matched.
-* **Rate limiting counts requests that match no route.** This is the point of the change: a limiter's budget is now spent by traffic that previously did not touch it, so a service sized against its own routes may see clients hit the limit sooner than before.
-* **The per-request scope is built for those requests.** [`ClientIp`](https://docs.rs/volga/latest/volga/struct.ClientIp.html), `CancellationToken`, `Config<T>`, `HostEnv` and `Dc<T>` now work inside a fallback handler instead of failing it with a `500`, and the configured request body limit applies there too.
+* **A short-circuiting global middleware decides unmatched requests too.** `filter`, a `with` that returns early, and `authorize` run before routing's answer is known, so a global authorization middleware answers `401` for a path that does not exist rather than `404` — which leaks less about what the service has. Per-route and per-group middleware are unaffected: those belong to a route that by definition matched.
+* **Rate limiting counts requests that match no route.** A limiter's budget is spent by traffic that never reaches a handler, so size it against real traffic rather than against the route count.
+* **The per-request scope is built for those requests.** [`ClientIp`](https://docs.rs/volga/latest/volga/struct.ClientIp.html), `CancellationToken`, `Config<T>`, `HostEnv` and `Dc<T>` work inside a fallback handler, and the configured request body limit applies there too.
 
 ### Telling the two apart
 
-Middleware that should only do its work for a real endpoint reads [`matched_route()`](https://docs.rs/volga/latest/volga/middleware/struct.HttpContext.html#method.matched_route), added in 0.10.0:
+Middleware that should only do its work for a real endpoint reads [`matched_route()`](https://docs.rs/volga/latest/volga/middleware/struct.HttpContext.html#method.matched_route):
 
 ```rust compile
 use volga::App;

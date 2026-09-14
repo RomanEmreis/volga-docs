@@ -65,9 +65,7 @@ let app = App::new().bind(([127, 0, 0, 1], 7878)); // anything that converts int
 Host names are resolved when the server starts — asynchronously, so the runtime is never blocked. If a name resolves to several addresses, they are tried in resolution order and the first one that can be bound wins.
 
 :::warning
-Before **v0.9.7**, an address that could not be parsed as a `SocketAddr` was silently replaced with `0.0.0.0:7878` on non-Windows targets. That included `localhost:3000` and `::1:3000` — so a server meant to stay on loopback listened on *every* interface with no error and no log line.
-
-An unusable address is now reported instead: [`run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) returns an `io::Error`, and [`run_blocking()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run_blocking) logs it and starts no server. If you rely on a loopback bind for security, upgrade.
+An address that cannot be resolved is reported rather than guessed at: [`run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) returns an `io::Error`, and [`run_blocking()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run_blocking) logs it and starts no server. Nothing falls back to `0.0.0.0:7878`, so a loopback bind stays on loopback.
 :::
 Next, map a specific handler to a route. For instance, mapping our handler to `GET /hello`:
 ```rust

@@ -145,7 +145,7 @@ This is especially useful when you have a **default** policy enabled globally, b
 
 ## CORS on Unmatched Requests
 
-Since **0.10.0** a `404` and a `405` carry the CORS headers the configured policy would have put on a `200`. Global middleware now runs for requests that matched no route, so a browser gets a usable CORS error instead of an opaque one.
+A `404` and a `405` carry the CORS headers the configured policy would have put on a `200`: global middleware runs for requests that matched no route, so a browser gets a usable CORS error instead of an opaque one.
 
 A **preflight** is still answered `204` only for a route that exists — answering one for a path or a method the router did not match would advertise an endpoint that is not there. Those requests fall through to the `404` / `405` and pick the headers up on the way out. The CORS middleware tells the two apart with [`matched_route()`](https://docs.rs/volga/latest/volga/middleware/struct.HttpContext.html#method.matched_route).
 

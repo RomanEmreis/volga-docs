@@ -155,7 +155,7 @@ let mut app = App::new()
 ```
 
 ::: info
-`EncodingKey`, `DecodingKey` и `Algorithm` теперь являются собственными типами Волги (больше не реэкспортируются из `jsonwebtoken`). Пути импорта остались прежними (`volga::auth::{EncodingKey, DecodingKey}`), но `jsonwebtoken::ErrorKind` больше недоступен — используйте конструкторы PEM / base64 / secret / env / file, предоставляемые Волгой. Параметры валидации токена настраиваются через [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html); прежний доступ через `BearerTokenService::validation()` удалён.
+`EncodingKey`, `DecodingKey` и `Algorithm` — собственные типы Волги в `volga::auth::*`, а не реэкспорты из `jsonwebtoken`, поэтому `jsonwebtoken::ErrorKind` и его конструкторы ключей недоступны: ключи создаются конструкторами PEM / base64 / secret / env / file, которые предоставляет Волга. Параметры валидации токена настраиваются через [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html).
 
 Начиная с **v0.9.8**, `volga::auth::Algorithm` — это реэкспорт [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) из `volga-oauth-core`: варианты, значение по-умолчанию `HS256` и поведение не изменились, но теперь тип общий с клиентскими крейтами — утверждение `private_key_jwt` и bearer-токен, который выпускает сервер, описываются одним словарём. Он также реэкспортируется из `volga::auth::oauth`, где его можно назвать без флага `jwt-auth`.
 :::
@@ -223,6 +223,10 @@ app.use_oauth();
 
 Для удобства `jwt-auth-full` включает derive-макрос [`Claims`](https://docs.rs/volga/latest/volga/auth/derive.Claims.html) для объявления структуры claim'ов. Но вы также можете использовать альтернативные способы:
 
+::: warning
+Derive работает только со **структурами**: payload JWT — это JSON-объект, поэтому `#[derive(Claims)]` на enum или union — ошибка компиляции. Структура, в которой нет ни одного из полей `role` / `roles` / `permissions`, допустима: у всех методов трейта есть реализация по умолчанию.
+:::
+
 ### Макрос `claims!`
 
 ```rust
@@ -274,11 +278,7 @@ impl AuthClaims for Claims {
 * [`predicate(|claims| ...)`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.predicate.html) - кастомная логика.
 
 ::: info
-Начиная с **v0.9.9** функция `permission` реэкспортируется из `volga::auth` наравне с четырьмя остальными. В **0.9.8 и
-раньше** она была единственной из пяти, отсутствовавшей в этом модуле, поэтому импорт из примера ниже не компилировался —
-на тех версиях используйте полный путь
-[`volga::auth::authorizer::permission`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.permission.html).
-Подсказка компилятора, `permissions`, — это другая функция.
+Все пять реэкспортируются из `volga::auth`; полный путь — [`volga::auth::authorizer::permission`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.permission.html) и остальные — тоже работает. В **0.9.8 и раньше** `permission` доступна только по полному пути, а подсказка компилятора, `permissions`, — это другая функция.
 :::
 
 ### Пример
@@ -324,6 +324,23 @@ fn main() {
 
 ::: tip
 Вы также можете объединять правила в цепочку с помощью комбинаторов [`and()`](https://docs.rs/volga/latest/volga/auth/authorizer/enum.Authorizer.html#method.and) и [`or()`](https://docs.rs/volga/latest/volga/auth/authorizer/enum.Authorizer.html#method.or) для создания комплексных правил.
+:::
+
+## Чем отвечает сервер на отклонённый запрос
+
+Каждый отказ middleware аутентификации несёт тот статус и тот вызов `WWW-Authenticate`, которые назначает ему RFC 6750 §3.1, — чтобы клиент мог отличить «почини заголовок» от «получи новый токен» и от «вернись позже», не разбирая текст сообщения:
+
+| Что произошло | Статус | Challenge |
+|---|---|---|
+| Заголовка `Authorization` нет вовсе | `401` | голый `Bearer` — без кода ошибки, чтобы клиент мог найти метаданные ресурса и начать флоу |
+| Заголовок `Authorization` есть, но это не корректное bearer-удостоверение — другая схема, пустой токен | `400` | `invalid_request` |
+| Запрос по обычному HTTP при включённом [`require_https`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.require_https) | `400` | `invalid_request`, `HTTPS required` |
+| Токен не прошёл проверку: истёк, ещё не действителен, неверная подпись, неверные `iss` / `aud` / `sub` / алгоритм, отсутствует обязательный claim — или он вовсе не декодируется | `401` | `invalid_token`, причина — в `error_description` |
+| Токен действителен, но не несёт роли или разрешения, которых требует маршрут | `403` | `insufficient_scope` |
+| Проверку не удалось выполнить — нечитаемый ключ проверки, недоступный issuer | `503` | нет: чинить клиенту нечего |
+
+::: warning При переходе с 0.10.0
+Токен, не прошедший проверку, получал `403`, а некорректный — `400`. Теперь и то и другое — `401`, поэтому всё, что трактует `403` как «этот токен обновлять бесполезно» — тест, триггер обновления в клиенте, алерт, — нужно перевести на `401`.
 :::
 
 ## Примеры

@@ -116,7 +116,7 @@ Key differences from Singleton:
 
 #### Registering with `Default` or a Factory
 
-To use the [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped) method, the type must implement the [`Inject`](https://docs.rs/volga/latest/volga/di/inject/trait.Inject.html) trait. This is a convenient and powerful approach when your type depends on other services registered in the DI container.
+To use the [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped) method, the type must implement the [`Inject`](https://docs.rs/volga/latest/volga/di/trait.Inject.html) trait. This is a convenient and powerful approach when your type depends on other services registered in the DI container.
 
 However, if the type has **no dependencies**, you can register it more directly using a factory:
 
@@ -154,7 +154,68 @@ A **Transient** dependency creates a **new instance every time it is resolved**,
 * [`add_transient_factory::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_factory)
 * [`add_transient_default::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_default)
 
-The behavior is similar to **Scoped**, with the key difference that **a new instance is created for every injection**, not once per request or scope.
+The behavior is similar to **Scoped**, with the key difference that **a new instance is created for every injection**, not once per request or scope. A transient resolved through [`Container::resolve`](https://docs.rs/volga/latest/volga/di/struct.Container.html#method.resolve) is moved out of the container rather than cloned, which is worth knowing for a type whose `Clone` or `Drop` has side effects.
+
+## The Graph Is Checked at Startup
+
+[`App::run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) checks the dependency graph before it starts anything, and returns an `Err` naming every problem at once rather than the first one:
+
+```text
+dependency injection: dependency cycle: myapp::Repo -> myapp::Db -> myapp::Repo; `myapp::Api` depends on `myapp::Clock`, which is not registered
+```
+
+Nothing is bound, spawned or announced until that check passes — no background task, no HTTPS redirect listener, no greeter line — so a caller that handles the error and tries again finds the port free, and a service nobody registered is a startup failure rather than a `500` on one route.
+
+What gets checked is what a registration **declares**. A factory declares its arguments, so the container already knows what this resolves:
+
+```rust
+// says it resolves `Db`
+app.add_scoped_factory(|db: Dc<Db>| Repo { db });
+```
+
+A hand-written [`Inject`](https://docs.rs/volga/latest/volga/di/trait.Inject.html) resolves from the container by hand, so it declares what it resolves by hand too:
+
+```rust compile
+use volga::di::{Container, Dependencies, Inject, error::Error};
+
+#[derive(Default, Clone)]
+struct Clock;
+
+struct Session {
+    clock: Clock,
+}
+
+impl Inject for Session {
+    fn inject(container: &Container) -> Result<Self, Error> {
+        Ok(Self { clock: container.resolve::<Clock>()? })
+    }
+
+    // Without this, `Session` is left out of the check
+    fn dependencies(deps: &mut Dependencies) {
+        deps.add::<Clock>();
+    }
+}
+```
+
+[`dependencies()`](https://docs.rs/volga/latest/volga/di/trait.Inject.html#method.dependencies) is a provided method whose default declares nothing, which keeps a type out of the startup check without making it wrong. Declare exactly what `inject` resolves — a dependency declared here but never resolved is checked all the same.
+
+A type that declares nothing is checked when it is constructed instead: a cycle reached while resolving panics naming the path it found, `A -> B -> A`.
+
+The same check runs on [`ContainerBuilder`](https://docs.rs/volga/latest/volga/di/struct.ContainerBuilder.html) directly, for a container built outside an `App`:
+
+```rust compile
+use volga::di::ContainerBuilder;
+
+fn main() {
+    let mut builder = ContainerBuilder::new();
+    builder.register_singleton(42u32);
+
+    assert!(builder.validate().is_ok());
+
+    let container = builder.build();
+    let _ = container;
+}
+```
 
 ## DI in middleware
 If you need to request/inject a dependency in middleware, if you're using method [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), you may leverage the [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) extractor similarly to request handlers. For the [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) use either [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) or [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) methods of [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).

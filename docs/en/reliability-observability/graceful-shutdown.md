@@ -106,6 +106,10 @@ The response is still delivered: the request that asked for the shutdown is in f
 Guard an endpoint like this with [authentication and authorization](/volga-docs/en/security-access/auth.html) — it stops the server for everyone.
 :::
 
+## What `run()` Waits For
+
+When the shutdown signal arrives, the accept loop stops taking new connections and `run()` waits for the open ones to finish what they are serving — up to **10 seconds**, after which it stops waiting and returns. The app's services, singletons included, are released once that wait is over. A TLS handshake still in progress is dropped rather than waited for: there is no request behind it yet.
+
 ## Shutdown and Request Cancellation
 
 The two are related but distinct. A shutdown lets in-flight requests **finish**; [request cancellation](/volga-docs/en/reliability-observability/cancellation.html) fires when a *client* disappears mid-request. A long-running handler should observe both: the per-request [`CancellationToken`](https://docs.rs/volga/latest/volga/app/endpoints/args/cancellation_token/type.CancellationToken.html) so it stops working for a client that left, and the shutdown handle so it does not hold the process open past the point of no return.

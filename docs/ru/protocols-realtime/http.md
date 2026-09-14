@@ -29,7 +29,7 @@ app.map_trace("/items", || async { ok!() });
 ```
 
 ::: tip
-Запрос `HEAD`, у которого нет собственного маршрута, обрабатывается маршрутом `GET` для того же пути — начиная с 0.10.0 через middleware и политику CORS этого маршрута, — поэтому [`map_head`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_head) нужен только для собственной реализации. См. [Свои обработчики HEAD, OPTIONS и TRACE](/volga-docs/ru/advanced-patterns/custom-trace-opt-head.html).
+Запрос `HEAD`, у которого нет собственного маршрута, обрабатывается маршрутом `GET` для того же пути — через middleware и политику CORS этого маршрута, — поэтому [`map_head`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_head) нужен только для собственной реализации. См. [Свои обработчики HEAD, OPTIONS и TRACE](/volga-docs/ru/advanced-patterns/custom-trace-opt-head.html).
 :::
 
 ### Метод `QUERY`

@@ -170,6 +170,14 @@ Now, if you run this `curl` command, your request will be redirected to `https:/
 ```
 Internally, when you run this code in debug mode it uses a [Temporary Redirect](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/307) (307), since link caching can cause unstable behavior in development environments. However, in release mode, it responds with 308 - [Permanent Redirect](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/308).
 
+### Which host the redirect points at
+
+The `Location` is built from the host the request was **addressed to**, with the HTTPS port substituted and the path and query kept as they were. That host is read from the request target first and from the `Host` header second, which is the order RFC 9112 §3.2.2 gives them — and the only order that finds anything over HTTP/2, where the host arrives as the `:authority` pseudo-header and never becomes a `Host` header at all (RFC 9113 §8.3.1).
+
+A request with no usable host — none at all, more than one `Host`, or one that is not a valid authority — is answered `400`, as RFC 9112 §3.2 requires. There is nowhere to send it.
+
+The listener itself serves HTTP/1.1 and HTTP/2, so a browser — which speaks HTTP/1.1 to a plaintext port — is redirected whatever the `http2` feature is set to.
+
 ## HTTP Strict Transport Security Protocol (HSTS)
 
 HTTP Strict Transport Security (HSTS) is an opt-in security enhancement that is specified by the web server through the use of a response header. When a browser that supports HSTS receives this header:
@@ -207,5 +215,30 @@ Then if you run this code you will receive the `Strict-Transport-Security` HTTP 
 ::: info
 [`with_preload()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.with_preload) and [`with_sub_domains()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.with_sub_domains) take no arguments — they enable the corresponding flags. Use [`without_preload()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.without_preload) / [`without_sub_domains()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.without_sub_domains) to disable them. All HSTS settings are configured through the `with_hsts(|h| ...)` closure on [`TlsConfig`](https://docs.rs/volga/latest/volga/tls/struct.TlsConfig.html#method.with_hsts).
 :::
+
+### Excluding hosts
+
+Some hosts should not be told to enforce HTTPS forever — a `localhost` a developer reaches over plain HTTP, or an internal name whose certificate is not public. [`with_exclude_hosts()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.with_exclude_hosts) names them:
+
+```rust compile
+use volga::{App, tls::TlsConfig};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new()
+        .with_tls(|tls| tls
+            .with_https_redirection()
+            .with_hsts(|hsts| hsts
+                .with_exclude_hosts(["localhost", "internal.example.com"])));
+
+    app.map_get("/hello", || async { "Hello, World!" });
+
+    app.run().await
+}
+```
+
+A host is matched by its **name alone**, on any port: a browser keeps an HSTS policy per host name and applies it whatever port that host is reached on, so there is no port for the list to distinguish. A port written in an entry is ignored, as are case, surrounding whitespace, a `user@` prefix and a trailing dot — `localhost` covers `LOCALHOST:8443` and `localhost.` alike.
+
+The same list can come from a [configuration file](../middleware-infrastructure/config-files.md), as `exclude_hosts` under `[tls.hsts_config]`, and is read the same way. The request's own host is taken from its target before the `Host` header, so the list applies over HTTP/2 as well.
 
 You can find more examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/tls/src/main.rs).

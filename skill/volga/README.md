@@ -4,7 +4,7 @@ A model-neutral [Agent Skill](https://agentskills.io/specification) for
 building HTTP services in Rust with the
 [volga](https://github.com/RomanEmreis/volga) web framework.
 
-Covers volga **0.10.0** (MSRV 1.90, edition 2024).
+Covers volga **0.10.1** (MSRV 1.90, edition 2024).
 
 ```
 volga/
@@ -22,7 +22,7 @@ volga/
 ```
 
 `SKILL.md` is deliberately short: it establishes the version and feature
-set, lists the traps that make pre-0.10 volga code fail, and routes to one
+set, lists the traps that make pre-0.10.1 volga code fail, and routes to one
 reference file. The agent loads the rest only when the task calls for it.
 
 ## Install

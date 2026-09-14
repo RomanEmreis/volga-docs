@@ -157,6 +157,10 @@ curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321"
 Received x-api-key: 123-321
 ```
 
+::: warning
+Структура должна быть **unit-like**. Типизированный заголовок — это его имя: значение живёт в `Header<T>`, а не в самом `T`, поэтому `#[http_header]` на структуре с полями — ошибка компиляции.
+:::
+
 :::info
 Атрибут [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html) является частью дополнительной функции `macros`.
 Убедитесь, что она включена в вашем `Cargo.toml`:

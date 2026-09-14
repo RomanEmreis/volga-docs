@@ -77,7 +77,57 @@ A factory may itself take `Dc<T>` or `Container` arguments when it needs to
 resolve something.
 
 Transient works identically; the only difference is that a new instance is
-built for **every** injection, not once per request.
+built for **every** injection, not once per request. A transient resolved
+through `Container::resolve` is moved out rather than cloned since 0.10.1, so
+a `Clone` or `Drop` with side effects runs one time less per resolution.
+
+### The graph is validated at startup (0.10.1)
+
+`App::run()` checks the container before it binds anything and returns an
+`Err` naming every cycle and every missing registration at once — nothing is
+spawned, no port is taken, no greeter is printed. Before 0.10.1 a service
+nobody registered failed the first request that resolved it, with a `500`.
+
+What is checked is what a registration **declares**. A factory declares its
+arguments. A hand-written `Inject` declares nothing unless it says so:
+
+<!-- snippet: skip -->
+```rust
+use volga::di::{Container, Dependencies, Inject, error::Error};
+
+impl Inject for Repo {
+    fn inject(container: &Container) -> Result<Self, Error> {
+        Ok(Self { cache: container.resolve::<Cache>()? })
+    }
+
+    // provided method; the default declares nothing, which leaves the type
+    // out of the check without making it wrong
+    fn dependencies(deps: &mut Dependencies) {
+        deps.add::<Cache>();
+    }
+}
+```
+
+A type that declares nothing is checked when it is constructed instead: a
+cycle reached while resolving panics naming the path, `A -> B -> A`, where it
+used to deadlock the worker thread (scoped) or overflow the stack and abort
+the process (transient).
+
+`ContainerBuilder::validate()` runs the same check on a container built
+outside an `App`:
+
+<!-- snippet: compile -->
+```rust
+use volga::di::ContainerBuilder;
+
+fn main() {
+    let mut builder = ContainerBuilder::new();
+    builder.register_singleton(42u32);
+
+    assert!(builder.validate().is_ok());
+    let _container = builder.build();
+}
+```
 
 ### DI in middleware
 

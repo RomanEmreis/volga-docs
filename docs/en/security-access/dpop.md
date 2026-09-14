@@ -150,7 +150,7 @@ fn read(header: &str) -> Result<(), OAuthError> {
 
 [`with_scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.with_scheme) and [`scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.scheme) render and report it, so a parsed challenge re-renders under the scheme it arrived with. `parse` is this method with `auth_scheme::BEARER`.
 
-The two registered DPoP error codes are modelled as well: `OAuthErrorCode::UseDpopNonce` and `OAuthErrorCode::InvalidDpopProof` (RFC 9449 §7.1), which used to surface as `Other`.
+The two registered DPoP error codes are modelled as well: `OAuthErrorCode::UseDpopNonce` and `OAuthErrorCode::InvalidDpopProof` (RFC 9449 §7.1).
 
 ::: warning
 Three **v0.9.8** changes are worth checking when upgrading:

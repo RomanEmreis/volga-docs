@@ -66,10 +66,8 @@ async fn report() -> HttpResult {
 }
 ```
 
-::: warning Changed in 0.10.0
-A group used to read its middleware, CORS policy and OpenAPI configuration at each `map_*` call, so a `g.with(require_api_key)` written *below* a route silently did not reach it — and what a group carries is usually authorization, rate limiting or CORS. 0.9.11 started warning about this; 0.10.0 removed the hazard: the group applies what it holds once its closure returns, so the `RouteGroup::<method> must be called before any map_* in the group` warning is gone with it.
-
-**This means middleware that used to be skipped now runs, with no opt-in.** A route mapped before its group's `authorize` or `token_bucket` behaved as if neither existed, and now answers `401` / `403` / `429` where it answered `200`.
+::: warning Upgrading from 0.9.x
+A group's configuration was read at each `map_*` call, so anything registered *below* a route did not reach it. It reaches every route now: a route mapped above its group's `authorize` or `token_bucket` answers `401` / `403` / `429` where it answered `200`.
 :::
 
 ### Ordering rules
@@ -107,9 +105,9 @@ async fn ping() -> HttpResult {
 
 ## One Route, One Registration
 
-Since 0.10.0 a route is registered under the name the router reads, so `/x`, `/x/` and `//x` are one route everywhere it is remembered — not only in the route tree. A group configures each of its routes once, whether it mapped it twice itself or a sub-group mapped it again.
+A route is registered under the name the router reads, so `/x`, `/x/` and `//x` are one route everywhere it is remembered — not only in the route tree. A group configures each of its routes once, whether it mapped it twice itself or a sub-group mapped it again.
 
-Mapping a route that is already mapped **replaces** it, along with everything bound to the registration being replaced. Both registrations used to land on one endpoint and the result was neither: the handler mapped last answered, while the middleware of the one mapped first ran. A handler and its middleware are written together and now stand or fall together, and the OpenAPI operation is built from the configuration the route currently holds.
+Mapping a route that is already mapped **replaces** it, along with everything bound to the registration being replaced. A handler and its middleware are written together and stand or fall together, and the OpenAPI operation is built from the configuration the route currently holds.
 
 :::warning
 A group prefix is a route pattern like any other, so it counts towards the [route parameter naming rules](/volga-docs/en/getting-started/route-params.html#parameter-names-are-per-route): `group("/{tenant}", ..)` beside `map_get("/{id}/items", ..)` is one route under two names, and panics at registration.

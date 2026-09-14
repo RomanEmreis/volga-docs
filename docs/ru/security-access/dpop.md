@@ -150,7 +150,7 @@ fn read(header: &str) -> Result<(), OAuthError> {
 
 [`with_scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.with_scheme) и [`scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.scheme) отображают и сообщают схему, поэтому разобранный челлендж рендерится обратно в той схеме, в которой пришёл. `parse` — это тот же метод с `auth_scheme::BEARER`.
 
-Оба зарегистрированных кода ошибок DPoP тоже смоделированы: `OAuthErrorCode::UseDpopNonce` и `OAuthErrorCode::InvalidDpopProof` (RFC 9449 §7.1) — раньше они попадали в `Other`.
+Оба зарегистрированных кода ошибок DPoP тоже смоделированы: `OAuthErrorCode::UseDpopNonce` и `OAuthErrorCode::InvalidDpopProof` (RFC 9449 §7.1).
 
 ::: warning
 При обновлении стоит проверить три изменения из **v0.9.8**:
