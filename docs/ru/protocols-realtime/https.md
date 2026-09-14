@@ -170,6 +170,20 @@ let config = TlsConfig::new()
 ```
 Внутри, когда вы запускаете этот код в режиме отладки, он использует [Temporary Redirect](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/307) (307), поскольку кэширование ссылок может привести к нестабильному поведению в среде для разработки. Однако в режиме релиза он отвечает 308 - [Permanent Redirect](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/308).
 
+### На какой хост ведёт редирект
+
+`Location` строится по хосту, **которому был адресован** запрос: порт подставляется HTTPS-ный, путь и query остаются как были. Сам хост читается сначала из цели запроса и только потом из заголовка `Host` — в том порядке, который задаёт RFC 9112 §3.2.2, и это единственный порядок, который вообще что-то находит в HTTP/2, где хост приходит в псевдозаголовке `:authority` и заголовком `Host` не становится (RFC 9113 §8.3.1).
+
+Запрос, по которому хост определить нельзя — его нет вовсе, `Host` пришёл дважды или это не валидный authority, — получает `400`, как того требует RFC 9112 §3.2. Перенаправлять его некуда.
+
+::: warning Исправлено в 0.10.1
+Три ошибки в одном слушателе, и все они выглядели как «редирект просто не происходит»:
+
+* При включённой фиче `http2` (а она входит в `full`) слушатель редиректа принимал **только** HTTP/2, поэтому браузер — который на открытый порт идёт по HTTP/1.1 — не получал перенаправления вовсе. Теперь слушатель обслуживает оба протокола.
+* Хост читался только из заголовка `Host`, поэтому HTTP/2-запрос к слушателю редиректа получал `404`.
+* Запрос без пригодного хоста получал `404` вместо `400`, а `Host: [::1]` без порта ронял редирект в `500`.
+:::
+
 ## HTTP Strict Transport Security Protocol (HSTS)
 
 HTTP Strict Transport Security (HSTS) — это дополнительное улучшение безопасности, которое указывается веб-сервером с помощью специального заголовка ответа. Когда браузер, поддерживающий HSTS, получает этот заголовок:
@@ -209,6 +223,35 @@ async fn main() -> std::io::Result<()> {
 
 ::: info
 [`with_preload()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.with_preload) и [`with_sub_domains()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.with_sub_domains) больше не принимают аргументов — они включают соответствующие флаги. Для отключения используйте [`without_preload()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.without_preload) / [`without_sub_domains()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.without_sub_domains). Все настройки HSTS задаются через замыкание [`with_hsts(|h| ...)`](https://docs.rs/volga/latest/volga/tls/struct.TlsConfig.html#method.with_hsts) на [`TlsConfig`](https://docs.rs/volga/latest/volga/tls/struct.TlsConfig.html).
+:::
+
+### Исключение хостов
+
+Некоторым хостам не стоит говорить «навсегда только HTTPS» — например, `localhost`, к которому разработчик ходит по обычному HTTP, или внутреннему имени, у которого нет публичного сертификата. Такие хосты перечисляет [`with_exclude_hosts()`](https://docs.rs/volga/latest/volga/tls/struct.HstsConfig.html#method.with_exclude_hosts):
+
+```rust compile
+use volga::{App, tls::TlsConfig};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new()
+        .with_tls(|tls| tls
+            .with_https_redirection()
+            .with_hsts(|hsts| hsts
+                .with_exclude_hosts(["localhost", "internal.example.com"])));
+
+    app.map_get("/hello", || async { "Hello, World!" });
+
+    app.run().await
+}
+```
+
+Хост сопоставляется **только по имени**, на любом порту: браузер хранит политику HSTS по имени хоста и применяет её, на каком бы порту он к этому хосту ни обратился, — различать порты этому списку просто незачем. Регистр, окружающие пробелы, префикс `user@` и завершающая точка игнорируются, поэтому `localhost` покрывает и `LOCALHOST:8443`, и `localhost.`.
+
+::: warning Изменено в 0.10.1
+Раньше из записи отбрасывались только `:443` и `:80`, поэтому совпадение решал порт: `example.com:8443` исключал этот хост на порту 8443 и больше нигде, а просто `example.com` — везде, *кроме* 8443. Браузер такой границы не проводит: у него одна политика на имя хоста, — поэтому как ни напиши, часть запросов, которые предполагалось исключить, всё равно получала предписание ходить только по HTTPS. А список, прочитанный из [файла конфигурации](../middleware-infrastructure/config-files.md) — `exclude_hosts` в секции `[tls.hsts_config]`, — вообще не проходил через нормализующий билдер, поэтому запись с любым портом, завершающей точкой или заглавной буквой не совпадала ни с чем. Теперь нормализуется каждая запись, где бы она ни была написана.
+
+В HTTP/2 `exclude_hosts` не срабатывал никогда: хост читался из заголовка `Host`, которого HTTP/2 не отправляет. Теперь он, как и для редиректа, читается сначала из цели запроса.
 :::
 
 Больше примеров вы можете найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/tls/src/main.rs).

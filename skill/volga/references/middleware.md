@@ -279,6 +279,31 @@ and `CacheControl::asset()` / `CacheControl::shell()` are the ready header
 presets for a handler. `App::with_cache_control` does **not** reach the
 static file server.
 
+The `ETag` follows the same split. `ETagSource::Metadata` hashes the file's
+length and the whole-second part of its `mtime`; `ETagSource::Content` hashes
+the bytes, costing one read per file version (cached, keyed by length,
+full-precision `mtime` and the platform's file identity). Assets default to
+`Metadata` — they are served `immutable`, so the tag is never consulted —
+and since 0.10.1 the shell defaults to `Content`, because two versions of an
+`index.html` rewritten by a content-hashed build collide on metadata and the
+old tag was answered `304` for changed content. Clients revalidate the shell
+once after that upgrade; asset tags are unchanged. Both tags stay **weak**
+whatever their source.
+
+<!-- snippet: skip -->
+```rust
+use volga::headers::ETagSource;
+
+App::new().with_host_env(|env| env
+    .with_asset_cache_control(|cc| cc.with_max_age(60))
+    .with_asset_etag(ETagSource::Content)   // narrowed ASSET, so tags matter
+    .with_shell_etag(ETagSource::Metadata));
+```
+
+Narrow `CacheControl::ASSET` and assets start revalidating — that is when
+`ETagSource::Content` is worth its read. Getters: `asset_etag()` /
+`shell_etag()`.
+
 ## Rate limiting (feature `rate-limiting`)
 
 Four algorithms, same three-step shape: define a policy, register it, apply

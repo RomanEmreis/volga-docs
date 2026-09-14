@@ -105,6 +105,14 @@ All three compose with the OS signal handler and with each other — whichever
 fires first wins. `shutdown_on` is safe to call before any runtime exists.
 Observe with `handle.is_shutdown_requested()` and `handle.cancelled()`.
 
+Once the signal arrives, the accept loop stops and `run()` waits for the open
+connections to finish, up to **10 seconds**, then releases the app's services
+and returns. A TLS handshake still in progress is dropped, not waited for.
+Before 0.10.1 that wait was skipped for every connection whenever a request
+happened to be in flight when the loop stopped — the usual case — so `run()`
+returned while responses were still being written, and under `run_blocking()`
+the end of `main` cut them off.
+
 ## Request cancellation
 
 <!-- snippet: skip -->
@@ -192,7 +200,8 @@ async fn health_check() {
 ```
 
 Each `TestServer` binds a free port and shares no global state, so tests run
-in parallel. `TestServer::spawn(setup)` is the one-liner form;
+in parallel. Since 0.10.1 the builder returns only once that port is bound,
+so a test's first request is no longer occasionally refused. `TestServer::spawn(setup)` is the one-liner form;
 `.configure(..)` reaches the `App` builder (for TLS, auth, CORS),
 `.with_https()` turns on TLS, `server.client()` is a preconfigured
 `reqwest::Client`, `server.ws("/ws")` opens a `TestWebSocket`, and

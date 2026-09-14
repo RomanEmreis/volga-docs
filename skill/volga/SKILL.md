@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.10.0"
+  volga-version: "0.10.1"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -21,8 +21,10 @@ arguments are extractors and whose return value is anything that implements
 **This skill describes volga 0.10.x.** The 0.9 line changed security
 defaults and removed a set of `with_default_*` helpers; 0.10.0 rebuilt how
 requests reach middleware, renamed the static file mount and made route
-groups a real scope. The response macros use a **semicolon** before custom
-headers. Most volga code a model has seen predates all of it. The
+groups a real scope; 0.10.1 moved a rejected bearer token from `403` to
+`401` and made a dependency graph that cannot resolve refuse to start. The
+response macros use a **semicolon** before custom headers. Most volga
+code a model has seen predates all of it. The
 [Non-negotiables](#non-negotiables) below are the places where writing
 older volga still *looks* right and does not compile — or compiles and
 rejects every request in production. Read them before writing code, every
@@ -39,7 +41,8 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.10"` | This skill applies as written |
+| `volga = "0.10"` or `"0.10.1"` | This skill applies as written — a caret requirement resolves to the newest 0.10.x |
+| `volga = "0.10.0"` pinned exactly | Same API, three different answers at runtime: a rejected token is answered `403` rather than `401`, a missing DI registration fails the first request instead of the start, and the shell's `ETag` comes from its metadata. Nothing has to change to upgrade |
 | `volga = "0.9"` | Static files, route groups, `HEAD` and unmatched requests all behave differently. Read `references/migration.md` first |
 | `volga = "0.8"` or older | Different auth defaults and helper methods too. Read `references/migration.md` first |
 | no `features` key | Only `http1` is on. Nearly everything below needs a feature — check the table in `references/operations.md` |
@@ -270,6 +273,58 @@ is removed. Two routes that reach one position under **different parameter
 names** panic at registration when they are the same verb, or a `GET` and a
 `HEAD`.
 
+### 16. A rejected bearer token is `401`, not `403`
+
+Since 0.10.1 a token that fails validation — expired, wrong signature,
+malformed, wrong `iss` / `aud` / `sub`, missing a required claim, not even
+decodable — is answered `401` with `invalid_token`. `403` is left to the one
+case RFC 6750 gives it: a **valid** token that lacks the role or permission
+the route asks for, answered with `insufficient_scope`. A credential that is
+not a bearer value at all is `400`, and a validation that could not complete
+(an unreadable verification key, an unreachable issuer) is `503`.
+
+Never write a test, a client refresh trigger or an alert that expects `403`
+from an expired token.
+
+### 17. An unresolvable DI graph stops the app at startup
+
+Since 0.10.1 `App::run()` validates the container before it binds anything
+and returns an `Err` naming every cycle and every missing registration at
+once. A service that nobody registered used to surface as a `500` on the
+first request that resolved it.
+
+A hand-written `impl Inject` declares nothing by default, so it is left out
+of that check — override `dependencies` to put it in:
+
+<!-- snippet: skip -->
+```rust
+use volga::di::{Container, Dependencies, Inject, error::Error};
+
+impl Inject for Repo {
+    fn inject(container: &Container) -> Result<Self, Error> {
+        Ok(Self { cache: container.resolve::<Cache>()? })
+    }
+
+    fn dependencies(deps: &mut Dependencies) {
+        deps.add::<Cache>();
+    }
+}
+```
+
+A factory declares its own arguments, so `add_scoped_factory(|c: Dc<Cache>| ..)`
+needs nothing extra. A cycle reached at resolution time panics naming the
+path, `A -> B -> A`, instead of deadlocking a worker thread (scoped) or
+aborting the process (transient).
+
+### 18. `#[http_header]` takes a unit struct, `#[derive(Claims)]` a struct
+
+Both used to compile and ignore what they were given. Since 0.10.1:
+
+* `#[http_header("x-api-key")] struct ApiKey;` — a field on that struct is
+  an error. The value lives in `Header<T>`, never in `T`.
+* `#[derive(Claims)]` on an enum or a union is an error. It expanded to an
+  empty `AuthClaims` impl before, so every authorizer silently said no.
+
 ## Checklist before handing code back
 
 - [ ] Every custom-header array is preceded by `;`, not `,`
@@ -279,4 +334,6 @@ names** panic at registration when they are the same verb, or a `GET` and a
 - [ ] No `.unwrap()` in a handler — return `HttpResult` and use `?`
 - [ ] `use_static_assets()`, not `map_static_assets()`; the mount is registered where it belongs in the pipeline
 - [ ] Global middleware that should not see unmatched requests checks `ctx.matched_route()`
+- [ ] Nothing expects `403` from a token that failed validation — that is `401`
+- [ ] A hand-written `impl Inject` declares what it resolves in `dependencies`
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean

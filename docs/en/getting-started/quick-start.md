@@ -79,6 +79,10 @@ Ensure routes are mapped before you start the server with:
 ```rust
 app.run().await
 ```
+::: tip New in 0.10.1
+A handler that does not fit now says so in volga's own words. [`FromRequest`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequest.html), `FromRequestRef`, [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) and `GenericHandler` carry their own diagnostics, so a closure whose argument is not an extractor — or whose return type nothing can turn into a response — is told which built-in extractors exist (`Json`, `Query`, `Form`, `Path`, `Header`) and where a type of your own plugs in, instead of failing against an unnameable internal trait bound.
+:::
+
 ## Testing the API
 
 You can test your API using the `curl` command:

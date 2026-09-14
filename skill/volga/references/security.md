@@ -68,7 +68,11 @@ impl AuthClaims for MyClaims {
 }
 ```
 
-`exp` is what makes a token expire — omit it and tokens never do.
+`exp` is what makes a token expire — omit it and tokens never do. The derive
+is for **structs**: since 0.10.1 an enum or a union is a compile error rather
+than an empty `AuthClaims` impl that made every authorizer say no. A struct
+with none of `role` / `roles` / `permissions` is fine — the trait's methods
+all have defaults.
 
 ### Issuing
 
@@ -164,9 +168,21 @@ App::new().with_bearer_auth(|auth| auth
 * `BearerTokenService::validation()` no longer exists — all token policy
   lives on `BearerAuthConfig`.
 
-Status codes on a guarded route: no credentials → `401` with a `Bearer`
-challenge; malformed `Authorization` → `400` with `invalid_request`; valid
-header, rejected token → `403` with a detailed challenge.
+Status codes on a guarded route, as RFC 6750 Section 3.1 assigns them:
+
+| What happened | Status | Challenge |
+|---|---|---|
+| no credentials at all | `401` | bare `Bearer`, no error code |
+| `Authorization` present but not a bearer value | `400` | `invalid_request` |
+| plaintext request while `require_https` is on | `400` | `invalid_request`, `HTTPS required` |
+| the token did not hold up — expired, bad signature, wrong `iss`/`aud`/`sub`/alg, missing claim, or it does not decode | `401` | `invalid_token` |
+| a valid token without the role or permission the route asks for | `403` | `insufficient_scope` |
+| validation could not complete — unreadable key, unreachable issuer | `503` | none |
+
+**Since 0.10.1 a rejected token is `401`, not `403`**, and a malformed one is
+`401` rather than `400`. `403` told a client holding a stale token that
+refreshing could not help, and disagreed with the `invalid_token` code beside
+it. Anything asserting `403` on an expired token is now wrong.
 
 ## OAuth 2.1 / OpenID Connect
 
@@ -402,7 +418,17 @@ directory. `TlsConfig` and `RedirectionConfig` are `#[non_exhaustive]` —
 builders only, no struct literals, no exhaustive matches.
 
 Redirection answers `307` in debug builds and `308` in release, so a cached
-redirect cannot pin a development machine.
+redirect cannot pin a development machine. The `Location` is built from the
+host the request was addressed to — read from the request target first and
+`Host` second, which is the only order that finds anything over HTTP/2 — with
+the HTTPS port substituted. A request with no usable host (none, more than
+one `Host`, or an invalid one) is answered `400`.
+
+Three 0.10.1 fixes here, all of which looked like "the redirect just does not
+happen": with the `http2` feature on (`full` includes it) the redirect
+listener accepted only HTTP/2, so browsers got nothing; an HTTP/2 request was
+answered `404` because the host was read from `Host` alone; and a request
+without a usable host was `404` rather than `400`.
 
 ## HSTS
 
@@ -423,3 +449,11 @@ App::new().with_tls(|tls| tls
 * The `TlsConfig::with_hsts_preload` / `with_hsts_max_age` /
   `with_hsts_sub_domains` / `with_hsts_exclude_hosts` shortcuts were
   removed; everything goes through the `with_hsts(|h| ...)` closure.
+* `with_exclude_hosts([..])` names hosts that are not sent the header. Since
+  0.10.1 an entry is matched by **host name on any port** — a port written in
+  the list is ignored, as are case, whitespace, a `user@` prefix and a
+  trailing dot — and entries read from a config file (`exclude_hosts` under
+  `[tls.hsts_config]`) are normalized the same way. Before that only `:443`
+  and `:80` were stripped, so `example.com:8443` excluded that host on 8443
+  alone and plain `example.com` excluded it everywhere but 8443; config-file
+  entries were not normalized at all, and nothing matched over HTTP/2.

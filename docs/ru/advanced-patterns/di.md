@@ -116,7 +116,7 @@ async fn main() -> std::io::Result<()> {
 
 #### Регистрация с помощью `Default` или фабрики
 
-Чтобы использовать метод [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped), тип должен реализовывать типаж [`Inject`](https://docs.rs/volga/latest/volga/di/inject/trait.Inject.html). Это удобный и мощный подход, когда ваш тип зависит от других сервисов, зарегистрированных в контейнере зависимостей.
+Чтобы использовать метод [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped), тип должен реализовывать типаж [`Inject`](https://docs.rs/volga/latest/volga/di/trait.Inject.html). Это удобный и мощный подход, когда ваш тип зависит от других сервисов, зарегистрированных в контейнере зависимостей.
 
 Однако, если у типа нет зависимостей, вы можете зарегистрировать его напрямую, используя фабрику:
 
@@ -155,6 +155,77 @@ app.add_scoped_default::<InMemoryCache>();
 * [`add_transient_default::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_default)
 
 Поведение аналогично **Scoped**, с ключевым отличием: **новый экземпляр создаётся для каждого внедрения**, а не один раз для каждого запроса или области действия.
+
+## Граф проверяется при старте
+
+Начиная с **0.10.1** [`App::run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) проверяет граф зависимостей до того, как что-либо запустить, и возвращает `Err`, перечисляя сразу все найденные проблемы, а не первую из них:
+
+```text
+dependency injection: dependency cycle: myapp::Repo -> myapp::Db -> myapp::Repo; `myapp::Api` depends on `myapp::Clock`, which is not registered
+```
+
+Пока проверка не пройдена, ничего не биндится, не спавнится и не объявляется — ни фоновая задача, ни слушатель HTTPS-редиректа, ни приветственная строка, — поэтому вызывающий код, который обработал ошибку и попробовал снова, найдёт порт свободным. До 0.10.1 незарегистрированный сервис обнаруживал первый же запрос, который его резолвил, — в виде `500` и только на своём маршруте.
+
+Проверяется то, что регистрация **декларирует**. Фабрика декларирует свои аргументы, поэтому контейнер уже знает, что она резолвит:
+
+```rust
+// говорит, что резолвит `Db`
+app.add_scoped_factory(|db: Dc<Db>| Repo { db });
+```
+
+Ручная реализация [`Inject`](https://docs.rs/volga/latest/volga/di/trait.Inject.html) резолвит из контейнера руками — значит, и декларирует это руками:
+
+```rust compile
+use volga::di::{Container, Dependencies, Inject, error::Error};
+
+#[derive(Default, Clone)]
+struct Clock;
+
+struct Session {
+    clock: Clock,
+}
+
+impl Inject for Session {
+    fn inject(container: &Container) -> Result<Self, Error> {
+        Ok(Self { clock: container.resolve::<Clock>()? })
+    }
+
+    // Без этого `Session` в проверку не попадёт
+    fn dependencies(deps: &mut Dependencies) {
+        deps.add::<Clock>();
+    }
+}
+```
+
+[`dependencies()`](https://docs.rs/volga/latest/volga/di/trait.Inject.html#method.dependencies) — метод с реализацией по умолчанию, и по умолчанию он не декларирует ничего: это оставляет тип вне стартовой проверки, не делая его при этом неправильным, и именно поэтому трейт получил новый метод, не сломав ни одной существующей реализации. Декларировать нужно ровно то, что резолвит `inject`: зависимость, объявленная здесь, но там не запрошенная, всё равно будет проверена.
+
+Тип, который ничего не декларирует, проверяется в момент конструирования — и это вторая половина изменения:
+
+::: warning Исправлено в 0.10.1
+Цикл в зависимостях раньше **вешал рабочий поток**, если проходил через scoped-сервисы, и переполнял стек, аварийно завершая процесс, если проходил через transient. Теперь цикл, встреченный при резолве, паникует, называя найденный путь: `A -> B -> A`.
+:::
+
+Та же проверка доступна прямо на [`ContainerBuilder`](https://docs.rs/volga/latest/volga/di/struct.ContainerBuilder.html) — для контейнера, собранного вне `App`:
+
+```rust compile
+use volga::di::ContainerBuilder;
+
+fn main() {
+    let mut builder = ContainerBuilder::new();
+    builder.register_singleton(42u32);
+
+    assert!(builder.validate().is_ok());
+
+    let container = builder.build();
+    let _ = container;
+}
+```
+
+::: tip Быстрее, и менять ничего не нужно
+В 0.10.1 также сократилась стоимость DI на запрос. Создание скоупа запроса больше не копирует карту регистраций — его цена зависит только от количества *scoped*-регистраций (404 нс → 20 нс для скоупа поверх 50 синглтонов и 3 scoped-сервисов; один атомарный инкремент, если scoped нет вовсе). [`resolve`](https://docs.rs/volga/latest/volga/di/struct.Container.html#method.resolve) клонирует разделяемый экземпляр на месте вместо того, чтобы брать на него `Arc`, а `Dc<T>` заимствует контейнер вместо его клонирования: при 8 потоках, резолвящих одновременно, синглтон из простых данных — 190 нс → 2 нс, ключ подписи cookie — 270 нс → 4 нс.
+
+Одно отличие в поведении: **transient**, полученный через `Container::resolve`, теперь перемещается, а не клонируется, поэтому `Clone` или `Drop` с побочными эффектами выполняется на один раз меньше при каждом резолве.
+:::
 
 ## Использование DI в middleware
 Чтобы внедрить зависимость в middleware, в случае использования [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) можно воспользоваться структурой [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) аналогично использованию в обработчиках запросов. Для [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) используйте метод [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve), либо [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) структуры [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).

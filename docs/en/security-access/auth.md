@@ -224,6 +224,16 @@ See the [OAuth 2.1 & OpenID Connect](./oauth.md) page for the full flow (issuer-
 
 The `jwt-auth-full` feature enables the [`Claims`](https://docs.rs/volga/latest/volga/auth/derive.Claims.html) derive macro for defining JWT claims. Alternatively, you can define claims using:
 
+::: warning Changed in 0.10.1
+The derive is for **structs** only. A JWT payload is a JSON object, and an enum or a union could never carry `role`, `roles` or `permissions` — the derive used to accept one and expand to an empty `AuthClaims` impl, so every authorizer silently said no. It is now a compile error:
+
+```text
+error: `Claims` can only be derived for structs
+```
+
+A struct carrying none of the three recognised fields is still fine: every method of the trait has a default.
+:::
+
 ### `claims!` macro
 
 ```rust
@@ -325,6 +335,27 @@ fn main() {
 
 ::: tip
 You can also chain rules with [`and()`](https://docs.rs/volga/latest/volga/auth/authorizer/enum.Authorizer.html#method.and) and [`or()`](https://docs.rs/volga/latest/volga/auth/authorizer/enum.Authorizer.html#method.or) combinators to express complex policies.
+:::
+
+## How a Rejected Request Is Answered
+
+Every rejection the bearer middleware makes carries the status and the `WWW-Authenticate` challenge RFC 6750 §3.1 assigns to it, so a client can tell "fix your header" from "get a new token" from "come back later" without parsing a message:
+
+| What happened | Status | Challenge |
+|---|---|---|
+| No `Authorization` header at all | `401` | bare `Bearer` — no error code, so a client can discover the resource metadata and start a flow |
+| An `Authorization` header that is not a well-formed bearer credential — wrong scheme, empty token | `400` | `invalid_request` |
+| A plaintext request while [`require_https`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.require_https) is on | `400` | `invalid_request`, `HTTPS required` |
+| A token that did not hold up: expired, not yet valid, wrong signature, wrong `iss` / `aud` / `sub` / algorithm, a missing required claim, or one that does not decode at all | `401` | `invalid_token`, with the reason in `error_description` |
+| A valid token that does not carry the role or permission the route asks for | `403` | `insufficient_scope` |
+| A validation that could not be completed — an unreadable verification key, an issuer that cannot be reached | `503` | none: the caller has nothing to fix |
+
+::: warning Changed in 0.10.1, without an opt-in
+A token that failed validation used to be answered `403`, and a malformed one — a credential that is not valid base64, whose payload is not JSON, or which is not UTF-8 — used to be answered `400`. Both are `401` now.
+
+`403` told a client holding a stale token that refreshing it could not help, which is exactly what would have helped, and it disagreed with the `invalid_token` code the challenge beside it already carried. `400` said the *request* was malformed when what was malformed was the credential in it. `403` is now reserved for the one case RFC 6750 gives it: a token that is valid and does not carry enough authority.
+
+Anything that checks for `403` on an expired token — a test, a client's refresh trigger, an alert — needs to check for `401` instead.
 :::
 
 ## Examples

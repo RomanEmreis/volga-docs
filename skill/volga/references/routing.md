@@ -142,6 +142,14 @@ and a handler written around that, reading `id` from a route that says
 `{name}`, now reads nothing. Positional extractors never looked at the name
 and are unaffected.
 
+A literal segment wins over a parameter wherever both could match, but only
+where it leads to a route: since 0.10.1 a lookup that runs out of literals
+backtracks to the nearest parameter it passed over. `GET /files/{name}`
+answers `/files/shared` even with `/files/shared/latest` mapped beside it —
+before 0.10.1 mapping the longer route made the shorter request `404`. A
+literal carrying a handler for another method still answers `405` rather
+than falling through to a parameter, and each node is visited at most once.
+
 ## Query parameters
 
 ```rust

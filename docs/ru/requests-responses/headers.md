@@ -157,6 +157,14 @@ curl "http://127.0.0.1:7878/hello" -H "x-api-key: 123-321"
 Received x-api-key: 123-321
 ```
 
+::: warning Изменено в 0.10.1
+Структура должна быть **unit-like**. Типизированный заголовок — это его имя: значение живёт в `Header<T>`, а не в самом `T`, поэтому поле здесь никто не читает, а конструкторы, которые генерирует макрос, молча бы его игнорировали. Раньше `#[http_header]` на структуре с полями компилировался; теперь это
+
+```text
+error: `#[http_header]` can only be applied to a unit-like struct
+```
+:::
+
 :::info
 Атрибут [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html) является частью дополнительной функции `macros`.
 Убедитесь, что она включена в вашем `Cargo.toml`:

@@ -49,7 +49,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-[`with_content_root()`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_content_root) sets the folder the files are served from. The path is used exactly as written, so a **relative** one — `with_content_root("static")` — resolves against the process's working directory, which is what a project laid out like the tree above wants. The default is the literal `/static`.
+[`with_content_root()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_content_root) sets the folder the files are served from. The path is used exactly as written, so a **relative** one — `with_content_root("static")` — resolves against the process's working directory, which is what a project laid out like the tree above wants. The default is the literal `/static`.
 
 ::: tip
 A leading slash makes the path absolute on Unix, so `"/static"` means `/static` at the filesystem root, not `project/static`. Drop it unless that is what you meant. A content root of `/` is reported on startup.
@@ -134,7 +134,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Since fallback files are disabled by default, we explicitly set the `404.html` file using [`with_fallback_file("404.html")`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_fallback_file).
+Since fallback files are disabled by default, we explicitly set the `404.html` file using [`with_fallback_file("404.html")`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_fallback_file).
 
 A more concise version of the above code is:
 
@@ -159,7 +159,7 @@ async fn main() -> std::io::Result<()> {
 The [`use_static_files()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_static_files) method combines [`use_static_assets()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_static_assets) and [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file). However, the fallback feature is only enabled if a fallback file is specified.
 
 ::: tip
-You can set [`with_fallback_file("index.html")`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_fallback_file) to always redirect to the main page for unknown routes.
+You can set [`with_fallback_file("index.html")`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_fallback_file) to always redirect to the main page for unknown routes.
 :::
 
 ## Serving Under a Prefix
@@ -194,7 +194,7 @@ The group's middleware — `wrap`, `with`, `filter`, `map_ok`, `authorize`, a ra
 
 ## Directory Browsing
 
-Like fallback files, directory browsing is disabled by default. You can enable it using [`with_files_listing()`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_files_listing). However, this is not recommended for production environments — an application that leaves it on in a release build says so on startup.
+Like fallback files, directory browsing is disabled by default. You can enable it using [`with_files_listing()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_files_listing). However, this is not recommended for production environments — an application that leaves it on in a release build says so on startup.
 
 ```rust compile
 use volga::App;
@@ -242,7 +242,7 @@ Every static file used to be served `max-age=86400, public, immutable`, the shel
 
 ### Configuring the policies
 
-Both roles are configured on [`HostEnv`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html). The builders receive the policy currently in effect, so narrowing a single directive does not mean restating the rest:
+Both roles are configured on [`HostEnv`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html). The builders receive the policy currently in effect, so narrowing a single directive does not mean restating the rest:
 
 ```rust compile
 use volga::App;
@@ -263,7 +263,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-[`with_asset_cache_control()`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_asset_cache_control) and [`with_shell_cache_control()`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_shell_cache_control) were added in **0.9.11**, and are read back with `asset_cache_control()` / `shell_cache_control()`. The two defaults are named by the [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/struct.CacheControl.html#associatedconstant.ASSET) and `CacheControl::SHELL` constants for anyone building a policy from scratch; `CacheControl::EMPTY` is the `const` equivalent of `CacheControl::default()`.
+[`with_asset_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_cache_control) and [`with_shell_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_cache_control) were added in **0.9.11**, and are read back with `asset_cache_control()` / `shell_cache_control()`. The two defaults are named by the [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) and `CacheControl::SHELL` constants for anyone building a policy from scratch; `CacheControl::EMPTY` is the `const` equivalent of `CacheControl::default()`.
 
 To restore the pre-0.9.11 behaviour on a deployment that wants it:
 
@@ -285,15 +285,57 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-::: tip
-The `ETag` is **weak**. RFC 9110 §8.8.1 reserves strong validation for octet-equality of the representation that is actually sent, and the compression middleware may re-encode a body after the static file server has set the header.
+### Where the `ETag` comes from
+
+A tag is derived either from what the filesystem says about a file or from the bytes in it, and the role decides which — a tag that is never read does not need to cost a read:
+
+| Role | Default | Why |
+|---|---|---|
+| **asset** | [`ETagSource::Metadata`](https://docs.rs/volga/latest/volga/headers/etag/enum.ETagSource.html) | it is served `immutable`, so a client never revalidates it and the tag is never consulted |
+| **shell** | [`ETagSource::Content`](https://docs.rs/volga/latest/volga/headers/etag/enum.ETagSource.html) | it is served `no-cache`, so the tag is what decides between a `304` and a full body on every navigation |
+
+`Metadata` hashes the file's byte length and the whole-second part of its `mtime` — what nginx, Apache and ASP.NET Core tag with, and free, because the server has already made that `stat`. `Content` hashes the bytes themselves: identical wherever one build is deployed, different as soon as a single byte is.
+
+::: warning Changed in 0.10.1, without an opt-in
+The index and the fallback file used to be tagged from their metadata like everything else, and two versions of a file collide there whenever they have the same length and an `mtime` in the same second. That is the ordinary case for the `index.html` of a content-hashed build: its `<script src="/assets/index-a1b2c3.js">` keeps its byte length across deploys, and a deployment that pins timestamps (`SOURCE_DATE_EPOCH`, `tar -p`, `rsync -t`) keeps the second too — so a client holding the old tag was answered `304` for changed content. The shell is now tagged from its bytes, which makes every client revalidate it once after the upgrade. Asset tags are unchanged.
 :::
 
-For a handler attaching one of these policies to a response of its own rather than configuring a server, [`CacheControl::asset()`](https://docs.rs/volga/latest/volga/headers/struct.CacheControl.html#method.asset) and `CacheControl::shell()` are the same two defaults as ready `Header<CacheControl>` presets, alongside `no_cache()`, `public()` and the rest.
+Both sources are configurable, on the same `HostEnv`:
+
+```rust compile
+use volga::{App, headers::ETagSource};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new()
+        .with_host_env(|env| env
+            // Assets that revalidate rather than being taken on trust,
+            // so their tags have to hold
+            .with_asset_cache_control(|cc| cc.with_max_age(60))
+            .with_asset_etag(ETagSource::Content)
+            // Back to the cheaper tag, for a deployment that never
+            // rewrites the shell in place
+            .with_shell_etag(ETagSource::Metadata));
+
+    app.use_static_files();
+
+    app.run().await
+}
+```
+
+[`with_asset_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_etag) and [`with_shell_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_etag) arrived in **0.10.1** and read back with `asset_etag()` / `shell_etag()`. The pairing to keep in mind is with `Cache-Control`: narrow [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) so assets start revalidating, and `ETagSource::Content` is what makes their answers trustworthy.
+
+A content tag costs **one read per file version**, not per request: it is remembered against the file's length and its `mtime` at full precision, plus whatever the platform can say about the file rather than its contents — the inode and change time on Unix, the creation time on Windows. A restart starts from an empty cache, and the cache is bounded, so a content root with a file per user does not grow an entry per file and keep it.
+
+::: tip
+The `ETag` is **weak** whatever it is derived from. RFC 9110 §8.8.1 reserves strong validation for octet-equality of the representation that is actually sent, and the compression middleware may re-encode a body after the static file server has set the header.
+:::
+
+For a handler attaching one of these policies to a response of its own rather than configuring a server, [`CacheControl::asset()`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#method.asset) and `CacheControl::shell()` are the same two defaults as ready `Header<CacheControl>` presets, alongside `no_cache()`, `public()` and the rest.
 
 ## Host Environment
 
-For more advanced scenarios, you can use the [`HostEnv`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html) struct, which represents the application's host environment. Using `HostEnv` directly makes it easier to switch between environments.
+For more advanced scenarios, you can use the [`HostEnv`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html) struct, which represents the application's host environment. Using `HostEnv` directly makes it easier to switch between environments.
 
 Here's how you can achieve the same configuration with `HostEnv`:
 
@@ -323,6 +365,6 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Additionally, [`HostEnv`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html) can be extracted in middlewares and request handlers.
+Additionally, [`HostEnv`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html) can be extracted in middlewares and request handlers.
 
 For a full example, see [this repository](https://github.com/RomanEmreis/volga/blob/main/examples/static_files/src/main.rs).

@@ -126,6 +126,23 @@ Two spellings cannot be told apart that way, so they are reported where they are
 
 Any other verb may name the position whatever it likes, and two routes on one verb that part at a position — `/users/{id}/posts` beside `/users/{name}/comments` — never meet at an endpoint and keep their own names too. A group prefix counts the same way, being a route pattern like any other.
 
+## A Literal Never Hides a Parameter
+
+Routes are matched segment by segment, and a literal segment wins over a parameter wherever both could match. What that does *not* mean is that a literal which leads nowhere wins: when the path it starts does not reach a route, the lookup goes back to the nearest parameter it passed over and carries on from there.
+
+```rust compile-fragment
+app.map_get("/files/{name}", || async { ok!("by name") });
+app.map_get("/files/shared/latest", || async { ok!("the shared one") });
+```
+
+`GET /files/shared/latest` is the literal route. `GET /files/shared` is not — `/files/shared` names no route of its own — so the lookup backtracks and the request is answered by `/files/{name}` with `name = "shared"`.
+
+::: warning Fixed in 0.10.1
+The lookup used to commit to the first literal it matched and never look back, so `/files/{name}` stopped answering `/files/shared` the moment `/files/shared/latest` was mapped. A route that worked started answering `404` because a longer route was added beside it — and nothing about the two patterns says they have anything to do with each other.
+:::
+
+A literal still takes precedence wherever it *does* lead to a route, and a literal that carries a handler for another method still answers `405` rather than falling through to a parameter. A lookup visits each node at most once, so nothing pays for backtracking in the shapes where it never happens.
+
 Using these examples, you can add dynamic routing to your Volga-based web server, enhancing the flexibility and functionality of your applications.
 
 Check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/route_params/src/main.rs)

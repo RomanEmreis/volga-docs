@@ -141,6 +141,10 @@ async fn main() -> std::io::Result<()> {
 
 It answers `true` when routing matched an endpoint for this request, and `false` for the requests answered by the fallback or by a `405`. It answers the same at every layer: a route's or a group's own middleware runs after the route pipeline has been taken and still sees `true`. The CORS middleware is the first caller — it gates the preflight short-circuit on it.
 
+::: tip Faster in 0.10.1, with nothing to change
+The chain no longer allocates for stages that only pass the request on, and a handler with no captured state no longer touches a reference count. Routing, chain and handler, measured in-process: no middleware 274 ns → 215 ns, one global middleware 368 ns → 257 ns. The CORS middleware clones the applicable policy once per request instead of twice.
+:::
+
 ## .wrap() vs .with()
 As you may have noticed, there are two similar methods for configuring the middleware pipeline. The [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) method offers lower-level access and provides full control over the entire [`HttpRequest`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequest.html), including the [`HttpBody`](https://docs.rs/volga/latest/volga/http/body/struct.HttpBody.html). This makes it ideal for advanced use cases such as compression, decompression, encoding, or decoding. In contrast, the [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) method is designed for convenience and covers around 80% of typical scenarios. It offers flexible access to dependency injection, [`HttpHeaders`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html), and other request metadata, but does not expose the request body.
 

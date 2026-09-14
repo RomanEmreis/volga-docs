@@ -92,6 +92,10 @@ app.map_get("/hello", || {
 app.run().await
 ```
 
+::: tip Появилось в 0.10.1
+Обработчик, который не подходит, теперь говорит об этом словами самой volga. У [`FromRequest`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequest.html), `FromRequestRef`, [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) и `GenericHandler` появились собственные диагностики: замыкание, чей аргумент не является экстрактором — или чей возвращаемый тип не превращается в ответ, — узнаёт, какие встроенные экстракторы существуют (`Json`, `Query`, `Form`, `Path`, `Header`) и куда подключается собственный тип, вместо ошибки о внутреннем трейте, который даже нельзя импортировать.
+:::
+
 ## Тестирование API
 
 Вы можете протестировать своё API при помощи команды `curl`:

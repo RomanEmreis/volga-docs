@@ -49,7 +49,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-[`with_content_root()`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_content_root) задаёт папку, из которой раздаются файлы. Путь используется ровно так, как написан, поэтому **относительный** — `with_content_root("static")` — разрешается относительно рабочего каталога процесса, что и нужно проекту с раскладкой как выше. Значение по умолчанию — буквально `/static`.
+[`with_content_root()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_content_root) задаёт папку, из которой раздаются файлы. Путь используется ровно так, как написан, поэтому **относительный** — `with_content_root("static")` — разрешается относительно рабочего каталога процесса, что и нужно проекту с раскладкой как выше. Значение по умолчанию — буквально `/static`.
 
 ::: tip
 Ведущий слеш делает путь абсолютным на Unix, поэтому `"/static"` означает `/static` в корне файловой системы, а не `project/static`. Убирайте его, если имелось в виду не это. О корневой папке контента `/` сообщается при старте.
@@ -134,7 +134,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Поскольку такие специальные резервные файлы отключены по умолчанию, мы явно задаем файл `404.html` с помощью метода [`with_fallback_file("404.html")`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_fallback_file).
+Поскольку такие специальные резервные файлы отключены по умолчанию, мы явно задаем файл `404.html` с помощью метода [`with_fallback_file("404.html")`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_fallback_file).
 
 Для упрощения можно использовать [`use_static_files()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_static_files), который объединяет [`use_static_assets()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_static_assets) и [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file), Однако, последний метод будет задействован, только если указан специальный резервный файл:
 
@@ -157,7 +157,7 @@ async fn main() -> std::io::Result<()> {
 ```
 
 ::: tip
-Можно установить [`with_fallback_file("index.html")`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_fallback_file), чтобы перенаправлять неизвестные маршруты на главную страницу.
+Можно установить [`with_fallback_file("index.html")`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_fallback_file), чтобы перенаправлять неизвестные маршруты на главную страницу.
 :::
 
 ## Раздача под префиксом
@@ -192,7 +192,7 @@ Middleware группы — `wrap`, `with`, `filter`, `map_ok`, `authorize`, о�
 
 ## Просмотр каталогов
 
-По умолчанию просмотр каталогов отключен. Его можно включить с помощью [`with_files_listing()`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_files_listing), однако это не рекомендуется для продакшн-сред — приложение, оставившее его включённым в release-сборке, сообщает об этом при старте.
+По умолчанию просмотр каталогов отключен. Его можно включить с помощью [`with_files_listing()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_files_listing), однако это не рекомендуется для продакшн-сред — приложение, оставившее его включённым в release-сборке, сообщает об этом при старте.
 
 ```rust compile
 use volga::App;
@@ -240,7 +240,7 @@ Asset никогда не меняется под тем же URL, поэтом�
 
 ### Настройка политик
 
-Обе роли настраиваются на [`HostEnv`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html). Билдеры получают текущую политику, поэтому чтобы сузить одну директиву, не нужно перечислять остальные:
+Обе роли настраиваются на [`HostEnv`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html). Билдеры получают текущую политику, поэтому чтобы сузить одну директиву, не нужно перечислять остальные:
 
 ```rust compile
 use volga::App;
@@ -261,7 +261,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-[`with_asset_cache_control()`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_asset_cache_control) и [`with_shell_cache_control()`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html#method.with_shell_cache_control) добавлены в **0.9.11** и читаются обратно через `asset_cache_control()` / `shell_cache_control()`. Обе политики по умолчанию названы константами [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/struct.CacheControl.html#associatedconstant.ASSET) и `CacheControl::SHELL` — на случай, если политику собирают с нуля; `CacheControl::EMPTY` — это `const`-эквивалент `CacheControl::default()`.
+[`with_asset_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_cache_control) и [`with_shell_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_cache_control) добавлены в **0.9.11** и читаются обратно через `asset_cache_control()` / `shell_cache_control()`. Обе политики по умолчанию названы константами [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) и `CacheControl::SHELL` — на случай, если политику собирают с нуля; `CacheControl::EMPTY` — это `const`-эквивалент `CacheControl::default()`.
 
 Чтобы вернуть поведение до 0.9.11 там, где оно нужно:
 
@@ -283,15 +283,57 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-::: tip
-`ETag` — **слабый**. RFC 9110 §8.8.1 оставляет строгую валидацию для побайтового равенства того представления, которое действительно отправляется, а middleware сжатия может перекодировать тело уже после того, как сервер статических файлов проставил заголовок.
+### Откуда берётся `ETag`
+
+Тег выводится либо из того, что о файле говорит файловая система, либо из его байтов, и выбирает между ними роль — тег, который никто не читает, не должен стоить чтения файла:
+
+| Роль | По умолчанию | Почему |
+|---|---|---|
+| **asset** | [`ETagSource::Metadata`](https://docs.rs/volga/latest/volga/headers/etag/enum.ETagSource.html) | раздаётся с `immutable`, поэтому клиент его никогда не перепроверяет и до тега дело не доходит |
+| **shell** | [`ETagSource::Content`](https://docs.rs/volga/latest/volga/headers/etag/enum.ETagSource.html) | раздаётся с `no-cache`, поэтому именно тег решает между `304` и полным телом при каждой навигации |
+
+`Metadata` хеширует длину файла в байтах и целую секунду его `mtime` — то же, чем тегируют nginx, Apache и ASP.NET Core, и это бесплатно: `stat` сервер уже сделал. `Content` хеширует сами байты: одинаково везде, куда выложена одна сборка, и по-разному, как только отличается хотя бы один байт.
+
+::: warning Изменено в 0.10.1, без возможности отказаться
+Индексный и резервный файлы раньше тегировались по метаданным, как и всё остальное, а две версии файла там совпадают всякий раз, когда у них одна длина и `mtime` в пределах одной секунды. Для `index.html` сборки с хешами в именах это обычный случай: его `<script src="/assets/index-a1b2c3.js">` сохраняет длину от деплоя к деплою, а деплой с фиксированными временными метками (`SOURCE_DATE_EPOCH`, `tar -p`, `rsync -t`) сохраняет и секунду — поэтому клиент со старым тегом получал `304` на изменившееся содержимое. Теперь shell тегируется по своим байтам, и после обновления каждый клиент один раз его перепроверит. Теги ассетов не изменились.
 :::
 
-Если политику нужно проставить в ответе обработчика, а не настроить на сервере, [`CacheControl::asset()`](https://docs.rs/volga/latest/volga/headers/struct.CacheControl.html#method.asset) и `CacheControl::shell()` — те же две политики в виде готовых пресетов `Header<CacheControl>`, рядом с `no_cache()`, `public()` и остальными.
+Оба источника настраиваются, на том же `HostEnv`:
+
+```rust compile
+use volga::{App, headers::ETagSource};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new()
+        .with_host_env(|env| env
+            // Ассеты, которые перепроверяются, а не принимаются на веру,
+            // поэтому их теги должны быть надёжными
+            .with_asset_cache_control(|cc| cc.with_max_age(60))
+            .with_asset_etag(ETagSource::Content)
+            // Обратно к более дешёвому тегу — для деплоя, который
+            // никогда не перезаписывает shell на месте
+            .with_shell_etag(ETagSource::Metadata));
+
+    app.use_static_files();
+
+    app.run().await
+}
+```
+
+[`with_asset_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_etag) и [`with_shell_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_etag) появились в **0.10.1** и читаются обратно через `asset_etag()` / `shell_etag()`. Держать в голове стоит их связку с `Cache-Control`: стоит сузить [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET), и ассеты начнут перепроверяться — а надёжными их ответы делает как раз `ETagSource::Content`.
+
+Тег по содержимому стоит **одного чтения на версию файла**, а не на запрос: он запоминается по длине файла и его `mtime` в полной точности плюс всему, что платформа может сказать о самом файле, а не о его содержимом — inode и времени изменения на Unix, времени создания на Windows. После перезапуска кеш пуст, а сам он ограничен по размеру, так что корень контента с файлом на пользователя не обрастает записью на каждый файл навсегда.
+
+::: tip
+`ETag` — **слабый**, из чего бы он ни выводился. RFC 9110 §8.8.1 оставляет строгую валидацию для побайтового равенства того представления, которое действительно отправляется, а middleware сжатия может перекодировать тело уже после того, как сервер статических файлов проставил заголовок.
+:::
+
+Если политику нужно проставить в ответе обработчика, а не настроить на сервере, [`CacheControl::asset()`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#method.asset) и `CacheControl::shell()` — те же две политики в виде готовых пресетов `Header<CacheControl>`, рядом с `no_cache()`, `public()` и остальными.
 
 ## Хост-среда
 
-Для более сложных сценариев можно использовать [`HostEnv`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html), который представляет хост-среду приложения.
+Для более сложных сценариев можно использовать [`HostEnv`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html), который представляет хост-среду приложения.
 Использование его напрямую упрощает управление и переключение между средами.
 
 Вот как можно добиться той же конфигурации с помощью `HostEnv`:
@@ -322,6 +364,6 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Кроме того, [`HostEnv`](https://docs.rs/volga/latest/volga/app/env/struct.HostEnv.html) можно извлекать в middleware и обработчики запросов.
+Кроме того, [`HostEnv`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html) можно извлекать в middleware и обработчики запросов.
 
 Полный пример можно найти в [этом репозитории](https://github.com/RomanEmreis/volga/blob/main/examples/static_files/src/main.rs).
