@@ -2,7 +2,7 @@
 
 Волга предоставляет централизованный механизм обработки ошибок, который перехватывает все ошибки, реализующие типаж [`Error`](https://doc.rust-lang.org/std/error/trait.Error.html), возникающие в обработчиках запросов и middleware. Для этого можно воспользоваться методом [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) типа [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) для регистрации функции, обрабатывающей ошибки.
 
-Функция принимает объект типа [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) и должна вернуть ответ, реализующий типаж [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html).
+Функция принимает объект типа [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) и должна вернуть ответ, реализующий типаж [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html). Как и обработчик запроса, она может быть [асинхронной или синхронной](/volga-docs/ru/getting-started/handlers.html).
 
 ### Пример:
 ```rust compile

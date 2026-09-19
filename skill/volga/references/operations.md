@@ -105,13 +105,48 @@ All three compose with the OS signal handler and with each other — whichever
 fires first wins. `shutdown_on` is safe to call before any runtime exists.
 Observe with `handle.is_shutdown_requested()` and `handle.cancelled()`.
 
-Once the signal arrives, the accept loop stops and `run()` waits for the open
-connections to finish, up to **10 seconds**, then releases the app's services
-and returns. A TLS handshake still in progress is dropped, not waited for.
-Before 0.10.1 that wait was skipped for every connection whenever a request
-happened to be in flight when the loop stopped — the usual case — so `run()`
-returned while responses were still being written, and under `run_blocking()`
-the end of `main` cut them off.
+Once the signal arrives, the accept loop stops and the open connections are
+told to close after the response they are serving. `run()` waits for them up
+to the **shutdown timeout** — 10 seconds by default — and then **closes**
+whatever is still open: its request's `CancellationToken` is cancelled and
+the response is dropped. `run()` returns once every connection is gone (the
+HTTPS redirect listener's included), then releases the app's services. A TLS
+handshake still in progress is dropped, not waited for.
+
+Set the timeout (0.11.0+) in code or in the config file; `Duration::ZERO`
+closes open connections immediately:
+
+```rust
+use std::time::Duration;
+
+let app = App::new().with_shutdown_timeout(Duration::from_secs(30));
+```
+
+```toml
+[server]
+shutdown_timeout_secs = 30
+```
+
+`ShutdownHandle` is also an **extractor** (0.11.0+): a handler or middleware
+taking one gets the running server's handle, whether or not the app was
+built with `with_shutdown`. No DI registration is needed for an admin
+endpoint:
+
+```rust
+use volga::{ShutdownHandle, ok};
+
+app.map_post("/admin/shutdown", |handle: ShutdownHandle| {
+    handle.shutdown();
+    ok!("shutting down")
+});
+```
+
+`handle.cancelled()` is a `'static` future resolving when the shutdown
+starts — the signal for a response that never ends on its own (SSE, a
+proxied stream) to end itself instead of being cut off at the timeout. See
+`realtime.md`. It is **not** the same signal as the request's
+`CancellationToken`, which is not cancelled when the shutdown starts, since
+requests in flight are still answered.
 
 ## Request cancellation
 
@@ -128,8 +163,24 @@ app.map_get("/long-task", |token: CancellationToken| async move {
 });
 ```
 
-The token is cancelled when the client disconnects. This is Tokio's
-`CancellationToken`, so `is_cancelled()` polling works too. Requests that
+The token is cancelled when the connection fails (the client disconnected)
+and when a graceful shutdown's timeout closes the connection — not when a
+shutdown merely starts. This is Tokio's `CancellationToken`, so
+`is_cancelled()` polling works too. The handler is dropped with its
+connection, so the token matters most for work that outlives it: a spawned
+task, or a `blocking` body, which is never cancelled for you:
+
+```rust
+use volga::{CancellationToken, blocking};
+
+app.map_get("/crunch", blocking(|token: CancellationToken| {
+    for _ in 0..5 {
+        if token.is_cancelled() { break; }
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+    "done"
+}));
+``` Requests that
 finish in a few hundred milliseconds are unaffected — the win is on long
 work the client walked away from.
 

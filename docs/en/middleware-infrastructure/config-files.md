@@ -190,7 +190,7 @@ Volga automatically recognizes and applies certain reserved sections from the co
 
 | Section      | Feature Flag   | Fields                                                        |
 |--------------|----------------|---------------------------------------------------------------|
-| `[server]`   | *(always)*     | `host`, `port`, `body_limit_bytes`, `max_header_count`, `max_connections` |
+| `[server]`   | *(always)*     | `host`, `port`, `body_limit_bytes`, `max_header_count`, `max_connections`, `shutdown_timeout_secs` |
 | `[tls]`      | `tls`          | TLS certificate configuration                                |
 | `[tracing]`  | `tracing`      | Tracing/logging configuration                                |
 | `[openapi]`  | `openapi`      | OpenAPI specification settings                                |
@@ -204,7 +204,10 @@ host = "0.0.0.0"
 port = 8080
 body_limit_bytes = 1048576
 max_connections = 1000
+shutdown_timeout_secs = 30
 ```
+
+`shutdown_timeout_secs` is how long a [graceful shutdown](/volga-docs/en/reliability-observability/graceful-shutdown.html#shutdown-timeout) waits for open connections before it closes them; `0` closes them right away.
 
 ::: tip
 Built-in sections are applied at startup only. They are **not** affected by hot-reload.

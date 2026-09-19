@@ -51,4 +51,31 @@ Message::new().json(payload);
 In addition to setting the message data, the `Message` builder also supports customization of the event name, ID, comments, and client reconnection retry interval. For details on the SSE message format, refer to [MDN's guide](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format).
 
 
+## Ending the Stream on Shutdown
+
+An SSE stream that never ends on its own keeps its connection open until the [shutdown timeout](/volga-docs/en/reliability-observability/graceful-shutdown.html#shutdown-timeout) closes it. To end it as soon as a shutdown starts, take the [`ShutdownHandle`](https://docs.rs/volga/latest/volga/app/shutdown/struct.ShutdownHandle.html) extractor and stop the stream on its `cancelled()` future:
+
+```rust compile
+use std::time::Duration;
+use futures_util::StreamExt;
+use volga::{App, ShutdownHandle, http::sse::{Message, SseStream}, sse_stream};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_get("/events", |shutdown: ShutdownHandle| async move {
+        let events = sse_stream! {
+            loop {
+                yield Message::new().data("Hello, world!");
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+        };
+        SseStream::new(events.take_until(shutdown.cancelled()))
+    });
+
+    app.run().await
+}
+```
+
 You may also find a full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/sse/src/main.rs).

@@ -2,7 +2,7 @@
 
 Volga provides a global error handling mechanism that catches all [`Error`](https://doc.rust-lang.org/std/error/trait.Error.html) values that may occur in request handlers and middleware. This can be easily achieved using the [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) method of the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) to register a function that handles errors.  
 
-The function receives an [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) object and should return a response that implements the [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) trait.  
+The function receives an [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) object and should return a response that implements the [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) trait. Like a request handler, it can be [asynchronous or synchronous](/volga-docs/en/getting-started/handlers.html).
 
 ### Example:
 ```rust compile

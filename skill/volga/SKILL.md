@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.10.1"
+  volga-version: "0.11.0"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -14,15 +14,17 @@ metadata:
 
 `volga` is an explicit, composable web framework on top of Tokio and hyper.
 An `App` owns the router, the DI container, the middleware pipeline and the
-server configuration. Handlers are plain async functions or closures whose
-arguments are extractors and whose return value is anything that implements
-`IntoResponse`.
+server configuration. Handlers are plain functions or closures — async, or
+since 0.11.0 synchronous — whose arguments are extractors and whose return
+value is anything that implements `IntoResponse`.
 
-**This skill describes volga 0.10.x.** The 0.9 line changed security
+**This skill describes volga 0.11.x.** The 0.9 line changed security
 defaults and removed a set of `with_default_*` helpers; 0.10.0 rebuilt how
 requests reach middleware, renamed the static file mount and made route
 groups a real scope; 0.10.1 moved a rejected bearer token from `403` to
-`401` and made a dependency graph that cannot resolve refuse to start. The
+`401` and made a dependency graph that cannot resolve refuse to start;
+0.11.0 added synchronous handlers, `blocking`, catch-all routes and a
+shutdown timeout that closes what is still open. The
 response macros use a **semicolon** before custom headers. Most volga
 code a model has seen predates all of it. The
 [Non-negotiables](#non-negotiables) below are the places where writing
@@ -41,8 +43,9 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.10"` or `"0.10.1"` | This skill applies as written — a caret requirement resolves to the newest 0.10.x |
-| `volga = "0.10.0"` pinned exactly | Same API, three different answers at runtime: a rejected token is answered `403` rather than `401`, a missing DI registration fails the first request instead of the start, and the shell's `ETag` comes from its metadata. Nothing has to change to upgrade |
+| `volga = "0.11"` or `"0.11.0"` | This skill applies as written — a caret requirement resolves to the newest 0.11.x |
+| `volga = "0.10"` or `"0.10.x"` | No synchronous handlers, `blocking`, catch-all routes, shutdown timeout or `ShutdownHandle` extractor — every handler must be `async`. Read the 0.10.x → 0.11.0 path in `references/migration.md` before upgrading |
+| `volga = "0.10.0"` pinned exactly | As 0.10.x, and three different answers at runtime: a rejected token is answered `403` rather than `401`, a missing DI registration fails the first request instead of the start, and the shell's `ETag` comes from its metadata |
 | `volga = "0.9"` | Static files, route groups, `HEAD` and unmatched requests all behave differently. Read `references/migration.md` first |
 | `volga = "0.8"` or older | Different auth defaults and helper methods too. Read `references/migration.md` first |
 | no `features` key | Only `http1` is on. Nearly everything below needs a feature — check the table in `references/operations.md` |
@@ -70,7 +73,7 @@ Each file is self-contained; load only what the task calls for.
 | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, DPoP, machine-to-machine grants, TLS, HSTS | `references/security.md` |
 | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events | `references/realtime.md` |
 | Feature flags, tracing, cancellation, graceful shutdown, OpenAPI, tests, deployment | `references/operations.md` |
-| A compile error on code that "used to work", or upgrading from 0.9.x / 0.8.x | `references/migration.md` |
+| A compile error on code that "used to work", or upgrading from 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
 
 ## An app that works
 
@@ -119,7 +122,7 @@ reachable from the network, `bind` explicitly.
 
 ## Non-negotiables
 
-Each one is a real difference between 0.10.x and what older code or an
+Each one is a real difference between 0.11.x and what older code or an
 untrained guess produces.
 
 ### 1. Custom headers come after a semicolon
@@ -325,6 +328,45 @@ Both used to compile and ignore what they were given. Since 0.10.1:
 * `#[derive(Claims)]` on an enum or a union is an error. It expanded to an
   empty `AuthClaims` impl before, so every authorizer silently said no.
 
+### 19. A synchronous handler runs on the worker — blocking work goes in `blocking`
+
+Since 0.11.0 a handler (and `filter` / `map_ok` / `map_err` / `tap_req`)
+with nothing to await may be a plain `fn` or closure:
+`app.map_get("/sum/{x}/{y}", |x: i32, y: i32| x + y)`. It runs inline on the
+runtime worker polling the request. Anything that actually blocks —
+`std::fs`, `std::thread::sleep`, a synchronous DB driver, heavy CPU — must be
+wrapped:
+
+```rust
+use volga::{HttpResult, blocking, ok};
+
+app.map_get("/reports/{id}", blocking(|id: u32| -> HttpResult {
+    ok!(std::fs::read_to_string(format!("reports/{id}.txt"))?)
+}));
+```
+
+`blocking` is not cancelled with the request; a long body checks a
+`CancellationToken`. `with`, `wrap` and `attach` stay async. Code that spells
+handler generics out needs one more `_` for the shape marker:
+`map_get::<_, _, (i32,), _>`.
+
+### 20. A catch-all value is not a safe file path
+
+`{*path}` (0.11.0+) binds the rest of the path **unnormalized** — `..`
+included. Never `Path::new(root).join(path)` it without rejecting `..`,
+roots and drive prefixes or canonicalizing and checking the prefix; serve
+files with `use_static_files()`. A catch-all must be the last segment, or
+mapping panics.
+
+### 21. Endless responses end on the shutdown signal
+
+Since 0.11.0 a graceful shutdown **closes** connections still open when
+`with_shutdown_timeout` (default 10 s) runs out. An SSE feed or proxied
+stream should take the `ShutdownHandle` extractor and stop on
+`shutdown.cancelled()` — `SseStream::new(events.take_until(shutdown.cancelled()))`
+— rather than be cut off. The request's `CancellationToken` does not fire
+when the shutdown starts.
+
 ## Checklist before handing code back
 
 - [ ] Every custom-header array is preceded by `;`, not `,`
@@ -336,4 +378,7 @@ Both used to compile and ignore what they were given. Since 0.10.1:
 - [ ] Global middleware that should not see unmatched requests checks `ctx.matched_route()`
 - [ ] Nothing expects `403` from a token that failed validation — that is `401`
 - [ ] A hand-written `impl Inject` declares what it resolves in `dependencies`
+- [ ] No synchronous handler does blocking I/O or sleeps outside `blocking`
+- [ ] A catch-all value joined onto a directory is checked for `..` and absolute paths
+- [ ] Endless streams stop on `ShutdownHandle::cancelled()`
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean

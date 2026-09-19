@@ -80,8 +80,11 @@ group is not replaced by the enclosing group's.
 
 ## Handlers
 
-A handler is any async function or closure whose parameters are extractors
-and whose return type implements `IntoResponse`. Both of these are handlers:
+A handler is a function or closure whose parameters are extractors and whose
+result implements `IntoResponse`. Since 0.11.0 it comes in two shapes, told
+apart by the signature: **asynchronous** (`async fn`, or a closure returning
+a future) and **synchronous** (a plain `fn`, or a closure returning the
+response itself). All of these are handlers:
 
 <!-- snippet: skip -->
 ```rust
@@ -94,7 +97,50 @@ async fn get_user(id: u64, repo: Dc<Repo>) -> HttpResult {
     }
 }
 app.map_get("/users/{id}", get_user);
+
+// synchronous: nothing to await, so no future to build (0.11.0+)
+app.map_get("/sum/{x}/{y}", |x: i32, y: i32| x + y);
+app.map_get("/hello/{name}", |name: String| ok!("Hello {name}!"));
 ```
+
+Use the synchronous shape for work with nothing to await — formatting,
+arithmetic, an in-memory lookup, a header check. Extraction is identical:
+`Json<T>`, `Form<T>`, `Query<T>` and `Dc<T>` arrive with the body already
+read, and OpenAPI describes the route the same way. It runs inline on the
+runtime worker polling the request, like an `async` body with no `.await`,
+and costs the same.
+
+A synchronous body that **blocks** — `std::fs`, a synchronous DB driver, a
+long computation — goes in `volga::blocking`, which runs it on Tokio's
+blocking pool while the extractors still run on the worker:
+
+```rust
+use volga::{blocking, HttpResult};
+
+app.map_get("/reports/{id}", blocking(|id: u32| -> HttpResult {
+    let report = std::fs::read_to_string(format!("reports/{id}.txt"))?;
+    ok!(report)
+}));
+```
+
+`blocking` takes only a synchronous handler (an `async` one is a compile
+error), shares it across requests instead of cloning it (captures need not
+be `Clone`), and resumes a panic on the awaiting task. The offloaded call is
+**not** cancelled with the request — a long body checks a
+`CancellationToken` itself. Never put blocking work in a plain synchronous
+handler: it stalls every other request that worker would have polled.
+
+Both shapes are accepted by every `map_*` and `map` on `App` and
+`RouteGroup`, `map_fallback`, `map_err`, `map_conn` and `map_msg`.
+
+The shape is carried by a marker (`volga::marker::{Async, Immediate}`),
+the **last** generic parameter of every registering method and handler
+trait, defaulted to `Async`. It is inferred, so only a call site that spells
+generics out changes: `app.map_get::<_, _, (i32,), _>(..)`. A bound
+`F: GenericHandler<Args>` still means the async shape; add a generic `M`
+(`F: GenericHandler<Args, M>`) to accept both. `App::map` / `RouteGroup::map`
+call their method parameter `V`, and `map_msg` / `MessageHandler` call the
+message type `Msg`.
 
 Returning `HttpResult` is the normal choice: it lets `?` propagate failures
 into the error pipeline. Bare `i32`, `String`, `&'static str`, `Vec<u8>`,
@@ -149,6 +195,44 @@ answers `/files/shared` even with `/files/shared/latest` mapped beside it —
 before 0.10.1 mapping the longer route made the shorter request `404`. A
 literal carrying a handler for another method still answers `405` rather
 than falling through to a parameter, and each node is visited at most once.
+
+### Catch-all parameters (0.11.0+)
+
+A route's **last** segment can be `{*name}`, binding the rest of the path as
+one value:
+
+```rust
+// GET /files/docs/2026/report.pdf -> path = "docs/2026/report.pdf"
+app.map_get("/files/{*path}", |path: String| async move { ok!("{path}") });
+```
+
+* It reads **at least one** segment: `/files` and `/files/` are not
+  answered by it and can be mapped separately.
+* The value is the path as sent, separators and a trailing `/` kept.
+  Positional extractors (`String`, `Path<T>`) read it undecoded;
+  `NamedPath<T>` decodes percent-escapes.
+* Precedence at every position: literal, then parameter, then catch-all;
+  the first position two routes differ at decides, in any mapping order.
+  `/assets/{*path}` answers `/assets/app.js` ahead of `/{lang}/{page}`.
+* A segment after a catch-all — including a route inside a group whose
+  prefix ends in one — **panics** at mapping. One verb naming the catch-all
+  differently twice panics like any parameter.
+* **Nothing is normalized**: `GET /files/../../etc/passwd` binds
+  `"../../etc/passwd"`. A handler joining the value onto a directory must
+  reject `..`, roots and drive prefixes, or canonicalize and check the
+  prefix. For serving files use `use_static_files()`, which does this.
+* OpenAPI describes it as the path parameter `{name}`. Beside a parameter
+  route of the same verb at the same position (`/files/{name}` and
+  `/files/{*path}`) the catch-all is left out of the shared document, with a
+  debug-build warning at startup.
+
+### How values are decoded
+
+Positional extractors read a parameter exactly as written in the path.
+`NamedPath<T>` decodes percent-escapes and nothing else: `&` and `+` are
+literal path characters, so `/files/C++` is `"C++"` and `/users/a&admin=true`
+is the single value `"a&admin=true"` (0.11.0; earlier versions form-decoded
+it, splitting on `&` and turning `+` into a space).
 
 ## Query parameters
 

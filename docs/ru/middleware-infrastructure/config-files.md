@@ -190,7 +190,7 @@ async fn main() -> std::io::Result<()> {
 
 | Секция       | Feature-флаг   | Поля                                                          |
 |--------------|----------------|---------------------------------------------------------------|
-| `[server]`   | *(всегда)*     | `host`, `port`, `body_limit_bytes`, `max_header_count`, `max_connections` |
+| `[server]`   | *(всегда)*     | `host`, `port`, `body_limit_bytes`, `max_header_count`, `max_connections`, `shutdown_timeout_secs` |
 | `[tls]`      | `tls`          | Настройки TLS-сертификатов                                    |
 | `[tracing]`  | `tracing`      | Настройки трассировки/логирования                             |
 | `[openapi]`  | `openapi`      | Настройки спецификации OpenAPI                                |
@@ -204,7 +204,10 @@ host = "0.0.0.0"
 port = 8080
 body_limit_bytes = 1048576
 max_connections = 1000
+shutdown_timeout_secs = 30
 ```
+
+`shutdown_timeout_secs` — сколько [плавное завершение](/volga-docs/ru/reliability-observability/graceful-shutdown.html#таимаут-завершения) ждёт открытые соединения, прежде чем закрыть их; `0` закрывает их сразу.
 
 ::: tip
 Встроенные секции применяются только при запуске. Горячая перезагрузка на них **не влияет**.

@@ -8,6 +8,10 @@ is rejected for no obvious reason, look here before rewriting anything.
 | Error | Cause | Fix |
 |---|---|---|
 | `argument never used` on an `ok!` / `status!` call | headers passed after a comma | use `;` before the header array |
+| `method takes N generic arguments but N-1 generic arguments were supplied` on `map_*` / `filter` / `map_ok` / ... | 0.11.0 added the handler-shape marker as the last generic parameter | add a trailing `_`: `map_get::<_, _, (i32,), _>(..)` |
+| "is not a request handler" on a synchronous closure | the closure returns something that is not `IntoResponse`; with neither shape matching, rustc cannot say which was meant | fix the return type |
+| `blocking` rejects a handler | it takes a synchronous handler only | drop `async`, or drop `blocking` |
+| `a catch-all parameter reads the rest of the path` panic | a segment after `{*name}`, possibly from a group prefix ending in one | make the catch-all the last segment |
 | `no method named map_get found for struct App` | `App` bound without `mut`, or a `with_*` called after routing | `let mut app = App::new()...;` then routes |
 | `cannot find derive macro Claims` | `jwt-derive` is not enabled (`full` does not include it) | add `jwt-auth-full` or `auth-full` |
 | `cannot find function permission in volga::auth` | it was not re-exported before 0.9.9 | upgrade, or use `volga::auth::authorizer::permission` — **not** `permissions`, which the compiler suggests and which is a different function |
@@ -74,8 +78,43 @@ is rejected for no obvious reason, look here before rewriting anything.
 | every client revalidates `index.html` once after upgrading | 0.10.1: the shell's `ETag` is derived from its bytes. Expected, and one round trip |
 | `exclude_hosts` started excluding a host it did not before | 0.10.1: entries match by host name on any port, and config-file entries are normalized |
 | an HTTP/2 client finally gets an HTTPS redirect | 0.10.1: the redirect listener serves HTTP/1.1 and HTTP/2, and reads the host from the request target |
+| a browser WebSocket client's `JSON.parse(event.data)` starts working, or a client reading replies as binary gets text | 0.11.0: `Json<T>` is sent as a text frame |
+| a `NamedPath<T>` value keeps a `&` or `+` it used to split on or turn into a space | 0.11.0: a path is not form-decoded; only percent-escapes are |
+| an SSE feed or stream is cut off during shutdown | the shutdown timeout closed it. End it on the `ShutdownHandle` extractor's `cancelled()`, or raise `with_shutdown_timeout` |
+| a request's `CancellationToken` fires during shutdown | 0.11.0: the shutdown timeout closed its connection |
+| other requests stall while one runs | a synchronous handler blocks the runtime worker. Wrap it in `blocking` |
 
 ## Version-by-version
+
+### 0.11.0 — synchronous handlers, catch-all routes, shutdown timeout
+Handler code keeps compiling; only call sites naming generics break.
+
+* **Synchronous handlers and middleware.** A plain `fn` or a closure
+  returning its response directly is a handler for every `map_*`, `map`,
+  `map_fallback`, `map_err`, `map_conn` and `map_msg`, and middleware for
+  `filter`, `map_ok`, `map_err` and `tap_req`. `with` / `wrap` / `attach`
+  stay async. `volga::blocking(f)` moves a blocking synchronous body to
+  Tokio's blocking pool; it is not cancelled with the request.
+* **Breaking, for turbofish only:** handler traits (`GenericHandler`,
+  `MapErr`, `Filter`, `MapOk`, `TapReq`, `ws::MessageHandler`) gained a
+  marker parameter defaulting to `marker::Async`, and every registering
+  method takes it as its last generic. `App::map` / `RouteGroup::map`
+  renamed their method parameter `M` → `V`, `map_msg` / `MessageHandler`
+  their message parameter `M` → `Msg`. `ErrorFunc` / `FallbackFunc` gained
+  it as a defaulted last parameter.
+* **Catch-all parameters**, `{*name}`, as the last segment. Lowest
+  precedence at every position; at least one segment; not normalized.
+* **`App::with_shutdown_timeout(Duration)`** and `[server]
+  shutdown_timeout_secs`; the default stays 10 s. Connections still open at
+  the timeout are **closed** now (their `CancellationToken` cancelled), and
+  `run()` returns once they are gone, redirect listener included.
+* **`ShutdownHandle` is an extractor**, always available; `cancelled()` is
+  a `'static` future.
+* `NamedPath<T>` keeps `&` and `+` as written; `Json<T>` goes out over a
+  WebSocket as a text frame; re-mapping a route under another spelling of
+  its pattern drops the replaced registration's OpenAPI configuration.
+* `rustls` 0.23.45 in the lockfile (RUSTSEC-2026-0285); applications pick
+  it up with `cargo update -p rustls`.
 
 ### 0.10.1 — statuses, startup checks and shutdown
 No API break, nothing to opt into, and nothing fails to compile except two
@@ -299,6 +338,22 @@ Nothing to rewrite. Check three things instead:
    fail a single route at runtime.
 3. Expect one revalidation of `index.html` per client after the deploy, and
    nothing else on the wire.
+
+## Upgrading 0.10.x → 0.11.0
+
+1. Bump the version and run `cargo check`. The only thing that can fail is a
+   call spelling handler generics out — add a trailing `_` for the marker.
+   Bounds written as `F: GenericHandler<Args>` keep their meaning.
+2. Grep for `Json` sent over a WebSocket. Clients reading those replies as
+   binary must read text; browser clients that `await blob.text()` can go
+   straight to `JSON.parse(event.data)`.
+3. Grep for `NamedPath` on routes whose values may contain `&` or `+`: they
+   now arrive as written.
+4. Find endless responses — SSE, proxied streams — and end them on the
+   `ShutdownHandle` extractor's `cancelled()`, since the shutdown timeout now
+   closes what is still open.
+5. Optional: drop `async move { .. }` from handlers and middleware with
+   nothing to await, and wrap genuinely blocking bodies in `blocking`.
 
 ## Upgrading 0.8.x → 0.9.x, in order
 

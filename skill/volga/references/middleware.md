@@ -160,6 +160,30 @@ parameter E`. The return type on a named function settles it.
 A `filter` returning `false` answers `404`. Header mutation methods return
 `&mut Self` since 0.9.0, and `append_header` is infallible.
 
+Since 0.11.0 `filter`, `tap_req`, `map_ok` and `map_err` also take a
+**synchronous** `fn` or closure returning its verdict, request or response
+directly — on `App`, `Route` and `RouteGroup`:
+
+```rust
+use volga::{App, HttpResponse, HttpResult, headers::{HttpHeaders, headers}};
+
+headers! { (Tag, "x-tag") }
+
+app.filter(|headers: HttpHeaders| headers.get_raw("x-api-key").is_some());
+
+app.map_get("/sum/{x}/{y}", |x: i32, y: i32| x + y)
+    .map_ok(tag);
+
+fn tag(mut resp: HttpResponse) -> HttpResult {
+    resp.try_insert_header::<Tag>("sync")?;
+    Ok(resp)
+}
+```
+
+The same inference rule holds: give a synchronous `map_ok` / `tap_req` a
+named `fn` with a return type. `with`, `wrap` and `attach` stay
+**async-only** — they exist to await `next`.
+
 ## CORS
 
 Configure, then activate, then scope. Skipping any step is a silent or

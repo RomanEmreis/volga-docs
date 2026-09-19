@@ -133,6 +133,54 @@ app.map_get("/files/shared/latest", || async { ok!("the shared one") });
 
 A literal still takes precedence wherever it *does* lead to a route, and a literal that carries a handler for another method still answers `405` rather than falling through to a parameter. A lookup visits each node at most once, so nothing pays for backtracking in the shapes where it never happens.
 
+## Catch-all Parameters
+
+Since **v0.11.0** a route's last segment can be a catch-all parameter, `{*name}`, which binds the rest of the path as one value:
+
+```rust compile
+use volga::{App, ok};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /files/docs/2026/report.pdf -> path = "docs/2026/report.pdf"
+    app.map_get("/files/{*path}", |path: String| async move {
+        ok!("file: {path}")
+    });
+
+    app.run().await
+}
+```
+
+* **It reads at least one segment.** `/files/{*path}` does not answer `/files` or `/files/`, so that position can carry a route of its own.
+* **The value is the path as the request wrote it**, from the first segment the catch-all reads to the end, separators and a trailing `/` included: `GET /files/a/b/` binds `"a/b/"`. It is decoded the way any parameter is — `String` and `Path<T>` read it undecoded, `NamedPath<T>` decodes its percent-escapes.
+* **It comes last in precedence.** At every position a literal is read first, a parameter second and a catch-all last, and the first position two routes differ at decides between them, whatever order they were mapped in.
+* **It is the last segment.** A route continuing past one — a route mapped inside a group whose prefix ends in one included — panics where it is mapped.
+* **It is named like any other parameter**, and the [two cases that panic at registration](#two-cases-that-panic-at-registration) apply to it the same way.
+
+```rust compile-fragment
+app.map_get("/api/users/{id}", |id: u32| async move { id.to_string() });
+app.map_get("/assets/{*path}", |path: String| async move { path });
+app.map_get("/{lang}/{page}", |lang: String, page: String| async move { format!("{lang}/{page}") });
+app.map_get("/{*path}", |path: String| async move { path });
+
+// GET /api/users/7        -> /api/users/{id}
+// GET /assets/app.js      -> /assets/{*path}, not /{lang}/{page}
+// GET /en/home            -> /{lang}/{page}
+// GET /api/users/7/extra  -> /{*path}, since nothing else reads all of it
+```
+
+::: warning A catch-all is not a safe file system path
+Nothing in the value is normalized, so a `..` segment reaches the handler as it was sent: `GET /files/../../etc/passwd` binds `"../../etc/passwd"`. A handler that joins the value onto a directory has to reject `..`, a root and a drive prefix itself, or resolve the joined path and check that it is still under that directory. For serving files from disk, use [`use_static_files()`](/volga-docs/en/middleware-infrastructure/static-files.html), which does this for you.
+:::
+
+In an OpenAPI document a catch-all is described as the path parameter `{name}`. A catch-all beside a parameter route for the same verb at the same position — `/files/{name}` and `/files/{*path}` — would be the same templated path there, so where both are bound to one document the parameter route is described and the catch-all is left out, with a warning at startup in debug builds.
+
+## How Parameter Values Are Decoded
+
+A positional extractor — `String`, a `FromStr` type, [`Path<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.Path.html) — reads the value as the request wrote it, percent-escapes included. [`NamedPath<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.NamedPath.html) decodes percent-escapes, and keeps every other character as written: `&` and `+` are literal characters in a path, so `/files/C++` reads as `"C++"` and `/users/a&admin=true` as the single value `"a&admin=true"`.
+
 Using these examples, you can add dynamic routing to your Volga-based web server, enhancing the flexibility and functionality of your applications.
 
 Check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/route_params/src/main.rs)

@@ -38,6 +38,42 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
+A message handler with nothing to await can also return its reply directly, since **v0.11.0**:
+
+```rust compile-fragment
+app.map_msg("/ws", |msg: String| format!("echo: {msg}"));
+```
+
+### JSON Messages
+
+A message handler can take and return [`Json<T>`](https://docs.rs/volga/latest/volga/struct.Json.html). A `Json<T>` is received from a text or a binary frame, and is sent as a **text** frame — the reply of a `map_msg` handler as well as [`WebSocket::send`](https://docs.rs/volga/latest/volga/ws/websocket/struct.WebSocket.html) and `WsSink::send` — so a browser client reads it from `event.data` as a string and passes it to `JSON.parse`:
+
+```rust compile
+use volga::{App, Json};
+use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize)]
+struct Request {
+    text: String,
+}
+
+#[derive(Serialize)]
+struct Reply {
+    echo: String,
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_msg("/ws", |msg: Json<Request>| {
+        Json(Reply { echo: msg.text.clone() })
+    });
+
+    app.run().await
+}
+```
+
 This is a very simple example, to get more control over a particular connection you may choose another method - [`map_ws()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_ws).
 
 ```rust compile
