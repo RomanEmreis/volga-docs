@@ -50,4 +50,31 @@ Message::new().json(payload);
 
 В дополнение к этому, `Message` также поддерживает настройку имени события (поле `event`), идентификатора (поле `id`), комментариев (поле `comment`) и интервала попыток повторного подключения клиента (поле `retry`). Подробную информацию о формате сообщения SSE см. в [руководстве MDN](https://developer.mozilla.org/ru/docs/Web/API/Server-sent_events/Using_server-sent_events#%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%82_%D0%BF%D0%BE%D1%82%D0%BE%D0%BA%D0%B0_%D1%81%D0%BE%D0%B1%D1%8B%D1%82%D0%B8%D0%B9).
 
+## Завершение потока при остановке сервера
+
+SSE-поток, который сам по себе не заканчивается, держит соединение открытым, пока его не закроет [таймаут завершения](/volga-docs/ru/reliability-observability/graceful-shutdown.html#таимаут-завершения). Чтобы завершить поток сразу, как только началась остановка, примите экстрактор [`ShutdownHandle`](https://docs.rs/volga/latest/volga/app/shutdown/struct.ShutdownHandle.html) и оборвите поток по его future `cancelled()`:
+
+```rust compile
+use std::time::Duration;
+use futures_util::StreamExt;
+use volga::{App, ShutdownHandle, http::sse::{Message, SseStream}, sse_stream};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_get("/events", |shutdown: ShutdownHandle| async move {
+        let events = sse_stream! {
+            loop {
+                yield Message::new().data("Hello, world!");
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+        };
+        SseStream::new(events.take_until(shutdown.cancelled()))
+    });
+
+    app.run().await
+}
+```
+
 Полный пример использования можно так же найти по по [ссылке](https://github.com/RomanEmreis/volga/blob/main/examples/sse/src/main.rs).

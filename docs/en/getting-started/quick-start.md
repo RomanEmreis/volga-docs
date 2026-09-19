@@ -73,6 +73,8 @@ app.map_get("/hello", || {
     ok!("Hello, World!")
 });
 ```
+A handler with nothing to await can return its response directly, as this one does, while one that awaits something is an `async` closure or an `async fn`. Both shapes are covered in [Handlers](/volga-docs/en/getting-started/handlers.html).
+
 Ensure routes are mapped before you start the server with:
 ```rust
 app.run().await

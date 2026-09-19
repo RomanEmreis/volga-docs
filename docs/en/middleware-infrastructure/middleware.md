@@ -139,6 +139,39 @@ async fn produce_err() -> IoError {
 By attaching [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) to the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), you configure a global error handler. You can read more about advanced error handling [here](/volga-docs/en/reliability-observability/errors.html).
 :::
 
+## Synchronous Middleware
+
+Since **v0.11.0** [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter), [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok), [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) and [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) also accept a plain `fn` or a closure that returns its verdict, response or request directly, when there is nothing to await — on [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), a route and a route group alike, just as [handlers](/volga-docs/en/getting-started/handlers.html#synchronous-handlers) do:
+
+```rust compile
+use volga::{App, HttpResponse, HttpResult, Path, headers, headers::HttpHeaders};
+
+headers! {
+    (CustomHeader, "x-custom-header")
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // Reject requests without an API key
+    app.filter(|headers: HttpHeaders| headers.get_raw("x-api-key").is_some());
+
+    app.map_get("/positive/sum/{x}/{y}", |x: i32, y: i32| x + y)
+        .filter(|Path((x, y)): Path<(i32, i32)>| x >= 0 && y >= 0)
+        .map_ok(tag_response);
+
+    app.run().await
+}
+
+fn tag_response(mut resp: HttpResponse) -> HttpResult {
+    resp.try_insert_header::<CustomHeader>("sync")?;
+    Ok(resp)
+}
+```
+
+[`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap), [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) and [`attach()`](/volga-docs/en/middleware-infrastructure/parameterized-middleware.html) stay asynchronous, since what they exist for is awaiting `next`.
+
 ## Examples
 * [Request filter example](https://github.com/RomanEmreis/volga/blob/main/examples/request_validation/src/main.rs)
 * [Response handler example](https://github.com/RomanEmreis/volga/blob/main/examples/response_handler/src/main.rs)

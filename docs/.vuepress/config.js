@@ -57,7 +57,7 @@ export default defineUserConfig({
           {
             text: 'Getting Started',
             prefix: '/en/getting-started/',
-            children: ['quick-start', 'route-params', 'query-params', 'route-groups'],
+            children: ['quick-start', 'handlers', 'route-params', 'query-params', 'route-groups'],
           },
           {
             text: 'Requests & Responses',
@@ -123,7 +123,7 @@ export default defineUserConfig({
           {
             text: 'Старт',
             prefix: '/ru/getting-started/',
-            children: ['quick-start', 'route-params', 'query-params', 'route-groups'],
+            children: ['quick-start', 'handlers', 'route-params', 'query-params', 'route-groups'],
           },
           {
             text: 'Запросы и ответы',

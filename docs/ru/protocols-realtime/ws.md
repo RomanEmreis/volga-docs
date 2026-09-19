@@ -38,6 +38,42 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
+Обработчик сообщений, которому нечего ждать, начиная с **v0.11.0** может возвращать ответ напрямую:
+
+```rust compile-fragment
+app.map_msg("/ws", |msg: String| format!("echo: {msg}"));
+```
+
+### JSON-сообщения
+
+Обработчик сообщений может принимать и возвращать [`Json<T>`](https://docs.rs/volga/latest/volga/struct.Json.html). `Json<T>` принимается из текстового или бинарного фрейма, а отправляется **текстовым** фреймом — и ответ обработчика `map_msg`, и [`WebSocket::send`](https://docs.rs/volga/latest/volga/ws/websocket/struct.WebSocket.html), и `WsSink::send`, — поэтому браузерный клиент читает его из `event.data` как строку и передаёт в `JSON.parse`:
+
+```rust compile
+use volga::{App, Json};
+use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize)]
+struct Request {
+    text: String,
+}
+
+#[derive(Serialize)]
+struct Reply {
+    echo: String,
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_msg("/ws", |msg: Json<Request>| {
+        Json(Reply { echo: msg.text.clone() })
+    });
+
+    app.run().await
+}
+```
+
 Это очень простой пример. Чтобы получить больше контроля над конкретным соединением, вы можете воспользоваться другим методом - [`map_ws()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_ws).
 
 ```rust compile

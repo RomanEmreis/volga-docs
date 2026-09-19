@@ -14,6 +14,28 @@ Three levels of control, from least to most:
 app.map_msg("/ws", |msg: String| async move {
     format!("Received: {msg}")
 });
+
+// synchronous, when there is nothing to await (0.11.0+)
+app.map_msg("/ws-sync", |msg: String| format!("echo: {msg}"));
+```
+
+`Json<T>` works as the message and as the reply. It is parsed from a text
+or a binary frame and **sent as a text frame** — the `map_msg` reply,
+`WebSocket::send` and `WsSink::send` alike — so a browser reads a string
+from `event.data` and `JSON.parse`s it (0.11.0; it went out as a binary
+frame, a `Blob` in the browser, before):
+
+```rust
+use volga::Json;
+use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize)]
+struct In { text: String }
+
+#[derive(Serialize)]
+struct Out { echo: String }
+
+app.map_msg("/ws-json", |msg: Json<In>| Json(Out { echo: msg.text.clone() }));
 ```
 
 ### `map_ws` — the socket
@@ -138,3 +160,23 @@ Message::new().comment("keep-alive");
 
 For work that should stop when the browser tab closes, combine the stream
 with the `CancellationToken` extractor — see `operations.md`.
+
+An endless stream holds its connection open through a graceful shutdown
+until the shutdown timeout closes it. End it as the shutdown starts with the
+`ShutdownHandle` extractor (0.11.0+):
+
+```rust
+use std::time::Duration;
+use futures_util::StreamExt;
+use volga::{App, ShutdownHandle, http::sse::{Message, SseStream}, sse_stream};
+
+app.map_get("/feed", |shutdown: ShutdownHandle| async move {
+    let events = sse_stream! {
+        loop {
+            yield Message::new().data("tick");
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+    };
+    SseStream::new(events.take_until(shutdown.cancelled()))
+});
+```

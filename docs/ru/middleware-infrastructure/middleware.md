@@ -138,6 +138,39 @@ async fn produce_err() -> IoError {
 Если вызвать [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) у [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), вы настроите глобальный обработчик ошибок. Подробнее о глобальной обработке ошибок читайте [здесь](/volga-docs/ru/reliability-observability/errors.html).
 :::
 
+## Синхронные middleware
+
+Начиная с **v0.11.0** [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter), [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok), [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) и [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) принимают также обычную `fn` или замыкание, которое возвращает вердикт, ответ или запрос напрямую, когда ждать нечего, — у [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), маршрута и группы маршрутов, так же как и [обработчики](/volga-docs/ru/getting-started/handlers.html#синхронные-обработчики):
+
+```rust compile
+use volga::{App, HttpResponse, HttpResult, Path, headers, headers::HttpHeaders};
+
+headers! {
+    (CustomHeader, "x-custom-header")
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // Отклонять запросы без API-ключа
+    app.filter(|headers: HttpHeaders| headers.get_raw("x-api-key").is_some());
+
+    app.map_get("/positive/sum/{x}/{y}", |x: i32, y: i32| x + y)
+        .filter(|Path((x, y)): Path<(i32, i32)>| x >= 0 && y >= 0)
+        .map_ok(tag_response);
+
+    app.run().await
+}
+
+fn tag_response(mut resp: HttpResponse) -> HttpResult {
+    resp.try_insert_header::<CustomHeader>("sync")?;
+    Ok(resp)
+}
+```
+
+[`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap), [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) и [`attach()`](/volga-docs/ru/middleware-infrastructure/parameterized-middleware.html) остаются асинхронными: они существуют ради того, чтобы дождаться `next`.
+
 ## Примеры
 * [Пример фильтрации запроса](https://github.com/RomanEmreis/volga/blob/main/examples/request_validation/src/main.rs)
 * [Пример обработки ответа](https://github.com/RomanEmreis/volga/blob/main/examples/response_handler/src/main.rs)

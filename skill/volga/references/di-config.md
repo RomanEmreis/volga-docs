@@ -200,7 +200,7 @@ These are applied automatically and need no `bind_section`:
 
 | Section | Feature | Fields |
 |---|---|---|
-| `[server]` | always | `host`, `port`, `body_limit_bytes`, `max_header_count`, `max_connections` |
+| `[server]` | always | `host`, `port`, `body_limit_bytes`, `max_header_count`, `max_connections`, `shutdown_timeout_secs` (0.11.0+) |
 | `[tls]` | `tls` | certificate and key paths, redirection, HSTS |
 | `[tracing]` | `tracing` | tracing / header settings |
 | `[openapi]` | `openapi` | specification settings |
