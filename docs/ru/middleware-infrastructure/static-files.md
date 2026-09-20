@@ -112,7 +112,7 @@ Escape-последовательность `%XX` декодируется; не
 
 ## Файл по умолчанию
 
-Чтобы раздавать специальный файл (например, `404.html`) при неизвестных маршрутах, используйте [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file), внутри он использует другой метод - [`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) который, в свою очередь, настраивает специальный обработчик, вызываемый при обнаружении неизвестного маршрута:
+Чтобы раздавать специальный файл (например, `404.html`) на `GET` или `HEAD`, на который не ответили ни файл на диске, ни маршрут, используйте [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file):
 
 ```rust compile
 use volga::App;
@@ -157,7 +157,47 @@ async fn main() -> std::io::Result<()> {
 ```
 
 ::: tip
-Можно установить [`with_fallback_file("index.html")`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_fallback_file), чтобы перенаправлять неизвестные маршруты на главную страницу.
+Укажите в [`with_fallback_file()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_fallback_file) файл `index.html`, чтобы каждый клиентский URL отрисовывался из одной оболочки — обычная схема для одностраничного приложения.
+:::
+
+### Как раздаётся этот файл
+
+Резервный файл раздаётся `GET`-маршрутом, покрывающим префикс mount'а и `{*path}` под ним: начиная с **0.11.1** это обычный маршрут в роутере, и из этого следуют три вещи, которые полезно знать:
+
+* **Он отвечает только на `GET` и `HEAD`.** Оболочка — это то, как клиентский URL отрисовывает приложение, а браузер переходит по ссылкам методом `GET`. Всё остальное — `POST` на опечатанный путь API, `OPTIONS`, `PUT` на путь файла — получает `405` с `Allow: GET,HEAD`, ровно как любой маршрут отвечает на метод, которого у него нет. Именно это не даёт ошибочной записи получить HTML-страницу с кодом `200` и упасть в клиенте на `res.json()` вместо того места, где она была сделана.
+* **Ваш маршрут отвечает раньше оболочки.** Литеральный сегмент и параметр читаются раньше catch-all в любой позиции, поэтому `map_get("/health", ..)` продолжает отвечать и при mount'е в корне, в любом порядке регистрации. `GET`-маршрут, вручную замапленный на одну из позиций самой оболочки — `map_get("/{*rest}", ..)` рядом с корневым mount'ом, — просто занимает эту позицию.
+* **Это не слот fallback'а приложения.** [`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) и `map_fallback_to_file()` больше не вытесняют друг друга: оболочка отвечает под префиксом mount'а, а `map_fallback` — на всё, что лежит за его пределами.
+
+Как и сами файлы, маршрут оболочки не попадает ни в список маршрутов, печатаемый при старте, ни в документ OpenAPI.
+
+::: tip API на том же сервере
+При **корневом** mount'е оболочка покрывает все `GET`-пути, поэтому `map_fallback` отвечать уже не на что — оболочка оказывается первой, а другие методы получают `405`. Чтобы промахи API отвечали в формате самого API, дайте его группе [собственный fallback](/volga-docs/ru/getting-started/route-groups.html#fallback-группы): роутер предпочтёт его как более глубокий.
+
+```rust compile
+use volga::{App, http::Uri, not_found, ok};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new()
+        .with_host_env(|env| env
+            .with_content_root("static")
+            .with_fallback_file("index.html"));
+
+    app.group("/api", |api| {
+        api.map_get("/users", || async { ok!("users") });
+
+        // GET /api/uesrs -> 404 в JSON, а не оболочка SPA
+        api.map_fallback(|uri: Uri| async move {
+            not_found!("no endpoint at {}", uri.path())
+        });
+    });
+
+    // Любой другой неизвестный путь отрисовывает приложение
+    app.use_static_files();
+
+    app.run().await
+}
+```
 :::
 
 ## Раздача под префиксом
@@ -185,9 +225,36 @@ async fn main() -> std::io::Result<()> {
 
 Middleware группы — `wrap`, `with`, `filter`, `map_ok`, `authorize`, ограничитель частоты — оборачивает файлы, которые раздаёт этот mount, ровно так же, как оборачивает зарегистрированные группой маршруты, включая вложенные группы.
 
+[`RouteGroup::use_static_files()`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.use_static_files) монтирует под этим префиксом и файлы, **и** резервный файл: начиная с **0.11.1** оболочка отвечает именно там и больше нигде — один сервер может держать фронтенд под `/app` и оставить остальное адресное пространство себе:
+
+```rust compile
+use volga::{App, ok};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new()
+        .with_host_env(|env| env
+            .with_content_root("static")
+            .with_fallback_file("index.html"));
+
+    // GET /app/assets/app.js -> файл
+    // GET /app/settings      -> index.html
+    app.group("/app", |g| {
+        g.use_static_files();
+    });
+
+    // GET /health -> маршрут; GET /elsewhere -> 404, а не оболочка
+    app.map_get("/health", || async { ok!("healthy") });
+
+    app.run().await
+}
+```
+
+Middleware группы выполняется вокруг оболочки так же, как вокруг файлов.
+
 :::warning Два ограничения mount'а в группе
 * **Префикс должен быть литеральным.** `app.group("/{tenant}", |g| g.use_static_files())` не раздаёт статические файлы и сообщает об этом при старте: mount сопоставляется с целевым путём запроса как он написан, а параметр сопоставляет роутер, который о mount'е ничего не знает.
-* **Политика CORS группы до файлов не доходит.** Политика выбирается по сработавшему маршруту, а файл раздаётся без маршрута, поэтому применяется политика приложения — заданная через [`with_cors()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_cors). По той же причине preflight, нацеленный на путь файла, обрабатывается как запрос к несуществующему пути.
+* **Политика CORS группы до файлов не доходит**, включая резервный файл. Политика выбирается по сработавшему маршруту, а файл раздаётся без маршрута, поэтому применяется политика приложения — заданная через [`with_cors()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_cors). По той же причине preflight, нацеленный на путь файла, обрабатывается как запрос к несуществующему пути.
 :::
 
 ## Просмотр каталогов

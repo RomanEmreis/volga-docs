@@ -54,6 +54,39 @@ for these requests, so those extractors work rather than failing with a
 `map_err`. `FromRawRequest` is removed; `FallbackHandler::call` now takes
 an `HttpRequest`.
 
+Since 0.11.1 a **group** carries a fallback of its own, for the requests
+under its prefix that no route answers — any method:
+
+```rust
+use volga::{http::Uri, not_found, ok};
+
+app.group("/api", |api| {
+    api.map_get("/models", || async { ok!("models") });
+
+    // GET /api/nope, POST /api/v1/x, DELETE /api -> here
+    // POST /api/models                           -> 405, a route is there
+    api.map_fallback(|uri: Uri| async move {
+        not_found!("no endpoint at {}", uri.path())
+    });
+});
+```
+
+The router resolves it as it resolves routes: the **deepest prefix wins**
+(`/api/v2` before `/api`, and either before a `/{*path}` route or a static
+shell under `/`), a route answers first for its own method and `405` for
+one it lacks, and the group's middleware and CORS policy wrap it. Unlike
+`App::map_fallback` it **does** bind path parameters — the ones its prefix
+declares, read with `NamedPath<T>`, the same at the prefix and below it;
+under a prefix ending in `{*name}` it answers everything that catch-all
+reads. It is not a route: not listed, not in OpenAPI, and
+`ctx.matched_route()` is `false` for it, so a preflight for a path only it
+answers is not treated as an endpoint's. A second fallback at one prefix
+replaces the first.
+
+Reach for it whenever an API shares a server with an SPA shell: the shell
+turns every unknown path into HTML `200`, which is wrong for `/api/uesrs`,
+and a group fallback gives that subtree the JSON `404` its clients parse.
+
 ## Route groups
 
 <!-- snippet: skip -->
