@@ -58,6 +58,38 @@ async fn main() -> std::io::Result<()> {
 
 A fallback runs inside a full per-request scope, so it takes the same extractors any other handler takes — `ClientIp`, `CancellationToken`, `Config<T>`, `HostEnv`, `Dc<T>` — and the configured request body limit applies to it. An error it returns is answered by the application's `map_err` handler, as an error from any other handler is, so a service that shapes its errors shapes them here too.
 
+### One Fallback per Part of the API
+
+One handler for every unknown path in the application is often one too few: an API wants JSON and a browser-facing SPA wants its shell. Since **0.11.1** a [route group](/volga-docs/en/getting-started/route-groups.html#a-fallback-for-the-group) carries a fallback of its own, and the router picks the deepest prefix that has one:
+
+```rust compile
+use volga::{App, http::Uri, error::Problem, not_found};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.group("/api", |api| {
+        // Everything unknown under /api answers in the API's own shape
+        api.map_fallback(|uri: Uri| async move {
+            let problem: Problem = Problem::new(404)
+                .with_detail("No endpoint at this path")
+                .with_instance(uri.path());
+            problem
+        });
+    });
+
+    // Everything else
+    app.map_fallback(|| async { not_found!("not found") });
+
+    app.run().await
+}
+```
+
+The group's middleware — `authorize`, a rate limiter, a request-id `tap_req` — runs around its fallback as it runs around its routes, so an unknown path behind authentication is refused rather than listed.
+
+`Problem` carries its extensions as a type parameter, so the annotation is what picks the default map up — one built with [`with_extensions()`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html#method.with_extensions) needs none.
+
 ## Problem Details
 
 Volga fully supports the [Problem Details](https://www.rfc-editor.org/rfc/rfc9457) format, which provides machine-readable error details in HTTP responses. This eliminates the need to define custom error formats for HTTP APIs.  

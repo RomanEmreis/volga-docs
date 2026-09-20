@@ -83,8 +83,30 @@ is rejected for no obvious reason, look here before rewriting anything.
 | an SSE feed or stream is cut off during shutdown | the shutdown timeout closed it. End it on the `ShutdownHandle` extractor's `cancelled()`, or raise `with_shutdown_timeout` |
 | a request's `CancellationToken` fires during shutdown | 0.11.0: the shutdown timeout closed its connection |
 | other requests stall while one runs | a synchronous handler blocks the runtime worker. Wrap it in `blocking` |
+| a non-`GET` request to an unknown path answers `405` with `Allow: GET,HEAD` instead of the SPA shell | 0.11.1: the fallback file answers `GET` and `HEAD` only |
+| `map_fallback` is never reached in an app with `use_static_files()` | 0.11.1: under a root mount the shell covers every `GET` path. Mount under a prefix, or give the API group its own `map_fallback` |
+| a group's fallback file stopped answering outside the group's prefix | 0.11.1: `RouteGroup::use_static_files` serves the shell under its own prefix, as it serves the files |
+| a group's middleware runs once for a route the group mapped under two spellings of its parameters | 0.11.1: a group records each route once, by the position the router reads |
 
 ## Version-by-version
+
+### 0.11.1 — group fallbacks, the shell as a route
+No API break; nothing to change in code. What differs at runtime:
+
+* **`RouteGroup::map_fallback`** answers any method under the group's
+  prefix that no route is mapped at, inside the group's middleware and
+  CORS policy, binding the parameters the prefix declares. The deepest
+  prefix wins, and a route still answers first (`405` for a method it
+  lacks). Not listed, not in OpenAPI, `matched_route()` is `false`.
+* **The fallback file is a `GET` route** at the mount's prefix and
+  `{*path}` below it, for `GET` and `HEAD` alone — any other method is
+  `405` with `Allow: GET,HEAD`. It no longer takes the application's
+  fallback slot, so `map_fallback` and `map_fallback_to_file` coexist; a
+  root mount leaves `map_fallback` nothing to answer.
+* **`RouteGroup::use_static_files`** serves the shell under the group's
+  prefix only, with the group's middleware around it.
+* A group applies its middleware once to a route mapped under two
+  spellings of its parameters.
 
 ### 0.11.0 — synchronous handlers, catch-all routes, shutdown timeout
 Handler code keeps compiling; only call sites naming generics break.

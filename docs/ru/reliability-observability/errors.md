@@ -58,6 +58,38 @@ async fn main() -> std::io::Result<()> {
 
 Fallback выполняется в полноценном скоупе запроса, поэтому принимает те же экстракторы, что и любой другой обработчик, — `ClientIp`, `CancellationToken`, `Config<T>`, `HostEnv`, `Dc<T>`, — и настроенный лимит тела запроса к нему тоже применяется. Возвращённую им ошибку обрабатывает `map_err` приложения, как и ошибку любого другого обработчика, поэтому сервис, формирующий свои ошибки, формирует их и здесь.
 
+### Свой fallback для каждой части API
+
+Одного обработчика на все неизвестные пути приложения часто мало: API хочет JSON, а SPA — свою оболочку. Начиная с **0.11.1** [группа маршрутов](/volga-docs/ru/getting-started/route-groups.html#fallback-группы) несёт собственный fallback, и роутер выбирает самый глубокий префикс, у которого он есть:
+
+```rust compile
+use volga::{App, http::Uri, error::Problem, not_found};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.group("/api", |api| {
+        // Всё неизвестное под /api отвечает в формате самого API
+        api.map_fallback(|uri: Uri| async move {
+            let problem: Problem = Problem::new(404)
+                .with_detail("No endpoint at this path")
+                .with_instance(uri.path());
+            problem
+        });
+    });
+
+    // Всё остальное
+    app.map_fallback(|| async { not_found!("not found") });
+
+    app.run().await
+}
+```
+
+Middleware группы — `authorize`, ограничитель частоты, `tap_req` с request-id — выполняется вокруг её fallback так же, как вокруг её маршрутов, поэтому неизвестный путь за аутентификацией отклоняется, а не перечисляет существующие.
+
+Расширения `Problem` — это его типовой параметр, поэтому аннотация нужна лишь чтобы подхватить значение по умолчанию: у `Problem`, собранного через [`with_extensions()`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html#method.with_extensions), она не нужна.
+
 ## Problem Details
 
 Волга полностью поддерживает формат [Problem Details](https://www.rfc-editor.org/rfc/rfc9457), который предоставляет машиночитаемые сведения об ошибках в ответах HTTP. Это устраняет необходимость определять пользовательские форматы ошибок для API.

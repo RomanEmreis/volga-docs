@@ -282,6 +282,26 @@ Traversal is refused by construction: a `.`, a `..`, an encoded separator
 `HostEnv` can also be built standalone (`HostEnv::new("/static")`, then
 `set_host_env(env)`) and extracted in handlers and middleware.
 
+### The fallback file (the shell)
+
+Since 0.11.1 the fallback file is served by a `GET` route at the mount's
+prefix and `{*path}` below it, resolved like any other route:
+
+* **`GET` and `HEAD` only.** Any other method is `405` with
+  `Allow: GET,HEAD` — a mistyped `POST` is refused where it is made instead
+  of getting HTML and `200`.
+* **A route of yours answers first**, in either registration order; a `GET`
+  mapped by hand at one of the shell's positions takes it over.
+* **It is not the application's fallback slot.** `map_fallback` and
+  `map_fallback_to_file` coexist: the shell answers under the mount's
+  prefix, `map_fallback` outside it. Under a root mount the shell covers
+  every `GET` path, so `map_fallback` gets nothing — give an API group its
+  own `RouteGroup::map_fallback` (the router prefers the deeper prefix).
+* **Scoped to its prefix.** `RouteGroup::use_static_files()` serves the
+  shell under that group's prefix alone, inside the group's middleware.
+* Neither the files nor the shell route are listed at startup or described
+  in OpenAPI.
+
 ### Caching
 
 A file's `Cache-Control` is chosen by the role its name gives it: **assets**

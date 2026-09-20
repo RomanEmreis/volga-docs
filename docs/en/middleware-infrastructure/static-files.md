@@ -112,7 +112,7 @@ A `%XX` escape is decoded; a malformed one, or one that does not decode to UTF-8
 
 ## Fallback
 
-To serve a custom fallback file (e.g., `404.html`), use [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file), which internally calls [`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) to handle unknown paths.
+To serve a custom fallback file (e.g., `404.html`) for a `GET` or `HEAD` request that neither a file on disk nor a route answers, use [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file).
 
 ```rust compile
 use volga::App;
@@ -159,7 +159,47 @@ async fn main() -> std::io::Result<()> {
 The [`use_static_files()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_static_files) method combines [`use_static_assets()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_static_assets) and [`map_fallback_to_file()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback_to_file). However, the fallback feature is only enabled if a fallback file is specified.
 
 ::: tip
-You can set [`with_fallback_file("index.html")`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_fallback_file) to always redirect to the main page for unknown routes.
+Point [`with_fallback_file()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_fallback_file) at `index.html` to render every client-side URL from the one shell — the usual single-page application setup.
+:::
+
+### How the file is served
+
+The fallback file is served by a `GET` route covering the mount's prefix and `{*path}` below it — since **0.11.1** it is an ordinary route in the router, which settles three questions worth knowing about:
+
+* **It answers `GET` and `HEAD` only.** The shell is how a client-side URL renders the application, and a browser navigates with `GET`. Anything else — a `POST` to a mistyped API path, an `OPTIONS`, a `PUT` to the path of a file — is answered `405` with `Allow: GET,HEAD`, the same answer any route gives a method it lacks. That is what keeps a mistyped write from getting an HTML page and a `200`, and failing in the client at `res.json()` instead of where it was made.
+* **A route of yours answers before the shell.** A literal or a parameter route is read before a catch-all at every position, so `map_get("/health", ..)` keeps answering with a root mount in place, in either registration order. A `GET` route mapped by hand at one of the shell's own positions — `map_get("/{*rest}", ..)` beside a root mount — simply takes that position over.
+* **It is not the application's fallback slot.** [`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) and `map_fallback_to_file()` no longer replace each other: the shell answers under the mount's prefix, and `map_fallback` answers whatever lies outside it.
+
+Like the files themselves, the shell route stays out of the route listing printed at startup and out of the OpenAPI document.
+
+::: tip Serving an API from the same server
+Under a **root** mount the shell covers every `GET` path, so `map_fallback` is left with nothing to answer — the shell gets there first, and other methods are answered `405`. To keep an API's misses in the API's own shape, give its group a [fallback of its own](/volga-docs/en/getting-started/route-groups.html#a-fallback-for-the-group): the router prefers it for sitting deeper than the shell.
+
+```rust compile
+use volga::{App, http::Uri, not_found, ok};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new()
+        .with_host_env(|env| env
+            .with_content_root("static")
+            .with_fallback_file("index.html"));
+
+    app.group("/api", |api| {
+        api.map_get("/users", || async { ok!("users") });
+
+        // GET /api/uesrs -> 404 JSON, not the SPA shell
+        api.map_fallback(|uri: Uri| async move {
+            not_found!("no endpoint at {}", uri.path())
+        });
+    });
+
+    // Every other unknown path renders the application
+    app.use_static_files();
+
+    app.run().await
+}
+```
 :::
 
 ## Serving Under a Prefix
@@ -187,9 +227,36 @@ async fn main() -> std::io::Result<()> {
 
 The group's middleware — `wrap`, `with`, `filter`, `map_ok`, `authorize`, a rate limiter — wraps the files this mount serves, exactly as it wraps the routes the group registered, nested groups included.
 
+[`RouteGroup::use_static_files()`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.use_static_files) mounts the files **and** the fallback file under that prefix, which since **0.11.1** is where the shell answers and nowhere else — one server can host a front end under `/app` and keep the rest of its URL space to itself:
+
+```rust compile
+use volga::{App, ok};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new()
+        .with_host_env(|env| env
+            .with_content_root("static")
+            .with_fallback_file("index.html"));
+
+    // GET /app/assets/app.js -> the file
+    // GET /app/settings      -> index.html
+    app.group("/app", |g| {
+        g.use_static_files();
+    });
+
+    // GET /health -> the route; GET /elsewhere -> 404, not the shell
+    app.map_get("/health", || async { ok!("healthy") });
+
+    app.run().await
+}
+```
+
+The group's middleware runs around the shell as it does around the files.
+
 :::warning Two limits of a group mount
 * **The prefix must be literal.** `app.group("/{tenant}", |g| g.use_static_files())` does not serve static files and says so at startup: a mount matches the request target as it is written, while a parameter is matched by the router, which knows nothing about the mount.
-* **A group's CORS policy does not reach the files.** A policy is resolved from the route that matched, and a file is served without one, so the policy that applies is the application's — configured with [`with_cors()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_cors). For the same reason a preflight aimed at a file's path is answered as one for an unmatched path.
+* **A group's CORS policy does not reach the files**, the fallback file included. A policy is resolved from the route that matched, and a file is served without one, so the policy that applies is the application's — configured with [`with_cors()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_cors). For the same reason a preflight aimed at a file's path is answered as one for an unmatched path.
 :::
 
 ## Directory Browsing

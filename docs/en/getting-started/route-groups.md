@@ -103,6 +103,73 @@ async fn ping() -> HttpResult {
 }
 ```
 
+## A Fallback for the Group
+
+Since **0.11.1** a group can answer for its own part of the URL space. [`map_fallback()`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_fallback) on a [`RouteGroup`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html) answers a request aimed under the group's prefix that no route is mapped at, whatever its method — it is [`App::map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) for one branch of the tree:
+
+```rust compile
+use volga::{App, http::Uri, not_found, ok};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.group("/api", |api| {
+        api.map_get("/models", || async { ok!("models") });
+
+        // GET /api/nope, POST /api/v1/whatever, DELETE /api  -> this handler
+        // POST /api/models                                   -> 405, a route is there
+        api.map_fallback(|uri: Uri| async move {
+            not_found!("no endpoint at {}", uri.path())
+        });
+    });
+
+    app.run().await
+}
+```
+
+The router resolves it the way it resolves routes, so there is no extra rule to keep in mind:
+
+* **The most specific prefix wins.** The fallback of `/api` answers `/api/nope` ahead of anything mapped under `/` — a `/{*path}` route, or an SPA shell served from the root — and the fallback of `/api/v2` answers ahead of the one on `/api`.
+* **A route still answers first.** A route mapped at the path the request is aimed at answers it for its own method, and a request for another method is that route's `405` with the methods it does have. That holds at the prefix itself too.
+* **The group's middleware and CORS policy wrap it**, along with those of every group around it. An unknown path under an `authorize`d group is refused the way a known one is, instead of telling the caller which paths exist.
+
+The handler takes what `App::map_fallback` takes — anything implementing [`FromRequestParts`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestParts.html) — and reads the path it was aimed at from `Uri`. It also binds the parameters its prefix declares, and nothing else, the same at the prefix and below it:
+
+```rust compile
+use volga::{App, NamedPath, not_found, ok};
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct Tenant {
+    tenant: String,
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.group("/tenants/{tenant}", |g| {
+        g.map_get("/users", || async { ok!("users") });
+
+        // Reads {tenant} for /tenants/acme, /tenants/acme/nope and /tenants/acme/a/b alike
+        g.map_fallback(|params: NamedPath<Tenant>| async move {
+            not_found!("tenant {} has no such endpoint", params.tenant)
+        });
+    });
+
+    app.run().await
+}
+```
+
+Under a prefix that ends in a catch-all — `group("/files/{*path}", ..)` — the fallback answers everything that catch-all reads, and binds it under the name the prefix gave it.
+
+A group fallback is not a route: it is not printed with the routes at startup, not described in OpenAPI, and [`matched_route()`](https://docs.rs/volga/latest/volga/middleware/struct.HttpContext.html#method.matched_route) reads `false` for a request it answers — so a CORS preflight for a path only it answers is not answered as though an endpoint were there. Mapping a second fallback at one prefix replaces the first.
+
+::: tip When to reach for one
+An API and a single-page application in one server. The shell is served under `/` and turns every unknown path into the application, which is right for `/settings` and wrong for `/api/uesrs` — the client asked for JSON and got HTML. A `map_fallback` on the `/api` group gives that half of the URL space an answer its clients can parse, and the router prefers it for being deeper. Shape it like the rest of the API's errors — the same [Problem Details](/volga-docs/en/reliability-observability/errors.html#problem-details) body, the same fields — and a caller handles a wrong path with the code it already has for a wrong payload.
+:::
+
 ## One Route, One Registration
 
 A route is registered under the name the router reads, so `/x`, `/x/` and `//x` are one route everywhere it is remembered — not only in the route tree. A group configures each of its routes once, whether it mapped it twice itself or a sub-group mapped it again.

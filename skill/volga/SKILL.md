@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.11.0"
+  volga-version: "0.11.1"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -24,7 +24,9 @@ requests reach middleware, renamed the static file mount and made route
 groups a real scope; 0.10.1 moved a rejected bearer token from `403` to
 `401` and made a dependency graph that cannot resolve refuse to start;
 0.11.0 added synchronous handlers, `blocking`, catch-all routes and a
-shutdown timeout that closes what is still open. The
+shutdown timeout that closes what is still open; 0.11.1 gave a route group
+a fallback of its own and made the static-file shell a `GET` route under
+its mount. The
 response macros use a **semicolon** before custom headers. Most volga
 code a model has seen predates all of it. The
 [Non-negotiables](#non-negotiables) below are the places where writing
@@ -43,7 +45,8 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.11"` or `"0.11.0"` | This skill applies as written — a caret requirement resolves to the newest 0.11.x |
+| `volga = "0.11"` or `"0.11.1"` | This skill applies as written — a caret requirement resolves to the newest 0.11.x |
+| `volga = "0.11.0"` pinned exactly | No `RouteGroup::map_fallback`, and the fallback file answers every method and takes the application's fallback slot. Upgrading to 0.11.1 needs no code change |
 | `volga = "0.10"` or `"0.10.x"` | No synchronous handlers, `blocking`, catch-all routes, shutdown timeout or `ShutdownHandle` extractor — every handler must be `async`. Read the 0.10.x → 0.11.0 path in `references/migration.md` before upgrading |
 | `volga = "0.10.0"` pinned exactly | As 0.10.x, and three different answers at runtime: a rejected token is answered `403` rather than `401`, a missing DI registration fails the first request instead of the start, and the shell's `ETag` comes from its metadata |
 | `volga = "0.9"` | Static files, route groups, `HEAD` and unmatched requests all behave differently. Read `references/migration.md` first |
@@ -367,6 +370,43 @@ stream should take the `ShutdownHandle` extractor and stop on
 — rather than be cut off. The request's `CancellationToken` does not fire
 when the shutdown starts.
 
+### 22. The SPA shell answers `GET` and `HEAD`, and a group can own its `404`
+
+Since 0.11.1 the fallback file of `use_static_files()` /
+`map_fallback_to_file()` is a `GET` route at the mount's prefix and
+`{*path}` below it, not the application's fallback slot:
+
+* another method gets `405` with `Allow: GET,HEAD` — never write a client
+  that expects the shell back from a `POST`;
+* `map_fallback` and `map_fallback_to_file` coexist; the shell answers
+  under the mount's prefix, `map_fallback` outside it. Under a **root**
+  mount the shell covers every `GET`, so `map_fallback` is left with
+  nothing;
+* a route you mapped still answers before the shell.
+
+Give an API served beside a root shell its own fallback, which the router
+prefers for being deeper:
+
+```rust
+use volga::{http::Uri, not_found, ok};
+
+app.group("/api", |api| {
+    api.map_get("/users", || async { ok!("users") });
+    // GET /api/uesrs -> this, not the HTML shell
+    api.map_fallback(|uri: Uri| async move {
+        not_found!("no endpoint at {}", uri.path())
+    });
+});
+app.use_static_files();
+```
+
+`RouteGroup::map_fallback` answers any method under its prefix that no
+route is mapped at, runs inside the group's middleware and CORS policy,
+binds the parameters the prefix declares (read them with `NamedPath<T>`),
+and is neither listed nor described in OpenAPI — `ctx.matched_route()`
+reads `false` for it. A route still answers first, including `405` for a
+method it lacks.
+
 ## Checklist before handing code back
 
 - [ ] Every custom-header array is preceded by `;`, not `,`
@@ -381,4 +421,6 @@ when the shutdown starts.
 - [ ] No synchronous handler does blocking I/O or sleeps outside `blocking`
 - [ ] A catch-all value joined onto a directory is checked for `..` and absolute paths
 - [ ] Endless streams stop on `ShutdownHandle::cancelled()`
+- [ ] Nothing expects the SPA shell back from a non-`GET` request — that is `405`
+- [ ] An API mounted beside a root shell has its own `RouteGroup::map_fallback`
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean
