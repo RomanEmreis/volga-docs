@@ -38,6 +38,40 @@ struct Out { echo: String }
 app.map_msg("/ws-json", |msg: Json<In>| Json(Out { echo: msg.text.clone() }));
 ```
 
+Any `TryFrom<Message>` type is a message and any `TryInto<Message>` type a
+reply. Since 0.12.0 the conversion error may be any type that converts into
+`Error` (`serde_json::Error`, `(StatusCode, E)`, an `IntoError` type), not
+only `Error` — for `map_msg`, `on_msg`, `WebSocket::recv`/`send`,
+`WsStream::recv` and `WsSink::send`. A `Message` itself is a valid reply:
+
+```rust
+use serde::Deserialize;
+use volga::ws::Message;
+
+#[derive(Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+enum Command { Ping, Echo { text: String } }
+
+impl TryFrom<Message> for Command {
+    type Error = serde_json::Error;
+
+    fn try_from(msg: Message) -> Result<Self, Self::Error> {
+        serde_json::from_slice(&msg.into_inner().into_data())
+    }
+}
+
+app.map_msg("/ws-cmd", |cmd: Command| match cmd {
+    Command::Ping => "pong".to_string(),
+    Command::Echo { text } => text,
+});
+
+app.map_msg("/ws-echo", |msg: Message| msg); // keeps text/binary as sent
+```
+
+In `map_msg` / `on_msg` a frame that fails to convert is **skipped**
+(logged under `tracing`) and the connection stays open; take `Message` or
+`Bytes`, or use `recv()`, when the client must hear about it.
+
 ### `map_ws` — the socket
 
 ```rust

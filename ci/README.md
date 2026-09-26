@@ -107,5 +107,5 @@ The extra features are the ones `full` leaves out but the skill documents:
 `dev-cert` for the development certificate helper, and `test` for
 `TestServer`.
 
-`VOLGA_VERSION` (default `0.11`) selects the version the snippets are compiled
+`VOLGA_VERSION` (default `0.12`) selects the version the snippets are compiled
 against.

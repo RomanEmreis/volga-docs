@@ -220,6 +220,8 @@ impl Validate for KeyValue {
 }
 ```
 
+`Validate::Error` не обязан быть `ValidationError`: подойдёт любой тип, который преобразуется в `Error` из Volga, и отвечает он статусом, который даёт это преобразование. Для собственного типа ошибки это одна реализация [`IntoError`](/volga-docs/ru/reliability-observability/errors.html#собственные-типы-ошибок) — начиная с **0.12.0** она заменяет написанный вручную `From<T> for Error`, который сама и предоставляет.
+
 ## `ValidationError`
 
 [`ValidationError`](https://docs.rs/volga/latest/volga/validation/struct.ValidationError.html) — это то, во что
@@ -326,8 +328,8 @@ app.map_post("/put", async |val: ValidJson<KeyValue>| {
 
 ## Сторонние библиотеки валидации
 
-Собственный тип ошибки библиотеки валидации и `volga::error::Error` оба являются внешними для вашего крейта, поэтому
-реализацию `From` там написать нельзя. [`Invalid<E>`](https://docs.rs/volga/latest/volga/validation/struct.Invalid.html) —
+Собственный тип ошибки библиотеки валидации, `IntoError` и `volga::error::Error` — все внешние для вашего крейта, поэтому
+ни `IntoError`, ни `From` там реализовать нельзя. [`Invalid<E>`](https://docs.rs/volga/latest/volga/validation/struct.Invalid.html) —
 это newtype, который решает задачу одним словом:
 ```rust
 use volga::validation::{Invalid, Validate};

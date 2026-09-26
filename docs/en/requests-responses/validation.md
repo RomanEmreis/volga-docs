@@ -219,6 +219,8 @@ impl Validate for KeyValue {
 }
 ```
 
+`Validate::Error` does not have to be `ValidationError`: any type that converts into volga's `Error` will do, and it answers with the status that conversion gives it. For an error type of your own that is one [`IntoError`](/volga-docs/en/reliability-observability/errors.html#error-types-of-your-own) impl — since **0.12.0** it replaces a hand-written `From<T> for Error`, which it provides.
+
 ## `ValidationError`
 
 [`ValidationError`](https://docs.rs/volga/latest/volga/validation/struct.ValidationError.html) is what `Validate`
@@ -324,8 +326,8 @@ for the rest of the Problem Details support.
 
 ## Using a Third-Party Validator
 
-A validation crate's own error and `volga::error::Error` are both foreign to your crate, so no `From` impl can bridge
-them there. [`Invalid<E>`](https://docs.rs/volga/latest/volga/validation/struct.Invalid.html) is the newtype that does
+A validation crate's own error type, `IntoError` and `volga::error::Error` are all foreign to your crate, so neither
+`IntoError` nor `From` can be implemented there. [`Invalid<E>`](https://docs.rs/volga/latest/volga/validation/struct.Invalid.html) is the newtype that does
 it in one word:
 ```rust
 use volga::validation::{Invalid, Validate};

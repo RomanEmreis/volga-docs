@@ -120,6 +120,16 @@ Two spellings cannot be told apart that way, so they are reported where they are
 
 Any other verb may name the position whatever it likes, and two routes on one verb that part at a position — `/users/{id}/posts` beside `/users/{name}/comments` — never meet at an endpoint and keep their own names too. A group prefix counts the same way, being a route pattern like any other.
 
+### In the OpenAPI document
+
+OpenAPI 3.0 allows one templated path per position, so since **0.11.2** routes that name a position differently are described under one path in each [OpenAPI document](/volga-docs/en/middleware-infrastructure/openapi.html): the one most of the routes there are written with, the first in alphabetical order on a tie. `GET /users/{id}` and `POST /users/{name}` become `/users/{id}` with two operations, and the `POST` operation's parameter is named `id` there.
+
+The client does not notice — a path parameter is sent and read by position — but the document no longer shows the name the handler reads by, so debug builds report each renamed route at startup.
+
+::: tip
+Name the parameter alike on every route through a position, and every route is described under its own names. Different names are worth keeping only where the handlers really read different things.
+:::
+
 ## A Literal Never Hides a Parameter
 
 Routes are matched segment by segment, and a literal segment wins over a parameter wherever both could match. What that does *not* mean is that a literal which leads nowhere wins: when the path it starts does not reach a route, the lookup goes back to the nearest parameter it passed over and carries on from there.
@@ -175,7 +185,7 @@ app.map_get("/{*path}", |path: String| async move { path });
 Nothing in the value is normalized, so a `..` segment reaches the handler as it was sent: `GET /files/../../etc/passwd` binds `"../../etc/passwd"`. A handler that joins the value onto a directory has to reject `..`, a root and a drive prefix itself, or resolve the joined path and check that it is still under that directory. For serving files from disk, use [`use_static_files()`](/volga-docs/en/middleware-infrastructure/static-files.html), which does this for you.
 :::
 
-In an OpenAPI document a catch-all is described as the path parameter `{name}`. A catch-all beside a parameter route for the same verb at the same position — `/files/{name}` and `/files/{*path}` — would be the same templated path there, so where both are bound to one document the parameter route is described and the catch-all is left out, with a warning at startup in debug builds.
+In an OpenAPI document a catch-all is described as the path parameter `{name}`. A catch-all beside a parameter route for the same verb at the same position — `/files/{name}` and `/files/{*path}` — would be the same templated path there, so where both are bound to one document the parameter route is described and the catch-all is left out, with a warning at startup in debug builds. Under different verbs — `GET /files/{*path}` beside `POST /files/{id}` — both are described, under one path, as [above](#in-the-openapi-document).
 
 ## How Parameter Values Are Decoded
 

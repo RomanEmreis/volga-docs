@@ -193,7 +193,7 @@ async fn main() -> std::io::Result<()> {
 | `[server]`   | *(всегда)*     | `host`, `port`, `body_limit_bytes`, `max_header_count`, `max_connections`, `shutdown_timeout_secs` |
 | `[tls]`      | `tls`          | Настройки TLS-сертификатов                                    |
 | `[tracing]`  | `tracing`      | Настройки трассировки/логирования                             |
-| `[openapi]`  | `openapi`      | Настройки спецификации OpenAPI                                |
+| `[openapi]`  | `openapi`      | Настройки спецификации [OpenAPI](/volga-docs/ru/middleware-infrastructure/openapi.html) |
 | `[cors]`     | `middleware`   | Настройки политики CORS                                       |
 
 Например, секция `[server]` позволяет настроить хост и порт прямо в файле конфигурации:

@@ -40,6 +40,43 @@ async fn sum(x: i32, y: i32) -> i32 {
 }
 ```
 
+### What a Filter Returns
+
+A filter's verdict is a `bool`, `()`, a [`FilterResult`](https://docs.rs/volga/latest/volga/http/response/filter_result/struct.FilterResult.html) or a `Result<(), E>`. A request it stops goes to the [error handler](/volga-docs/en/reliability-observability/errors.html), with the status of what the filter returned:
+
+| The filter returns | Answer |
+|---|---|
+| `false`, or `FilterResult::err()` | `400 Bad Request` with a generic message |
+| `Err` of anything with a status — `Error`, `StatusCode`, `(StatusCode, E)`, `std::io::Error`, `ValidationError`, `OAuthError`, `Problem`, a type of your own implementing [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) | that status, as the same `Err` would get from a [handler](/volga-docs/en/reliability-observability/errors.html#returning-errors-from-a-handler) |
+| `Err` of a string or a `Box<dyn std::error::Error + Send + Sync>` | `400 Bad Request` with that message |
+
+The last row is the one difference from a handler, where a string is a `500`: an error without a status of its own, returned from a filter, is taken as the reason the request is refused. Since **0.12.0**, an error with a status keeps it — an `OAuthError` answers `401` for `invalid_token` and `403` for `insufficient_scope`, an `Error` keeps its instance and [attached response](/volga-docs/en/reliability-observability/errors.html#answering-with-a-body-of-its-own).
+
+```rust compile
+use volga::{App, headers::HttpHeaders, http::StatusCode};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // 401 Unauthorized without the header
+    app.filter(|headers: HttpHeaders| match headers.get_raw("x-api-key") {
+        Some(_) => Ok(()),
+        None => Err((StatusCode::UNAUTHORIZED, "missing API key")),
+    });
+
+    app.map_get("/sum", |x: i32, y: i32| x + y);
+
+    app.run().await
+}
+```
+
+[`FilterResult::with_error()`](https://docs.rs/volga/latest/volga/http/response/filter_result/struct.FilterResult.html#method.with_error) takes the same types and answers as `Err` with that error does.
+
+::: warning A std::error::Error is not enough
+A filter's `Err` must be `Error` or implement `IntoError`. A type that only implements `std::error::Error` — `ParseIntError`, an error from another crate — does not compile there; give it a status with `.map_err(|err| (StatusCode::BAD_REQUEST, err))`, or wrap it into an error type of your own that implements `IntoError`.
+:::
+
 ## Handling Incoming Requests
 
 The [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) method gives you access to the [`HttpRequestMut`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html), allowing you to inspect or mutate request before request processing.
@@ -111,8 +148,8 @@ async fn sum(x: i32, y: i32) -> i32 {
 
 The [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) method lets you define custom error handlers - globally, per route, or for route groups.
 
-```rust
-use volga::{App, HttpResult, error::{Error, Problem}};
+```rust compile
+use volga::{App, error::{Error, ProblemDetails}};
 use std::io::Error as IoError;
 
 #[tokio::main]
@@ -126,14 +163,16 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 
-async fn handle_err(error: Error) -> HttpResult {
-    Problem::from(error)
+async fn handle_err(error: Error) -> ProblemDetails {
+    ProblemDetails::from(error)
 }
 
 async fn produce_err() -> IoError {
     IoError::other("some error")
 }
 ```
+
+Since **0.12.0** whatever `Err` the handler returns reaches this `map_err` as an `Error` — `Err(StatusCode::NOT_FOUND)` and an `Err` of your own error type included.
 
 ::: tip
 By attaching [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) to the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), you configure a global error handler. You can read more about advanced error handling [here](/volga-docs/en/reliability-observability/errors.html).

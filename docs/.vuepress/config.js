@@ -67,7 +67,7 @@ export default defineUserConfig({
           {
             text: 'Middleware & Infrastructure',
             prefix: '/en/middleware-infrastructure/',
-            children: ['middleware', 'middlewares', 'parameterized-middleware', 'compression', 'decompression', 'cors', 'static-files', 'rate-limiting', 'config-files'],
+            children: ['middleware', 'middlewares', 'parameterized-middleware', 'compression', 'decompression', 'cors', 'static-files', 'rate-limiting', 'config-files', 'openapi'],
           },
           {
             text: 'Security & Access',
@@ -133,7 +133,7 @@ export default defineUserConfig({
           {
             text: 'Middleware и инфраструктура',
             prefix: '/ru/middleware-infrastructure/',
-            children: ['middleware', 'middlewares', 'parameterized-middleware', 'compression', 'decompression', 'cors', 'static-files', 'rate-limiting', 'config-files'],
+            children: ['middleware', 'middlewares', 'parameterized-middleware', 'compression', 'decompression', 'cors', 'static-files', 'rate-limiting', 'config-files', 'openapi'],
           },
           {
             text: 'Безопасность и доступ',

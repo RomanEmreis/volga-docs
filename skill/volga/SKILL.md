@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.11.1"
+  volga-version: "0.12.0"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -18,7 +18,7 @@ server configuration. Handlers are plain functions or closures — async, or
 since 0.11.0 synchronous — whose arguments are extractors and whose return
 value is anything that implements `IntoResponse`.
 
-**This skill describes volga 0.11.x.** The 0.9 line changed security
+**This skill describes volga 0.12.x.** The 0.9 line changed security
 defaults and removed a set of `with_default_*` helpers; 0.10.0 rebuilt how
 requests reach middleware, renamed the static file mount and made route
 groups a real scope; 0.10.1 moved a rejected bearer token from `403` to
@@ -26,7 +26,9 @@ groups a real scope; 0.10.1 moved a rejected bearer token from `403` to
 0.11.0 added synchronous handlers, `blocking`, catch-all routes and a
 shutdown timeout that closes what is still open; 0.11.1 gave a route group
 a fallback of its own and made the static-file shell a `GET` route under
-its mount. The
+its mount; 0.11.2 let OpenAPI inputs be described by hand; 0.12.0 made a
+handler's `Err` an error handed to `map_err` instead of a second response,
+with `IntoError` as the one impl an error type needs. The
 response macros use a **semicolon** before custom headers. Most volga
 code a model has seen predates all of it. The
 [Non-negotiables](#non-negotiables) below are the places where writing
@@ -45,8 +47,9 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.11"` or `"0.11.1"` | This skill applies as written — a caret requirement resolves to the newest 0.11.x |
-| `volga = "0.11.0"` pinned exactly | No `RouteGroup::map_fallback`, and the fallback file answers every method and takes the application's fallback slot. Upgrading to 0.11.1 needs no code change |
+| `volga = "0.12"` or `"0.12.0"` | This skill applies as written — a caret requirement resolves to the newest 0.12.x |
+| `volga = "0.11"` or `"0.11.x"` | A handler's `Err` must implement `IntoResponse` and is sent as a response, skipping `map_err`; error types implement `From<T> for Error`; no `IntoError`, no `Error::with_response`. Read the 0.11.x → 0.12.0 path in `references/migration.md` before upgrading — part of it changes answers without a compile error |
+| `volga = "0.11.0"` or `"0.11.1"` pinned exactly | As 0.11.x; 0.11.0 also lacks `RouteGroup::map_fallback`, and its fallback file answers every method. `OpenApiSchema` is unreachable before 0.11.2 |
 | `volga = "0.10"` or `"0.10.x"` | No synchronous handlers, `blocking`, catch-all routes, shutdown timeout or `ShutdownHandle` extractor — every handler must be `async`. Read the 0.10.x → 0.11.0 path in `references/migration.md` before upgrading |
 | `volga = "0.10.0"` pinned exactly | As 0.10.x, and three different answers at runtime: a rejected token is answered `403` rather than `401`, a missing DI registration fails the first request instead of the start, and the shell's `ETag` comes from its metadata |
 | `volga = "0.9"` | Static files, route groups, `HEAD` and unmatched requests all behave differently. Read `references/migration.md` first |
@@ -70,13 +73,13 @@ Each file is self-contained; load only what the task calls for.
 |---|---|
 | Routes, groups, path/query/JSON/form/file/multipart/header/cookie/raw-body extraction | `references/routing.md` |
 | Validating an extracted payload — `Validate`, `Valid<E>`, `#[derive(Validate)]`, `ValidationError` | `references/validation.md` |
-| Returning a response, status codes, streaming, errors, Problem Details | `references/responses.md` |
+| Returning a response, status codes, streaming, errors (`Result<T, E>`, `IntoError`, `with_response`), Problem Details | `references/responses.md` |
 | `with` / `wrap` / `attach` / `filter` / `tap_req` / `map_ok` / `map_err`, CORS, compression, static files, rate limiting | `references/middleware.md` |
 | Dependency injection, lifetimes, configuration files, hot reload | `references/di-config.md` |
 | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, DPoP, machine-to-machine grants, TLS, HSTS | `references/security.md` |
 | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events | `references/realtime.md` |
-| Feature flags, tracing, cancellation, graceful shutdown, OpenAPI, tests, deployment | `references/operations.md` |
-| A compile error on code that "used to work", or upgrading from 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
+| Feature flags, tracing, cancellation, graceful shutdown, OpenAPI (hand-written schemas included), tests, deployment | `references/operations.md` |
+| A compile error on code that "used to work", or upgrading from 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
 
 ## An app that works
 
@@ -125,7 +128,7 @@ reachable from the network, `bind` explicitly.
 
 ## Non-negotiables
 
-Each one is a real difference between 0.11.x and what older code or an
+Each one is a real difference between 0.12.x and what older code or an
 untrained guess produces.
 
 ### 1. Custom headers come after a semicolon
@@ -407,6 +410,36 @@ and is neither listed nor described in OpenAPI — `ctx.matched_route()`
 reads `false` for it. A route still answers first, including `405` for a
 method it lacks.
 
+### 23. A handler's `Err` is an error — and a bare string is a `500`
+
+Since 0.12.0 the `Err` of a handler's `Result<T, E>` is converted through
+`IntoError` and goes to `map_err` (or the default handler). `E` is `Error`,
+`StatusCode`, `(StatusCode, E)`, `io::Error`, `Problem`, a volga error type,
+a string, or your own type implementing `IntoError`:
+
+```rust
+use volga::{Json, http::StatusCode};
+
+app.map_get("/orders/{id}", |id: u32| -> Result<Json<u32>, (StatusCode, &'static str)> {
+    if id == 0 {
+        return Err((StatusCode::NOT_FOUND, "no such order"));
+    }
+    Ok(Json(id))
+});
+```
+
+* `Err("..")`, `Err(String)` compile and answer **`500`** — always pair a
+  client error with its status. `Err(404)` does not compile; use
+  `StatusCode::NOT_FOUND`.
+* `Err(HttpResponse)` / `Err(Json<T>)` do not compile. A body for an error
+  goes on the error: `Error::from_parts(status, None, msg).with_response(Json(body))`.
+* An error type implements **`IntoError`, not `From<T> for Error`** — the
+  former provides the latter, and writing both is E0119.
+* A **filter's** `Err` takes the same types and keeps their status
+  (`OAuthError` → `401`/`403`), except that a string answers `400` there.
+  A plain `std::error::Error` (`ParseIntError`, `anyhow::Error`) is not
+  accepted: `.map_err(|e| (StatusCode::BAD_REQUEST, e))`.
+
 ## Checklist before handing code back
 
 - [ ] Every custom-header array is preceded by `;`, not `,`
@@ -423,4 +456,6 @@ method it lacks.
 - [ ] Endless streams stop on `ShutdownHandle::cancelled()`
 - [ ] Nothing expects the SPA shell back from a non-`GET` request — that is `405`
 - [ ] An API mounted beside a root shell has its own `RouteGroup::map_fallback`
+- [ ] No handler or filter returns `Err` of a bare string for a client error — pair it with a `StatusCode`
+- [ ] Error types implement `IntoError`, never `From<T> for Error`; bodies for errors go through `with_response`
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean

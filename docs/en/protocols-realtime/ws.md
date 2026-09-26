@@ -74,7 +74,52 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-This is a very simple example, to get more control over a particular connection you may choose another method - [`map_ws()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_ws).
+### Message Types of Your Own
+
+A message is anything implementing `TryFrom<`[`Message`](https://docs.rs/volga/latest/volga/ws/args/struct.Message.html)`>`, and a reply anything implementing `TryInto<Message>`. Since **0.12.0** their conversion error can be any type that converts into volga's `Error` — `serde_json::Error`, a `(StatusCode, E)` pair, a type of your own implementing [`IntoError`](/volga-docs/en/reliability-observability/errors.html#error-types-of-your-own) — rather than `Error` itself. The same holds for `WebSocket::on_msg`, `WebSocket::recv` and `send`, `WsStream::recv` and `WsSink::send`.
+
+```rust compile
+use serde::Deserialize;
+use volga::{App, ws::Message};
+
+#[derive(Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+enum Command {
+    Ping,
+    Echo { text: String },
+}
+
+impl TryFrom<Message> for Command {
+    type Error = serde_json::Error;
+
+    fn try_from(msg: Message) -> Result<Self, Self::Error> {
+        serde_json::from_slice(&msg.into_inner().into_data())
+    }
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // {"type":"ping"}                  -> pong
+    // {"type":"echo","text":"hello"}   -> hello
+    app.map_msg("/ws", |cmd: Command| match cmd {
+        Command::Ping => "pong".to_string(),
+        Command::Echo { text } => text,
+    });
+
+    // A `Message` is a reply too: this echo keeps text frames text and binary frames binary
+    app.map_msg("/echo", |msg: Message| msg);
+
+    app.run().await
+}
+```
+
+::: tip
+A frame that does not convert into the handler's message type is skipped, and the connection stays open; with the `tracing` feature on, it is logged as an error. Where a client has to learn that its message was rejected, take a type that accepts any frame — `Message`, `Bytes` — and reply with the error yourself, or read the socket with `recv()`, which hands the conversion error to you.
+:::
+
+These are simple examples; to get more control over a particular connection you may choose another method - [`map_ws()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_ws).
 
 ```rust compile
 use volga::{App, ws::WebSocket};

@@ -74,7 +74,52 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Это очень простой пример. Чтобы получить больше контроля над конкретным соединением, вы можете воспользоваться другим методом - [`map_ws()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_ws).
+### Собственные типы сообщений
+
+Сообщение — это всё, что реализует `TryFrom<`[`Message`](https://docs.rs/volga/latest/volga/ws/args/struct.Message.html)`>`, а ответ — всё, что реализует `TryInto<Message>`. Начиная с **0.12.0** ошибкой их преобразования может быть любой тип, который превращается в `Error` из Volga, — `serde_json::Error`, пара `(StatusCode, E)`, ваш собственный тип, реализующий [`IntoError`](/volga-docs/ru/reliability-observability/errors.html#собственные-типы-ошибок), — а не только сам `Error`. То же верно для `WebSocket::on_msg`, `WebSocket::recv` и `send`, `WsStream::recv` и `WsSink::send`.
+
+```rust compile
+use serde::Deserialize;
+use volga::{App, ws::Message};
+
+#[derive(Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+enum Command {
+    Ping,
+    Echo { text: String },
+}
+
+impl TryFrom<Message> for Command {
+    type Error = serde_json::Error;
+
+    fn try_from(msg: Message) -> Result<Self, Self::Error> {
+        serde_json::from_slice(&msg.into_inner().into_data())
+    }
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // {"type":"ping"}                  -> pong
+    // {"type":"echo","text":"hello"}   -> hello
+    app.map_msg("/ws", |cmd: Command| match cmd {
+        Command::Ping => "pong".to_string(),
+        Command::Echo { text } => text,
+    });
+
+    // `Message` тоже годится как ответ: это эхо оставляет текстовые кадры текстовыми, а бинарные — бинарными
+    app.map_msg("/echo", |msg: Message| msg);
+
+    app.run().await
+}
+```
+
+::: tip
+Кадр, который не преобразуется в тип сообщения обработчика, пропускается, а соединение остаётся открытым; с включённой фичей `tracing` это логируется как ошибка. Если клиент должен узнать, что его сообщение отклонено, принимайте тип, подходящий для любого кадра, — `Message`, `Bytes` — и отвечайте ошибкой сами, либо читайте сокет через `recv()`, который отдаёт ошибку преобразования вам.
+:::
+
+Это простые примеры. Чтобы получить больше контроля над конкретным соединением, вы можете воспользоваться другим методом - [`map_ws()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_ws).
 
 ```rust compile
 use volga::{App, ws::WebSocket};

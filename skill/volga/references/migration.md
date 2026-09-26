@@ -8,6 +8,10 @@ is rejected for no obvious reason, look here before rewriting anything.
 | Error | Cause | Fix |
 |---|---|---|
 | `argument never used` on an `ok!` / `status!` call | headers passed after a comma | use `;` before the header array |
+| `` `X` cannot be the error of a request handler's `Result` `` | 0.12.0: a handler's `Err` must be `Error` or implement `IntoError`; `X` is a response type (`HttpResponse`, `Json<T>`), an integer, or an error type with only `From<X> for Error` | return the response as `Ok`, attach a body with `Error::with_response`, use `StatusCode`, or turn the `From` impl into `impl IntoError` |
+| `conflicting implementations of trait From<X> for volga::error::Error` (E0119) | 0.12.0: `IntoError` provides that `From` through a blanket impl | delete the `From` impl; keep `IntoError` |
+| `` `F` is not a filter `` on a filter returning `Result<(), E>` | 0.12.0: a filter's `E` must be `Error` or implement `IntoError`, not just `std::error::Error` | `.map_err(\|e\| (StatusCode::BAD_REQUEST, e))`, or wrap it in an `IntoError` type |
+| `FilterResult::with_error` rejects its argument | 0.12.0: it takes what a filter's `Err` takes | as above |
 | `method takes N generic arguments but N-1 generic arguments were supplied` on `map_*` / `filter` / `map_ok` / ... | 0.11.0 added the handler-shape marker as the last generic parameter | add a trailing `_`: `map_get::<_, _, (i32,), _>(..)` |
 | "is not a request handler" on a synchronous closure | the closure returns something that is not `IntoResponse`; with neither shape matching, rustc cannot say which was meant | fix the return type |
 | `blocking` rejects a handler | it takes a synchronous handler only | drop `async`, or drop `blocking` |
@@ -60,7 +64,7 @@ is rejected for no obvious reason, look here before rewriting anything.
 | `415` on a request | `Content-Encoding` names an algorithm whose feature is off |
 | the server listens on every interface | that is `App::new()`'s default off Windows. `bind` explicitly |
 | the process hangs or panics on start | `run_blocking()` called inside a Tokio runtime |
-| everything under `/api` 404s after adding a filter | a `filter` returning `false` answers `404` |
+| everything under `/api` answers `400` after adding a filter | a `filter` returning `false` refuses with `400`; return `Err((StatusCode::.., ".."))` for another status |
 | a route that answered `200` now answers `401` / `403` / `429` | 0.10.0: its group's `authorize` / `token_bucket` was registered *after* it and used to be skipped; a group is now a scope |
 | a `HEAD` health check that answered `200` now answers `401` / `403` | 0.10.0: `HEAD` travels through the `GET` route's middleware instead of a second bare route |
 | an unknown path answers `401` instead of `404` | 0.10.0: global short-circuiting middleware (`filter`, `authorize`, an early-returning `with`) now runs for unmatched requests |
@@ -87,8 +91,58 @@ is rejected for no obvious reason, look here before rewriting anything.
 | `map_fallback` is never reached in an app with `use_static_files()` | 0.11.1: under a root mount the shell covers every `GET` path. Mount under a prefix, or give the API group its own `map_fallback` |
 | a group's fallback file stopped answering outside the group's prefix | 0.11.1: `RouteGroup::use_static_files` serves the shell under its own prefix, as it serves the files |
 | a group's middleware runs once for a route the group mapped under two spellings of its parameters | 0.11.1: a group records each route once, by the position the router reads |
+| a handler returning `Err(String)` / `Err("..")` answers `500` instead of `200` | 0.12.0: a handler's `Err` goes to the error handler, and a message has no status. Return `Err((StatusCode::BAD_REQUEST, ".."))` |
+| `Err(StatusCode::..)` now has a body (its reason phrase), or Problem Details | 0.12.0: it goes through the error handler |
+| `map_err` / `use_problem_details()` now sees errors it never saw — `Err(StatusCode)`, `Err(Problem)` | 0.12.0: every handler `Err` reaches it |
+| a filter that answered `400` now answers `401`, `403`, `404`, `422`… | 0.12.0: a filter's `Err` keeps its status — `OAuthError` by code, `io::Error` by kind, `ValidationError`, `StatusCode` |
+| a debug build warns `OpenAPI: ... describes ... as a map` at startup | 0.11.2: a `#[serde(flatten)]` input cannot be inferred. Describe it with `with_request_schema` / `with_query_schema` |
+| a debug build warns `OpenAPI: ... is described as ...` at startup, or the spec shows another route's parameter name | 0.11.2: routes naming one position differently share one templated path. Name the parameters alike |
 
 ## Version-by-version
+
+### 0.12.0 — a handler's `Err` is an error
+**Breaking**, partly without a compile error.
+
+* **`volga::error::IntoError`** — the `Err` of a handler's `Result<T, E>`
+  is converted into an `Error` and handed to the error handler (`map_err`,
+  `use_problem_details`, the default). Implemented for volga's error types,
+  `StatusCode` (canonical reason), `(StatusCode, E)`, strings and
+  `Box<dyn Error + Send + Sync>` (`500`), `Problem<E>` (answers with
+  itself); not for integers. It provides `From<T> for Error`, so `?` works
+  with it; a type with both impls is E0119. Applies to handlers, `map_err`,
+  `map_fallback`, `with` and `map_ok`.
+* `Err(String)` answers `500` (was `200`) — compiles unchanged.
+  `Err(StatusCode)` / `Err(Problem)` keep their status but now reach
+  `map_err`. `Err(HttpResponse)` / `Err(Json<T>)` no longer compile.
+* **`Error::with_response` / `has_response` / `take_response`** — an error
+  carrying the response it answers with; the default handler and
+  `use_problem_details` send it unchanged, with the error's status.
+* **`IntoError::describe_openapi`** (feature `openapi`); `Result<T, E>`
+  describes both `T` and `E`.
+* **A filter's `Err`** goes through `IntoError` too: `OAuthError`,
+  `ValidationError`, `io::Error`, `StatusCode`, `(StatusCode, E)`, `Problem`
+  and `Error` answer with their own status, instance and attached response;
+  strings and boxed errors answer `400`. A type that is only
+  `std::error::Error` no longer compiles there. `FilterResult::with_error`
+  takes the same types.
+* WebSocket conversions (`map_msg`, `on_msg`, `send`, `recv`) accept any
+  error convertible into `Error`; a `map_msg` handler can reply with a
+  `Message`.
+* `Error` shrank from 48 to 32 bytes on 64-bit targets.
+
+### 0.11.2 — hand-written OpenAPI inputs
+No API break.
+
+* `volga::openapi::OpenApiSchema` is exported, so `with_request_schema` /
+  `with_response_schema` are callable; `with_query_schema` describes query
+  parameters from an object schema; `undescribed_inputs()` lists inputs
+  described without their fields.
+* A `#[serde(flatten)]` input is reported at startup (debug) instead of
+  silently published without fields.
+* Routes naming one position differently (`GET /users/{id}`,
+  `POST /users/{name}`; also a catch-all beside a parameter under another
+  verb) are described under one templated path, others renamed by position
+  and reported at startup (debug).
 
 ### 0.11.1 — group fallbacks, the shell as a route
 No API break; nothing to change in code. What differs at runtime:
@@ -376,6 +430,28 @@ Nothing to rewrite. Check three things instead:
    closes what is still open.
 5. Optional: drop `async move { .. }` from handlers and middleware with
    nothing to await, and wrap genuinely blocking bodies in `blocking`.
+
+## Upgrading 0.11.x → 0.12.0
+
+1. Bump the version and run `cargo check`. Work the compile errors: a
+   handler `Err` of a response type becomes `Ok(..)` or an error with
+   `with_response(..)`; every `impl From<T> for volga::error::Error` becomes
+   `impl IntoError for T` (same body, `fn into_error(self) -> Error`); a
+   filter's `Err` of a foreign error gets a status with
+   `.map_err(|e| (StatusCode::BAD_REQUEST, e))`.
+2. **Grep for handlers whose `Err` is a string** — `Result<_, String>`,
+   `Result<_, &str>`, `Err(format!(`, `Err("`. They compile and now answer
+   `500`. Give each a status: `Err((StatusCode::BAD_REQUEST, msg))`.
+3. Review `map_err` and `use_problem_details()`: they now receive every
+   handler `Err`, `Err(StatusCode)` and `Err(Problem)` included. A
+   `map_err` that rebuilds every error should let an attached response
+   through (`if err.has_response() { return Err(err) }`).
+4. Grep tests and clients for statuses from filters: an `OAuthError`,
+   `ValidationError`, `io::Error` or `StatusCode` returned from a filter now
+   answers with its own status instead of `400`.
+5. Optional: replace custom error bodies built in handlers with an
+   `IntoError` type using `with_response`, and describe it in OpenAPI with
+   `describe_openapi`.
 
 ## Upgrading 0.8.x → 0.9.x, in order
 
