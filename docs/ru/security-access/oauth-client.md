@@ -321,6 +321,20 @@ async fn metadata() -> HttpResult {
 }
 ```
 
+Начиная с **0.12.0** это преобразование — реализация [`IntoError`](/volga-docs/ru/reliability-observability/errors.html#собственные-типы-ошибок), поэтому `ClientError` может быть и `Err` обработчика как есть и попадает в `map_err`, как любая другая ошибка:
+
+```rust compile
+use volga_oauth_client::{ClientError, DiscoveryClient};
+
+async fn issuer() -> Result<String, ClientError> {
+    let metadata = DiscoveryClient::new()
+        .fetch_server_metadata("https://auth.example.com")
+        .await?;
+
+    Ok(metadata.issuer)
+}
+```
+
 Статус описывает, **где** произошёл сбой, а не повторяет ответ сервера авторизации — ведь в этом вызове *клиентом* было ваше приложение:
 
 | Сбой | Статус |

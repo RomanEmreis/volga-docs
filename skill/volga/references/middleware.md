@@ -13,7 +13,7 @@ compose outward-in.
 | `wrap` | `HttpContext` + `NextFn`, body included | compression, encoding, anything needing the raw body |
 | `with` | extractors + `Next`, no body | 80% of cases — DI, headers, timing, short-circuiting |
 | `attach` | a type implementing `Middleware` | reusable, configurable middleware |
-| `filter` | extractors, returns `bool` | validation and access checks |
+| `filter` | extractors, returns `bool` / `Result<(), E>` | validation and access checks |
 | `tap_req` | `HttpRequestMut` | mutate the request before the handler |
 | `map_ok` | `HttpResponse` | augment a successful response |
 | `map_err` | `Error` | turn an error into a response |
@@ -157,8 +157,35 @@ closures. A closure ending in `Ok(resp)` gives the compiler no way to infer
 the error type — `type annotations needed ... cannot infer type of the type
 parameter E`. The return type on a named function settles it.
 
-A `filter` returning `false` answers `404`. Header mutation methods return
-`&mut Self` since 0.9.0, and `append_header` is infallible.
+Header mutation methods return `&mut Self` since 0.9.0, and
+`append_header` is infallible.
+
+#### What a filter returns
+
+`bool`, `()`, `FilterResult` or `Result<(), E>`, where `E` is `Error` or
+implements `IntoError` — the same bound as a handler's `Err`. A refused
+request goes to the error handler:
+
+| Verdict | Answer |
+|---|---|
+| `false`, `FilterResult::err()` | `400`, generic message |
+| `Err` with a status — `Error`, `StatusCode`, `(StatusCode, E)`, `io::Error` (by kind), `OAuthError`, `ValidationError`, `Problem`, your `IntoError` type | that status (0.12.0+) |
+| `Err` of a string or `Box<dyn Error + Send + Sync>` | `400` with the message — unlike a handler, where it is `500` |
+
+```rust
+use volga::{headers::HttpHeaders, http::StatusCode};
+
+app.filter(|headers: HttpHeaders| match headers.get_raw("x-api-key") {
+    Some(_) => Ok(()),
+    None => Err((StatusCode::UNAUTHORIZED, "missing API key")),
+});
+```
+
+An `Error` returned from a filter keeps its instance and its
+`with_response` body; `FilterResult::with_error(e)` takes the same types as
+`Err(e)`. Since 0.12.0 a type that is only `std::error::Error` —
+`ParseIntError`, `anyhow::Error` — no longer compiles as a filter's `Err`:
+`.map_err(|e| (StatusCode::BAD_REQUEST, e))`.
 
 Since 0.11.0 `filter`, `tap_req`, `map_ok` and `map_err` also take a
 **synchronous** `fn` or closure returning its verdict, request or response

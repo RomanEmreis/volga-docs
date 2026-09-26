@@ -193,7 +193,7 @@ Volga automatically recognizes and applies certain reserved sections from the co
 | `[server]`   | *(always)*     | `host`, `port`, `body_limit_bytes`, `max_header_count`, `max_connections`, `shutdown_timeout_secs` |
 | `[tls]`      | `tls`          | TLS certificate configuration                                |
 | `[tracing]`  | `tracing`      | Tracing/logging configuration                                |
-| `[openapi]`  | `openapi`      | OpenAPI specification settings                                |
+| `[openapi]`  | `openapi`      | [OpenAPI](/volga-docs/en/middleware-infrastructure/openapi.html) specification settings |
 | `[cors]`     | `middleware`   | CORS policy configuration                                     |
 
 For example, the `[server]` section lets you configure the host and port directly in the config file:

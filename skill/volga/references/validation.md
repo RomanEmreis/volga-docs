@@ -149,6 +149,11 @@ impl Validate for KeyValue {
 }
 ```
 
+`type Error` is anything that converts into `volga::error::Error` and
+answers with that conversion's status. For your own error type that is
+`impl IntoError` (0.12.0+) — never a hand-written `From<T> for Error`, which
+`IntoError` already provides and would conflict with.
+
 ## Reported names
 
 Failures carry the name **the client sent**: `#[serde(rename)]` and
@@ -195,8 +200,9 @@ field-less failures land under an empty key. No extra wiring.
 
 ## A third-party validator
 
-A validation crate's error and `volga::error::Error` are both foreign to the
-user crate, so no `From` impl can bridge them there. `Invalid<E>` is the newtype
+A validation crate's error, `IntoError` and `volga::error::Error` are all
+foreign to the user crate, so neither `IntoError` nor `From` can be
+implemented there. `Invalid<E>` is the newtype
 that does — that is the whole relationship: no dependency, no feature, no
 blanket impl over anyone else's trait.
 

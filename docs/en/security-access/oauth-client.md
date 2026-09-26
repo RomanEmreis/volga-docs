@@ -321,6 +321,20 @@ async fn metadata() -> HttpResult {
 }
 ```
 
+Since **0.12.0** the conversion is an [`IntoError`](/volga-docs/en/reliability-observability/errors.html#error-types-of-your-own) impl, so a `ClientError` can also be a handler's `Err` as it is, and goes to `map_err` like any other error:
+
+```rust compile
+use volga_oauth_client::{ClientError, DiscoveryClient};
+
+async fn issuer() -> Result<String, ClientError> {
+    let metadata = DiscoveryClient::new()
+        .fetch_server_metadata("https://auth.example.com")
+        .await?;
+
+    Ok(metadata.issuer)
+}
+```
+
 The status describes **where** the failure sits rather than echoing what the authorization server answered — this application was the *client* of the call that failed:
 
 | Failure | Status |

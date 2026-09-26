@@ -209,22 +209,79 @@ let mut app = App::new()
 
 ## OpenAPI (feature `openapi`)
 
-<!-- snippet: skip -->
 ```rust
-let mut app = App::new().with_open_api(|api| api /* ... */);
-app.use_open_api();      // serves the spec and UI
+use volga::openapi::OpenApiSchema;
 
-app.map_post("/upload", upload)
-    .open_api(|route| route.produces_multipart(200));
+let mut app = App::new().with_open_api(|api| api
+    .with_title("Example API")
+    .with_version("1.0.0")
+    .with_specs(["v1", "v2"])   // /v1/openapi.json, /v2/openapi.json; default: /openapi.json
+    .with_ui());                // Swagger UI at /openapi
+app.use_open_api();             // serves the spec(s) and UI
+
+app.group("/users", |api| {
+    api.open_api(|cfg| cfg.with_tag("users").with_docs(["v1", "v2"]));
+    api.map_get("/{id:integer}", |id: u64| id);
+});
+
+app.map_post("/upload", || "ok")
+    .open_api(|route| route.with_doc("v2").produces_no_schema(200));
 ```
 
-Configuring without `use_open_api()` logs a warning and serves nothing.
+* `with_open_api` without `use_open_api()` serves nothing (debug builds
+  warn); `use_open_api()` without a configuration **panics**. The
+  `[openapi]` config section (`title`, `version`, `description`,
+  `ui_enabled`, `ui_path`, `specs`) configures it too.
+* Inferred: path params from the template (`{id:integer}` types them),
+  bodies/queries from the `Deserialize` types of `Json`/`Form`/`Query`/
+  `NamedPath`, validation constraints. Serialize-only response types need
+  `produces_json::<T>(status)` or `with_response_schema`.
+* A route bound to no document is described in the first spec. Group config
+  merges with route config.
+* `Result<T, E>` describes `T` and `E` (0.12.0); an error type describes
+  itself via `IntoError::describe_openapi`.
+
+### Hand-written schemas (0.11.2+)
+
+A struct with a `#[serde(flatten)]` field is read by serde as a map, so
+**none** of its fields are inferred: a body is published as an empty object
+(any value when nested, e.g. in a `Vec`), a `Query<T>` as no parameters.
+Debug builds name each such input at startup. Describe it by hand:
+
+```rust
+use volga::openapi::OpenApiSchema;
+
+let schema = OpenApiSchema::object()
+    .with_property("name", OpenApiSchema::string())
+    .with_property("page", OpenApiSchema::integer())
+    .with_required(["name", "page"]);
+
+app.map_post("/search", || "ok")
+    .open_api(|cfg| cfg.with_request_schema(schema.clone()));
+app.map_get("/search", || "ok")
+    .open_api(|cfg| cfg.with_query_schema(schema)); // one parameter per property
+```
+
+`OpenApiSchema` is importable from `volga::openapi` since 0.11.2.
+`OpenApiRouteConfig::undescribed_inputs()` lists what is still undescribed.
+
+### One path per position (0.11.2+)
+
+`GET /users/{id}` beside `POST /users/{name}` are described under **one**
+templated path per document — the spelling most routes there use,
+alphabetical first on a tie — and the others' parameters are renamed by
+position (debug builds report each). The wire is unaffected. Name the
+parameter alike to keep every route under its own names.
+
+All three startup reports go to `tracing` at `WARN` when the `tracing`
+feature is on (it is in `full`) — no subscriber, no report — and to stderr
+otherwise. Debug builds only.
 
 ## Testing (feature `test`, as a dev-dependency)
 
 ```toml
 [dev-dependencies]
-volga = { version = "0.9", features = ["test"] }
+volga = { version = "0.12", features = ["test"] }
 ```
 
 ```rust

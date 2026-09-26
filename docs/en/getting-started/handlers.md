@@ -51,7 +51,7 @@ fn health() -> HttpResult {
 }
 ```
 
-Everything else is the same as for the asynchronous shape: the extractors run before the handler, so `Json<T>`, `Form<T>`, `Query<T>` and `Dc<T>` arrive with the body already read; the return value is anything implementing [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html), `HttpResult` and `Result<T, E>` included; and the route is described in OpenAPI the same way.
+Everything else is the same as for the asynchronous shape: the extractors run before the handler, so `Json<T>`, `Form<T>`, `Query<T>` and `Dc<T>` arrive with the body already read; the return value is anything implementing [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html), `HttpResult` and [`Result<T, E>`](#returning-errors) included; and the route is described in OpenAPI the same way.
 
 ```rust compile
 use volga::{App, Json, ok};
@@ -85,6 +85,40 @@ A synchronous handler runs on the runtime worker that polls the request, exactly
 * the middleware [`filter`, `map_ok`, `map_err` and `tap_req`](/volga-docs/en/middleware-infrastructure/middleware.html#synchronous-middleware).
 
 `wrap`, `with` and `attach` take asynchronous middleware only, since what they exist for is awaiting `next`.
+
+## Returning Errors
+
+A handler that can fail returns `Result<T, E>`: `Ok` is the response, and since **0.12.0** `Err` is an error handed to the [error handler](/volga-docs/en/reliability-observability/errors.html#returning-errors-from-a-handler), never a response of its own. `E` is volga's `Error`, a `StatusCode`, a `(StatusCode, message)` pair, a `std::io::Error`, or any type implementing [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) — and `?` converts all of them.
+
+```rust compile
+use volga::{App, HttpResult, http::StatusCode, ok};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_get("/users/{id}", |id: u32| -> Result<String, StatusCode> {
+        match id {
+            1 => Ok("admin".into()),
+            _ => Err(StatusCode::NOT_FOUND),
+        }
+    });
+
+    app.map_get("/config", read_config);
+
+    app.run().await
+}
+
+async fn read_config() -> HttpResult {
+    // A missing file is a 404, an unreadable one a 403
+    let text = tokio::fs::read_to_string("app_config.toml").await?;
+    ok!(text)
+}
+```
+
+::: warning
+A bare message — `Err("not found")`, `Err(format!(..))` — has no status of its own and answers `500`. Pair it with one: `Err((StatusCode::NOT_FOUND, "not found"))`.
+:::
 
 ## Blocking Work
 
