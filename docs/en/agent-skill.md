@@ -4,7 +4,7 @@ A packaged [Agent Skill](https://agentskills.io/specification) that teaches a
 coding assistant to write Volga correctly — the same material as this site,
 reorganised for a model rather than a reader.
 
-<SkillDownload href="/volga-skill.zip" label="Download volga-skill.zip" note="~50 KiB · MIT · tracks volga 0.12.0" />
+<SkillDownload href="/volga-skill.zip" label="Download volga-skill.zip" note="~50 KiB · MIT · tracks volga 0.13.0" />
 
 Source: [`skill/volga`](https://github.com/RomanEmreis/volga-docs/tree/main/skill/volga).
 
@@ -15,12 +15,14 @@ Assistants are confidently wrong about Volga, and for a specific reason: the
 0.10.0 rebuilt how requests reach middleware and how route groups apply
 what they hold, 0.10.1 changed what a rejected token is answered with, and
 0.11.0 added synchronous handlers, catch-all routes and a shutdown timeout,
-0.11.1 gave a route group a fallback of its own, and 0.12.0 turned a
+0.11.1 gave a route group a fallback of its own, 0.12.0 turned a
 handler's `Err` into an error for `map_err` rather than a second response,
+and 0.13.0 made every path parameter arrive percent-decoded,
 while most Volga code a model has seen predates all of it.
 So the failure mode is not a forgotten method name. It is an assistant
 writing `ok!("hi", [("x-key", "v")])` with a comma instead of a semicolon,
 returning `Err("not found".to_string())` and getting a `500`,
+decoding a path parameter that arrived decoded already,
 reaching for `with_default_cors()`, calling `use_cors()` on an app that
 never configured CORS, mapping static files with `map_static_assets()`, or
 shipping a bearer-auth setup that answers `400` to every request once it
@@ -33,14 +35,14 @@ The skill front-loads exactly those traps, then routes to detail on demand.
 | File | Covers |
 |---|---|
 | `SKILL.md` | Establishing the version and features, the non-negotiables, a minimal app, routing |
-| `references/routing.md` | Routes, groups, path/query params, JSON, forms, files, multipart, headers, cookies |
+| `references/routing.md` | Routes, groups, path/query params, path parameters of your own types, JSON, forms, files, multipart, headers, cookies |
 | `references/responses.md` | Response macros, `IntoResponse`, status codes, streaming, errors and `IntoError`, Problem Details |
 | `references/middleware.md` | `with` / `wrap` / `attach` / `filter` / `tap_req` / `map_ok`, CORS, compression, static files, rate limiting |
 | `references/di-config.md` | DI lifetimes, `Inject`, factories, configuration files, hot reload |
 | `references/security.md` | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, the client crate, TLS, HSTS |
 | `references/realtime.md` | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events |
 | `references/operations.md` | Feature flags, graceful shutdown, cancellation, tracing, OpenAPI and hand-written schemas, `TestServer` |
-| `references/migration.md` | Symptom → cause, and the 0.11.x → 0.12.0, 0.10.x → 0.11.0, 0.10.0 → 0.10.1, 0.9.x → 0.10.x and 0.8.x → 0.9.x upgrade paths |
+| `references/migration.md` | Symptom → cause, and the 0.12.x → 0.13.0, 0.11.x → 0.12.0, 0.10.x → 0.11.0, 0.10.0 → 0.10.1, 0.9.x → 0.10.x and 0.8.x → 0.9.x upgrade paths |
 
 `SKILL.md` stays short on purpose: an entrypoint an agent always reads, and
 eight references it loads only when the task needs one.
@@ -97,7 +99,8 @@ before anything else:
   on/off builders (`with_credentials`, `with_preload`, …) no longer take a
   `bool`.
 * **`Path<T>` is a tuple, `NamedPath<T>` is the named struct**, and neither
-  may be mixed with positional path parameters in one handler.
+  may be mixed with positional path parameters in one handler. A type of
+  your own becomes a path parameter through `FromPathArg` since 0.13.0.
 * **`full` is not everything** — `#[derive(Claims)]`, `#[http_header]`,
   development certificates and `TestServer` each need a feature `full` does
   not include.
@@ -116,6 +119,8 @@ before anything else:
 * **A handler's `Err` is an error** since 0.12.0: it reaches `map_err`, a
   bare string answers `500`, and an error type implements `IntoError` —
   never `From<T> for Error`.
+* **Path parameters arrive decoded** since 0.13.0: a handler never decodes
+  one again, and a literal segment written with `%XX` panics at mapping.
 
 ## The code in it compiles
 
@@ -133,12 +138,12 @@ python3 ci/check-snippets.py --docs-dir skill --default-mode compile-fragment --
 
 ## Version
 
-The skill tracks volga **0.12.0** on MSRV **1.90**. The frontmatter records
+The skill tracks volga **0.13.0** on MSRV **1.90**. The frontmatter records
 both, so an assistant can tell whether the skill matches the crate in front
 of it:
 
 ```yaml
 metadata:
-  volga-version: "0.12.0"
+  volga-version: "0.13.0"
   msrv: "1.90"
 ```

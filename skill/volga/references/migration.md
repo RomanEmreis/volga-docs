@@ -8,6 +8,9 @@ is rejected for no obvious reason, look here before rewriting anything.
 | Error | Cause | Fix |
 |---|---|---|
 | `argument never used` on an `ok!` / `status!` call | headers passed after a comma | use `;` before the header array |
+| `` `Path<X>` is not an extractor `` with a note that `Path<T>` reads by position | `X` is a struct; `Path<T>` takes a tuple or one `FromPathArg` type | `NamedPath<X>` with `Deserialize`, or a tuple |
+| `` `X` is not an extractor `` with `` the trait `FromPathArg` is not implemented for `X` `` | 0.13.0: a type of your own is a path parameter only through `FromPathArg` (implementing `FromStr` is not enough) | `impl FromPathArg for X { fn from_path_arg(arg: &PathArg) -> Result<Self, Error> { arg.parse().map(X) } }`, or wrap it in `Json` / `Query` / `NamedPath` |
+| panic: `invalid route ...: the segment ... carries a percent-escape` | 0.13.0: literal segments, group prefixes and static-mount prefixes are matched against the decoded path | write the text it spells: `"/docs v1"`, not `"/docs%20v1"` |
 | `` `X` cannot be the error of a request handler's `Result` `` | 0.12.0: a handler's `Err` must be `Error` or implement `IntoError`; `X` is a response type (`HttpResponse`, `Json<T>`), an integer, or an error type with only `From<X> for Error` | return the response as `Ok`, attach a body with `Error::with_response`, use `StatusCode`, or turn the `From` impl into `impl IntoError` |
 | `conflicting implementations of trait From<X> for volga::error::Error` (E0119) | 0.12.0: `IntoError` provides that `From` through a blanket impl | delete the `From` impl; keep `IntoError` |
 | `` `F` is not a filter `` on a filter returning `Result<(), E>` | 0.12.0: a filter's `E` must be `Error` or implement `IntoError`, not just `std::error::Error` | `.map_err(\|e\| (StatusCode::BAD_REQUEST, e))`, or wrap it in an `IntoError` type |
@@ -95,10 +98,48 @@ is rejected for no obvious reason, look here before rewriting anything.
 | `Err(StatusCode::..)` now has a body (its reason phrase), or Problem Details | 0.12.0: it goes through the error handler |
 | `map_err` / `use_problem_details()` now sees errors it never saw — `Err(StatusCode)`, `Err(Problem)` | 0.12.0: every handler `Err` reaches it |
 | a filter that answered `400` now answers `401`, `403`, `404`, `422`… | 0.12.0: a filter's `Err` keeps its status — `OAuthError` by code, `io::Error` by kind, `ValidationError`, `StatusCode` |
+| a path parameter is decoded twice — `100%25` fails, `%2520` reads as a space | 0.13.0: the router decodes every parameter already. Remove the handler's own decoding |
+| a request that reached a handler now answers `400` before routing | 0.13.0: its path carries a malformed escape (`%zz`, trailing `%2`) or non-UTF-8 (`%FF`); `String` / `Path<T>` used to accept it. It goes through `map_err` |
+| `GET /users/a%2Fb` binds `"a/b"` where it used to bind `"a%2Fb"` | 0.13.0: positional extractors read the decoded value; `%2F` still never splits a segment |
+| a literal route with a space or non-ASCII (`/café`) starts answering | 0.13.0: literals are matched against the decoded path. Expected |
+| `500` with `` `Path<T>` of a single type reads one path parameter `` | `Path<u32>` on a route declaring two or none. Use a tuple or `NamedPath<T>` |
+| `500` with `the handler reads more path parameters than the route declares` | more positional arguments than the pattern has `{..}` segments. Fix the pattern or the signature |
+| a static file under `/st%61tic/..` or `//static/..` is now served | 0.13.0: a mount matches its prefix against decoded segments, as the router does |
 | a debug build warns `OpenAPI: ... describes ... as a map` at startup | 0.11.2: a `#[serde(flatten)]` input cannot be inferred. Describe it with `with_request_schema` / `with_query_schema` |
 | a debug build warns `OpenAPI: ... is described as ...` at startup, or the spec shows another route's parameter name | 0.11.2: routes naming one position differently share one templated path. Name the parameters alike |
 
 ## Version-by-version
+
+### 0.13.0 — decoded paths, path parameters of your own types
+**Breaking** at runtime for positional extractors; new API is additive.
+
+* **The router percent-decodes the path once**, segment by segment, and
+  every extractor reads the decoded value. `String`, `u32`, `Path<T>` and
+  `FromPathArg` types used to read it undecoded (`NamedPath<T>` decoded it
+  leniently); now all read `John%20Doe` as `John Doe`, `%31` as `1`. `+`
+  stays a plus. `%2F` decodes to `/` inside its segment and never splits
+  it; a catch-all tail is decoded whole. The raw path stays in the `Uri`.
+* A malformed escape or non-UTF-8 escapes answer **`400` before routing**,
+  through the global middleware and `map_err`, as a `404` does.
+* A literal segment, group prefix or static-mount prefix written with a
+  percent-escape **panics** at mapping; write its text (`/lit/a b`).
+  Literals match decoded paths, so `GET /caf%C3%A9` reaches `/café`.
+* A static mount matches its prefix against decoded segments and leaves a
+  malformed path to the router's `400`.
+* **`FromPathArg`, `PathArg`, `PathArgs`** are public in
+  `volga::http::endpoints::args`. A `FromPathArg` type is a handler
+  argument, a `Path<(..)>` element, or the `T` of `Path<T>`.
+  `PathArg::{name, value, parse}`; `parse` goes through `FromStr` and
+  answers `400`. `PathArgs::{iter, len, is_empty}` make `FromPathArgs`
+  implementable.
+* **`uuid` feature** (in `full`): `uuid::Uuid` as a path parameter.
+* **`Path<T>` of a single type**: `Path<u32>`. It answers `500` unless the
+  route declares exactly one parameter.
+* A handler reading more positional parameters than the route declares
+  answers `500`; an extra `Option<T>` reads `None`.
+* `Valid<Path<T>>` validates a single `FromPathArg + Validate` parameter.
+* The compile error for a non-extractor argument names `FromPathArg`; for
+  `Path<Struct>` it points to `NamedPath<T>`.
 
 ### 0.12.0 — a handler's `Err` is an error
 **Breaking**, partly without a compile error.
@@ -452,6 +493,26 @@ Nothing to rewrite. Check three things instead:
 5. Optional: replace custom error bodies built in handlers with an
    `IntoError` type using `with_response`, and describe it in OpenAPI with
    `describe_openapi`.
+
+## Upgrading 0.12.x → 0.13.0
+
+1. Bump the version and run `cargo check`. Handler code keeps compiling,
+   but mapping can now **panic**: run the app (or its tests)
+   once and rewrite any literal segment or prefix written with `%XX` as
+   its text.
+2. **Grep for hand-rolled decoding of path parameters** —
+   `percent_decode`, `urlencoding::decode`, `percent_encoding` near a
+   `String` path argument, `Path<..>` or a catch-all. Remove it: the value
+   arrives decoded, and decoding again breaks `100%25` and re-opens `%252F`.
+3. Review checks on path values (file names, slugs, tenant ids): they now
+   see `/` and `..` that arrived as `%2F` / `%2E%2E`. Keep checking the
+   decoded value — and nothing after it.
+4. Update tests and clients that expected a malformed-escape path to reach
+   a handler: it answers `400` now, through `map_err`.
+5. Optional: replace `String` parameters parsed by hand with a newtype
+   implementing `FromPathArg`, `Path<(T,)>` with `Path<T>`, and a
+   `NamedPath` wrapper around a single validated field with
+   `Valid<Path<T>>`; turn on `uuid` for UUID ids.
 
 ## Upgrading 0.8.x → 0.9.x, in order
 

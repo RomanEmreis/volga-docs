@@ -68,9 +68,10 @@ All four are re-exported from the crate root, so `use volga::ValidJson;` and
 `use volga::validation::ValidJson;` are the same import.
 
 ::: tip
-`ValidPath<T>` is the **named** path extractor, not the positional one: `Path<T>` reads a tuple, and a tuple is not
-a type your crate can implement `Validate` for. Use a struct with `Deserialize`, as described in
-[Route Params](/volga-docs/en/getting-started/route-params.html).
+`ValidPath<T>` is the **named** path extractor, not the positional one: a `Path<T>` of several parameters reads a
+tuple, and a tuple is not a type your crate can implement `Validate` for. Use a struct with `Deserialize`, as
+described in [Route Params](/volga-docs/en/getting-started/route-params.html#using-namedpath-t), or validate a
+[single parameter](#validating-a-path-parameter) of your own type.
 :::
 
 The wrapper forwards the inner extractor's payload source, so a validated body still reads the body and a validated
@@ -83,6 +84,48 @@ app.map_post("/items", async |filter: ValidQuery<Filter>, val: ValidJson<KeyValu
 ```
 
 `Valid<E>` derefs to the inner extractor, and `into_inner()` unwraps it.
+
+### Validating a path parameter
+
+Since **0.13.0** a single path parameter of your own type can be validated without a struct around it. Implement
+[`FromPathArg`](/volga-docs/en/getting-started/route-params.html#parameters-of-your-own-types) to read it and
+`Validate` to check it, and take it as `Valid<Path<T>>`:
+```rust compile
+use volga::{App, Path, error::Error, ok};
+use volga::http::endpoints::args::{FromPathArg, PathArg};
+use volga::validation::{Valid, Validate, ValidationError};
+
+struct Page(u32);
+
+impl FromPathArg for Page {
+    fn from_path_arg(arg: &PathArg) -> Result<Self, Error> {
+        arg.parse().map(Page)
+    }
+}
+
+impl Validate for Page {
+    type Error = ValidationError;
+
+    fn validate(&self) -> Result<(), Self::Error> {
+        if self.0 == 0 {
+            return Err(ValidationError::field("page", "must be at least 1"));
+        }
+        Ok(())
+    }
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /pages/3 -> 3
+    // GET /pages/0 -> 400 "page: must be at least 1"
+    app.map_get("/pages/{page}", |Valid(Path(Page(page))): Valid<Path<Page>>| ok!("{page}"));
+
+    app.run().await
+}
+```
+A value that does not parse is refused by `FromPathArg` with `400`, before `validate()` is called.
 
 ## Rules the Derive Understands
 

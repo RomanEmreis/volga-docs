@@ -299,12 +299,17 @@ What follows from the mount being middleware:
 Mount under a group prefix to keep files to one part of the URL space —
 `app.group("/static", |g| g.use_static_files())`. The prefix must be
 **literal**: `group("/{tenant}", ..)` serves nothing and warns at startup.
+It is compared with the **decoded** segments of a request, as the router
+compares a route's (0.13.0), so write it as its text — `"/docs v1"`, never
+`"/docs%20v1"`, which panics at registration.
 The group's middleware wraps the files; the group's **CORS policy does
 not** — a file is served without a matched route, so the application's
 policy applies.
 
 Traversal is refused by construction: a `.`, a `..`, an encoded separator
-(`%2F`) or an embedded NUL is declined rather than looked up.
+(`%2F`) or an embedded NUL is declined rather than looked up. A path that
+does not decode (`%zz`, `%FF`) is left to the router, which answers `400`
+through `map_err` / problem details.
 
 `HostEnv` can also be built standalone (`HostEnv::new("/static")`, then
 `set_host_env(env)`) and extracted in handlers and middleware.

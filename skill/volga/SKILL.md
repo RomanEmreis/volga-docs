@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.12.0"
+  volga-version: "0.13.0"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -18,7 +18,7 @@ server configuration. Handlers are plain functions or closures — async, or
 since 0.11.0 synchronous — whose arguments are extractors and whose return
 value is anything that implements `IntoResponse`.
 
-**This skill describes volga 0.12.x.** The 0.9 line changed security
+**This skill describes volga 0.13.x.** The 0.9 line changed security
 defaults and removed a set of `with_default_*` helpers; 0.10.0 rebuilt how
 requests reach middleware, renamed the static file mount and made route
 groups a real scope; 0.10.1 moved a rejected bearer token from `403` to
@@ -28,7 +28,9 @@ shutdown timeout that closes what is still open; 0.11.1 gave a route group
 a fallback of its own and made the static-file shell a `GET` route under
 its mount; 0.11.2 let OpenAPI inputs be described by hand; 0.12.0 made a
 handler's `Err` an error handed to `map_err` instead of a second response,
-with `IntoError` as the one impl an error type needs. The
+with `IntoError` as the one impl an error type needs; 0.13.0 made the router
+percent-decode the path once for every extractor and let a type of your
+own be a path parameter through `FromPathArg`. The
 response macros use a **semicolon** before custom headers. Most volga
 code a model has seen predates all of it. The
 [Non-negotiables](#non-negotiables) below are the places where writing
@@ -47,7 +49,8 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.12"` or `"0.12.0"` | This skill applies as written — a caret requirement resolves to the newest 0.12.x |
+| `volga = "0.13"` or `"0.13.0"` | This skill applies as written — a caret requirement resolves to the newest 0.13.x |
+| `volga = "0.12"` or `"0.12.0"` | Positional path extractors (`String`, `u32`, `Path<T>`) read values **undecoded** and accept malformed escapes; `FromPathArg` is private, there is no `uuid` feature, and `Path<T>` takes tuples only. Read the 0.12.x → 0.13.0 path in `references/migration.md` before upgrading — it changes values without a compile error |
 | `volga = "0.11"` or `"0.11.x"` | A handler's `Err` must implement `IntoResponse` and is sent as a response, skipping `map_err`; error types implement `From<T> for Error`; no `IntoError`, no `Error::with_response`. Read the 0.11.x → 0.12.0 path in `references/migration.md` before upgrading — part of it changes answers without a compile error |
 | `volga = "0.11.0"` or `"0.11.1"` pinned exactly | As 0.11.x; 0.11.0 also lacks `RouteGroup::map_fallback`, and its fallback file answers every method. `OpenApiSchema` is unreachable before 0.11.2 |
 | `volga = "0.10"` or `"0.10.x"` | No synchronous handlers, `blocking`, catch-all routes, shutdown timeout or `ShutdownHandle` extractor — every handler must be `async`. Read the 0.10.x → 0.11.0 path in `references/migration.md` before upgrading |
@@ -71,7 +74,7 @@ Each file is self-contained; load only what the task calls for.
 
 | The task | Read |
 |---|---|
-| Routes, groups, path/query/JSON/form/file/multipart/header/cookie/raw-body extraction | `references/routing.md` |
+| Routes, groups, path/query/JSON/form/file/multipart/header/cookie/raw-body extraction, path parameters of your own types (`FromPathArg`, `Uuid`) | `references/routing.md` |
 | Validating an extracted payload — `Validate`, `Valid<E>`, `#[derive(Validate)]`, `ValidationError` | `references/validation.md` |
 | Returning a response, status codes, streaming, errors (`Result<T, E>`, `IntoError`, `with_response`), Problem Details | `references/responses.md` |
 | `with` / `wrap` / `attach` / `filter` / `tap_req` / `map_ok` / `map_err`, CORS, compression, static files, rate limiting | `references/middleware.md` |
@@ -79,7 +82,7 @@ Each file is self-contained; load only what the task calls for.
 | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, DPoP, machine-to-machine grants, TLS, HSTS | `references/security.md` |
 | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events | `references/realtime.md` |
 | Feature flags, tracing, cancellation, graceful shutdown, OpenAPI (hand-written schemas included), tests, deployment | `references/operations.md` |
-| A compile error on code that "used to work", or upgrading from 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
+| A compile error on code that "used to work", or upgrading from 0.12.x / 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
 
 ## An app that works
 
@@ -128,7 +131,7 @@ reachable from the network, `bind` explicitly.
 
 ## Non-negotiables
 
-Each one is a real difference between 0.12.x and what older code or an
+Each one is a real difference between 0.13.x and what older code or an
 untrained guess produces.
 
 ### 1. Custom headers come after a semicolon
@@ -172,13 +175,37 @@ One handler picks **one** style for path parameters:
 ```rust
 |id: u64, name: String| async move { ... }                 // positional, in pattern order
 |Path((id, name)): Path<(u64, String)>| async move { ... } // positional tuple
+|Path(id): Path<u64>| async move { ... }                   // one type, route declares exactly one (0.13.0+)
 |NamedPath(p): NamedPath<Params>| async move { ... }       // named struct, needs Deserialize
 ```
 
-`Path<T>` is a **tuple**; `NamedPath<T>` is the named-struct one. Reaching
-for `Path<Params>` with a struct is the usual slip. The same distinction
-makes `ValidPath<T>` an alias for `Valid<NamedPath<T>>` — a tuple is not a
-type your crate can implement `Validate` for.
+`Path<T>` is a **tuple**, or a single `FromPathArg` type on a one-parameter
+route (`500` on any other); `NamedPath<T>` is the named-struct one. Reaching
+for `Path<Params>` with a struct is the usual slip — it does not compile.
+The same distinction makes `ValidPath<T>` an alias for
+`Valid<NamedPath<T>>`; a single parameter of your own type validates as
+`Valid<Path<T>>`.
+
+A type of your own becomes a path parameter by implementing `FromPathArg`
+(0.13.0+) — not `FromStr` alone, not `Deserialize`:
+
+```rust
+use volga::{error::Error, ok};
+use volga::http::endpoints::args::{FromPathArg, PathArg};
+
+struct OrderId(u64);
+
+impl FromPathArg for OrderId {
+    fn from_path_arg(arg: &PathArg) -> Result<Self, Error> {
+        arg.parse().map(OrderId) // FromStr; failure -> 400
+    }
+}
+
+app.map_get("/orders/{id}", |id: OrderId| ok!("order {}", id.0));
+```
+
+`uuid::Uuid` is one out of the box with the `uuid` feature (in `full`) and
+the `uuid` crate in `Cargo.toml`.
 
 ### 4. Bearer auth requires HTTPS and strips the token, by default
 
@@ -440,6 +467,21 @@ app.map_get("/orders/{id}", |id: u32| -> Result<Json<u32>, (StatusCode, &'static
   A plain `std::error::Error` (`ParseIntError`, `anyhow::Error`) is not
   accepted: `.map_err(|e| (StatusCode::BAD_REQUEST, e))`.
 
+### 24. Path values arrive decoded — never decode them again
+
+Since 0.13.0 the router percent-decodes the path once and every extractor
+reads the result: `100%25` is `"100%"`, `a%2Fb` is `"a/b"` in **one**
+segment (it never reaches `/a/b`), `+` stays `+`. A path that does not
+decode (`%zz`, `%FF`) answers `400` before routing, through `map_err`.
+
+* Don't run `percent_decode` / `urlencoding::decode` on a parameter — a
+  second decode fails on `100%` and turns a checked `%2F` into `/`. Check
+  the value you were handed; it can already carry `/` and `..`.
+* Write literal segments and group / static prefixes as their text:
+  `"/files/a b"`, `"/café"`. A percent-escape in a literal —
+  `"/files/a%20b"` — **panics** at mapping.
+* The raw path is still in the request's `Uri` if you need it.
+
 ## Checklist before handing code back
 
 - [ ] Every custom-header array is preceded by `;`, not `,`
@@ -458,4 +500,6 @@ app.map_get("/orders/{id}", |id: u32| -> Result<Json<u32>, (StatusCode, &'static
 - [ ] An API mounted beside a root shell has its own `RouteGroup::map_fallback`
 - [ ] No handler or filter returns `Err` of a bare string for a client error — pair it with a `StatusCode`
 - [ ] Error types implement `IntoError`, never `From<T> for Error`; bodies for errors go through `with_response`
+- [ ] Path parameters of your own types implement `FromPathArg`; `Path<T>` of a single type only on a one-parameter route
+- [ ] No handler percent-decodes a path parameter itself, and no literal segment or prefix is written with a `%XX` escape
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean
