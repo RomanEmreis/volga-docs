@@ -192,11 +192,12 @@ app.map_get("/hello/{descr}/{name}", |descr: String, name: String| async move {
     ok!("Hello {} {}!", descr, name)
 });
 
-// 2. positional tuple
+// 2. positional tuple — or, on a route declaring exactly one parameter, a single type
 use volga::Path;
 app.map_get("/hello/{name}/{age}", |Path((name, age)): Path<(String, u32)>| async move {
     ok!("Hello {name}, age {age}")
 });
+app.map_get("/users/{id}", |Path(id): Path<u64>| ok!("user {id}")); // 0.13.0+
 
 // 3. named struct — needs serde::Deserialize
 use volga::NamedPath;
@@ -210,8 +211,66 @@ app.map_get("/hello/{name}/{age}", |NamedPath(p): NamedPath<Params>| async move 
 });
 ```
 
-Any type implementing `FromStr` works as a positional parameter; a value
-that fails to parse answers `400` before the handler runs.
+A positional parameter is any type implementing `FromPathArg`: the
+primitives, `String`, `Box<str>`, `Cow<'static, str>`, the `std::net`
+addresses, `PathBuf` and, with the `uuid` feature (in `full`, 0.13.0+),
+`uuid::Uuid`. A value that fails to parse answers `400` before the handler
+runs.
+
+* **`Path<T>` of a single type reads exactly one parameter** (0.13.0+). On a
+  route declaring two, `Path<u32>` answers `500` rather than take the first —
+  `Path<OrderId>` on `/users/{user_id}/orders/{order_id}` would read the
+  user's id. Use a tuple or `NamedPath<T>` there.
+* A handler reading more positional parameters than its route declares
+  answers `500`; an extra `Option<T>` reads `None`.
+* `Path<SomeStruct>` does not compile — a struct goes into `NamedPath<T>`,
+  and the error says so.
+
+### Path parameters of your own types (0.13.0+)
+
+`volga::http::endpoints::args::{FromPathArg, PathArg}` are public. Implement
+`FromPathArg` and the type is a handler argument, a `Path<(..)>` element and
+the `T` of `Path<T>`. `PathArg::parse` goes through `FromStr` and answers
+`400` on failure, so a newtype takes one line:
+
+```rust
+use volga::{Path, error::Error, ok};
+use volga::http::endpoints::args::{FromPathArg, PathArg};
+
+struct OrderId(u64);
+
+impl FromPathArg for OrderId {
+    fn from_path_arg(arg: &PathArg) -> Result<Self, Error> {
+        arg.parse().map(OrderId)
+    }
+}
+
+app.map_get("/orders/{id}", |id: OrderId| ok!("order {}", id.0));
+app.map_get(
+    "/users/{user_id}/orders/{order_id}",
+    |Path((user, order)): Path<(u64, OrderId)>| ok!("order {} of user {user}", order.0),
+);
+```
+
+`PathArg::name()` is the name the pattern gives it, `value()` the decoded
+value; a hand-written check returns any error, e.g.
+`Error::client_error(format!("{} is not a valid slug", arg.name()))` (a `400`).
+Don't put rules in `FromPathArg` that belong in `Validate` — a single
+parameter validates as `Valid<Path<T>>` (see `references/validation.md`).
+
+`FromPathArgs` (what `Path<T>` reads its `T` through) is implementable too:
+`PathArgs::iter()` yields the parameters in pattern order, with `len()` /
+`is_empty()`. Answer `500` when the route does not declare what the type
+reads — that is a code mistake, not a bad request.
+
+`uuid::Uuid` needs the `uuid` feature **and** the `uuid` crate as a
+dependency for the type name — volga does not re-export it:
+
+```rust
+use uuid::Uuid;
+
+app.map_get("/files/{id}", |id: Uuid| ok!("file {id}")); // not a UUID -> 400
+```
 
 Since 0.10.0 each endpoint binds the names **its own pattern** was written
 with, so `POST /users/{name}` mapped beside `GET /users/{id}` binds `name`.
@@ -241,9 +300,8 @@ app.map_get("/files/{*path}", |path: String| async move { ok!("{path}") });
 
 * It reads **at least one** segment: `/files` and `/files/` are not
   answered by it and can be mapped separately.
-* The value is the path as sent, separators and a trailing `/` kept.
-  Positional extractors (`String`, `Path<T>`) read it undecoded;
-  `NamedPath<T>` decodes percent-escapes.
+* The value is the rest of the path, separators and a trailing `/` kept,
+  decoded whole (0.13.0): `GET /files/a%2Fb/c` binds `"a/b/c"`.
 * Precedence at every position: literal, then parameter, then catch-all;
   the first position two routes differ at decides, in any mapping order.
   `/assets/{*path}` answers `/assets/app.js` ahead of `/{lang}/{page}`.
@@ -259,13 +317,32 @@ app.map_get("/files/{*path}", |path: String| async move { ok!("{path}") });
   `/files/{*path}`) the catch-all is left out of the shared document, with a
   debug-build warning at startup.
 
-### How values are decoded
+### How values are decoded (0.13.0+)
 
-Positional extractors read a parameter exactly as written in the path.
-`NamedPath<T>` decodes percent-escapes and nothing else: `&` and `+` are
-literal path characters, so `/files/C++` is `"C++"` and `/users/a&admin=true`
-is the single value `"a&admin=true"` (0.11.0; earlier versions form-decoded
-it, splitting on `&` and turning `+` into a space).
+The router percent-decodes the path **once**, segment by segment, and every
+extractor — plain arguments, `FromPathArg` types, `Path<T>`, `NamedPath<T>` —
+reads the decoded value: `John%20Doe` → `"John Doe"`, `100%25` → `"100%"`,
+`%31` into a `u32` → `1`. `+` and `&` are literal path characters:
+`/files/C++` is `"C++"`, `/users/a&admin=true` one value.
+
+* `%2F` decodes to `/` **inside** its segment and never splits it:
+  `GET /users/a%2Fb` binds `"a/b"` on `/users/{id}` and never reaches
+  `/users/a/b`.
+* A path that does not decode — `%zz`, a trailing `%2`, non-UTF-8 like
+  `%FF` — answers **`400` before routing**, through the global middleware
+  and `map_err` / problem details, as a `404` does.
+* The raw path stays in the request's `Uri`.
+* **Never decode a parameter again.** `%2E%2E` already arrived as `..`; a
+  second decode double-decodes `100%25` into an error and lets `%252F`
+  pass a `/` check as `%2F`. Check the value the handler receives.
+* **Write literal segments as their text**: `"/lit/a b"`, `"/café"`. A
+  literal (or a group or static-mount prefix) carrying a percent-escape —
+  `"/lit/a%20b"` — **panics** at mapping, since it could only match
+  `a%2520b`.
+
+Before 0.13.0 positional extractors read values undecoded and accepted
+malformed escapes; code that decoded `String` parameters by hand must drop
+it on upgrade.
 
 ## Query parameters
 

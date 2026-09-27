@@ -106,9 +106,15 @@ Register the mount **after** [`use_compression()`](https://docs.rs/volga/latest/
 
 ### Path resolution
 
-The request target is resolved from its ordinary path components alone. A `.`, a `..`, an encoded separator (`%2F`) or an embedded NUL is declined rather than dropped or looked up, so traversal is refused by construction. A symlink under the content root that points outside of it — the one case a request target cannot describe — is still caught and answered `403`.
+The request target is read the way the router reads it: split into segments, each one percent-decoded, and the mount's prefix compared with the decoded segments — so a mount and a route under one prefix answer the same requests. `/st%61tic/app.css` and `//static/app.css` are both served under `/static`. A `+` in a request target is the literal character, not a space: a request target is not a form body.
 
-A `%XX` escape is decoded; a malformed one, or one that does not decode to UTF-8, is answered `400`. A `+` in a request target is the literal character, not a space: a request target is not a form body.
+What is left is resolved from its ordinary path components alone. A `.`, a `..`, an encoded separator (`%2F`) or an embedded NUL is declined rather than dropped or looked up, so traversal is refused by construction. A symlink under the content root that points outside of it — the one case a request target cannot describe — is still caught and answered `403`.
+
+A target that does not decode — a malformed `%XX` escape, or one that is not UTF-8 — is left to the router, which answers it `400` through the [error handler](/volga-docs/en/reliability-observability/errors.html), so `map_err` and problem details apply to it as to any other malformed path.
+
+::: warning Write the prefix as its text
+A prefix is compared with decoded segments, so it is written as the text it spells: `app.group("/docs v1", ..)`, not `"/docs%20v1"`. A literal segment carrying a percent-escape panics where the mount is registered, as it does in a [route](/volga-docs/en/getting-started/route-params.html#literal-segments-are-written-as-their-text).
+:::
 
 ## Fallback
 

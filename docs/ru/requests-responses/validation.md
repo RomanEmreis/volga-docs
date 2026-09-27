@@ -69,9 +69,10 @@ key: key is required
 это один и тот же импорт.
 
 ::: tip
-`ValidPath<T>` — это **именованный** экстрактор пути, а не позиционный: `Path<T>` читает кортеж, а для кортежа ваш крейт
-не может реализовать `Validate`. Используйте структуру с `Deserialize`, как описано в разделе
-[Параметры маршрута](/volga-docs/ru/getting-started/route-params.html).
+`ValidPath<T>` — это **именованный** экстрактор пути, а не позиционный: `Path<T>` из нескольких параметров читает кортеж,
+а для кортежа ваш крейт не может реализовать `Validate`. Используйте структуру с `Deserialize`, как описано в разделе
+[Параметры маршрута](/volga-docs/ru/getting-started/route-params.html#использование-namedpath-t), или валидируйте
+[одиночный параметр](#валидация-параметра-пути) собственного типа.
 :::
 
 Обёртка передаёт дальше источник данных внутреннего экстрактора, поэтому проверяемое тело по-прежнему читается из тела
@@ -84,6 +85,48 @@ app.map_post("/items", async |filter: ValidQuery<Filter>, val: ValidJson<KeyValu
 ```
 
 `Valid<E>` разыменовывается во внутренний экстрактор, а `into_inner()` его разворачивает.
+
+### Валидация параметра пути
+
+Начиная с **0.13.0** одиночный параметр пути собственного типа можно валидировать без обёртки-структуры. Реализуйте
+[`FromPathArg`](/volga-docs/ru/getting-started/route-params.html#параметры-собственных-типов), чтобы его прочитать, и
+`Validate`, чтобы его проверить, и принимайте его как `Valid<Path<T>>`:
+```rust compile
+use volga::{App, Path, error::Error, ok};
+use volga::http::endpoints::args::{FromPathArg, PathArg};
+use volga::validation::{Valid, Validate, ValidationError};
+
+struct Page(u32);
+
+impl FromPathArg for Page {
+    fn from_path_arg(arg: &PathArg) -> Result<Self, Error> {
+        arg.parse().map(Page)
+    }
+}
+
+impl Validate for Page {
+    type Error = ValidationError;
+
+    fn validate(&self) -> Result<(), Self::Error> {
+        if self.0 == 0 {
+            return Err(ValidationError::field("page", "must be at least 1"));
+        }
+        Ok(())
+    }
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /pages/3 -> 3
+    // GET /pages/0 -> 400 "page: must be at least 1"
+    app.map_get("/pages/{page}", |Valid(Path(Page(page))): Valid<Path<Page>>| ok!("{page}"));
+
+    app.run().await
+}
+```
+Значение, которое не разбирается, отклоняет `FromPathArg` с ответом `400` — ещё до вызова `validate()`.
 
 ## Правила, которые понимает макрос
 

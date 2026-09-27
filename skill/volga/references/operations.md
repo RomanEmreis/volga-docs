@@ -22,6 +22,7 @@ available.
 | `ws` | WebSockets | yes |
 | `cookie-full` | `cookie` + `signed-cookie` + `private-cookie` | yes |
 | `validation-derive` | `#[derive(Validate)]` (the trait and `Valid<E>` need no feature) | yes |
+| `uuid` | `uuid::Uuid` as a path parameter (0.13.0; add the `uuid` crate for the type name) | yes |
 | `auth` | `basic-auth` + `jwt-auth` | yes |
 | `oauth-client` | issuer-based bearer validation | yes |
 | `jwt-derive` / `jwt-auth-full` / `auth-full` | `#[derive(Claims)]` | **no** |

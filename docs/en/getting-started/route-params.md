@@ -1,5 +1,5 @@
 # Route Parameters
-Volga offers robust routing configurations allowing you to harness dynamic routes using parameters. By utilizing the function arguments that implement the [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) trait, you can pass them directly to your request handler.
+Volga offers robust routing configurations allowing you to harness dynamic routes using parameters. A handler argument whose type implements [`FromPathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArg.html) is read straight from the path: the primitives, `String`, the `std::net` addresses, `PathBuf` and, with the `uuid` feature, [`Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html) — and [types of your own](#parameters-of-your-own-types).
 
 ## Example: Single Route Parameter
 
@@ -57,6 +57,166 @@ Hello beautiful world!
 It is important to strictly keep the order of the arguments for the handler function as described in the route.
 So for the `hello/{descr}/{name}` it is supposed to be `|descr: String, name: String|`.
 :::
+
+## Using `Path<T>`
+[`Path<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.Path.html) reads the parameters by position into one value: a tuple, in the order the route declares them, or — since **0.13.0** — a single type on a route that declares exactly one parameter:
+```rust compile
+use volga::{App, Path, ok};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /hello/beautiful/world
+    app.map_get("/hello/{descr}/{name}", |Path((descr, name)): Path<(String, String)>| {
+        ok!("Hello {descr} {name}!")
+    });
+
+    // GET /users/42
+    app.map_get("/users/{id}", |Path(id): Path<u32>| ok!("user {id}"));
+
+    app.run().await
+}
+```
+
+::: warning `Path<T>` of a single type reads exactly one parameter
+`Path<u32>` on a route that declares two parameters answers `500`: it never picks the first of several, so a `Path<OrderId>` on `/users/{user_id}/orders/{order_id}` cannot read the user's id as the order's. Read such a route as a tuple, `Path<(u64, OrderId)>`, or by name with [`NamedPath<T>`](#using-namedpath-t).
+
+Plain arguments follow the same rule: a handler taking more positional parameters than its route declares answers `500`, and an extra `Option<T>` reads `None`.
+:::
+
+A struct with named fields is not a `Path<T>` — it goes into `NamedPath<T>`, and the compile error for `Path<MyStruct>` says so.
+
+## Parameters of Your Own Types
+Since **0.13.0** any type becomes a path parameter by implementing [`FromPathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArg.html). [`PathArg::parse`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArg.html#method.parse) reads the value through `FromStr` and answers `400` if it does not parse, so a newtype takes one line:
+```rust compile
+use volga::{App, Path, error::Error, ok};
+use volga::http::endpoints::args::{FromPathArg, PathArg};
+
+struct OrderId(u64);
+
+impl FromPathArg for OrderId {
+    fn from_path_arg(arg: &PathArg) -> Result<Self, Error> {
+        arg.parse().map(OrderId)
+    }
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /orders/42
+    app.map_get("/orders/{id}", |id: OrderId| ok!("order {}", id.0));
+
+    // GET /users/7/orders/42
+    app.map_get(
+        "/users/{user_id}/orders/{order_id}",
+        |Path((user, order)): Path<(u64, OrderId)>| ok!("order {} of user {user}", order.0),
+    );
+
+    app.run().await
+}
+```
+
+Such a type goes wherever a built-in one does: a handler argument of its own, an element of a `Path<(..)>` tuple, or the `T` of `Path<T>`.
+
+Besides `parse`, a [`PathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArg.html) gives you the parameter's `name()`, as the route's pattern spells it, and its `value()`, already [decoded](#how-parameter-values-are-decoded). A check of your own returns whatever error fits — here a `400` naming the parameter:
+```rust compile
+use volga::{App, error::Error, ok};
+use volga::http::endpoints::args::{FromPathArg, PathArg};
+
+struct Slug(String);
+
+impl FromPathArg for Slug {
+    fn from_path_arg(arg: &PathArg) -> Result<Self, Error> {
+        let value = arg.value();
+        let valid = !value.is_empty()
+            && value.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
+
+        if !valid {
+            return Err(Error::client_error(format!("`{}` is not a valid slug", arg.name())));
+        }
+        Ok(Slug(value.to_owned()))
+    }
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /posts/hello-world
+    app.map_get("/posts/{slug}", |slug: Slug| ok!("post {}", slug.0));
+
+    app.run().await
+}
+```
+
+::: tip
+A single parameter of your own type can be [validated](/volga-docs/en/requests-responses/validation.html#validating-a-path-parameter) as `Valid<Path<T>>` once it also implements `Validate`. Keep `FromPathArg` to *reading* the value and `Validate` to the rules it has to meet.
+:::
+
+### `Uuid`
+The `uuid` feature, part of `full`, makes [`uuid::Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html) a path parameter. volga does not re-export the type, so add the `uuid` crate as well:
+```toml
+[dependencies]
+volga = { version = "0.13", features = ["uuid"] }
+uuid = "1"
+```
+```rust compile
+use volga::{App, Path, ok};
+use uuid::Uuid;
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /files/0199a0f1-1111-7000-8000-000000000001
+    app.map_get("/files/{id}", |id: Uuid| ok!("file {id}"));
+
+    // GET /users/0199a0f1-1111-7000-8000-000000000001/files/0199a0f1-1111-7000-8000-000000000002
+    app.map_get("/users/{user}/files/{file}", |Path((user, file)): Path<(Uuid, Uuid)>| {
+        ok!("file {file} of user {user}")
+    });
+
+    app.run().await
+}
+```
+A value that is not a UUID answers `400` before the handler runs.
+
+### Reading every parameter at once
+`Path<T>` reads its `T` through [`FromPathArgs`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArgs.html), and [`PathArgs`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArgs.html) iterates the parameters in the order the route declares them, so a type can take several at once:
+```rust compile
+use volga::{App, Path, error::Error, ok};
+use volga::http::endpoints::args::{FromPathArgs, PathArgs};
+
+struct Range {
+    from: u32,
+    to: u32,
+}
+
+impl FromPathArgs for Range {
+    fn from_path_args(args: &PathArgs) -> Result<Self, Error> {
+        let mut args = args.iter();
+        match (args.next(), args.next(), args.next()) {
+            (Some(from), Some(to), None) => Ok(Range { from: from.parse()?, to: to.parse()? }),
+            _ => Err(Error::server_error("`Range` reads exactly two path parameters")),
+        }
+    }
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /pages/3/7
+    app.map_get("/pages/{from}/{to}", |Path(range): Path<Range>| {
+        ok!("pages {} to {}", range.from, range.to)
+    });
+
+    app.run().await
+}
+```
+A route that does not declare what the type reads is a mistake in the code, not in the request — which is why the example answers `500` for it, as `Path<T>` of a single type does.
 
 ## Using `NamedPath<T>`
 Alternatively, use the [`NamedPath<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.NamedPath.html) to wrap the route parameters into a dedicated struct. Where `T` should be either deserializable struct or `HashMap`. Make sure that you also have [serde](https://crates.io/crates/serde) installed:
@@ -164,7 +324,7 @@ async fn main() -> std::io::Result<()> {
 ```
 
 * **It reads at least one segment.** `/files/{*path}` does not answer `/files` or `/files/`, so that position can carry a route of its own.
-* **The value is the path as the request wrote it**, from the first segment the catch-all reads to the end, separators and a trailing `/` included: `GET /files/a/b/` binds `"a/b/"`. It is decoded the way any parameter is — `String` and `Path<T>` read it undecoded, `NamedPath<T>` decodes its percent-escapes.
+* **The value is the rest of the path**, from the first segment the catch-all reads to the end, separators and a trailing `/` included: `GET /files/a/b/` binds `"a/b/"`. It is [decoded](#how-parameter-values-are-decoded) whole, so `GET /files/a%2Fb/c` binds `"a/b/c"`.
 * **It comes last in precedence.** At every position a literal is read first, a parameter second and a catch-all last, and the first position two routes differ at decides between them, whatever order they were mapped in.
 * **It is the last segment.** A route continuing past one — a route mapped inside a group whose prefix ends in one included — panics where it is mapped.
 * **It is named like any other parameter**, and the [two cases that panic at registration](#two-cases-that-panic-at-registration) apply to it the same way.
@@ -189,7 +349,34 @@ In an OpenAPI document a catch-all is described as the path parameter `{name}`. 
 
 ## How Parameter Values Are Decoded
 
-A positional extractor — `String`, a `FromStr` type, [`Path<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.Path.html) — reads the value as the request wrote it, percent-escapes included. [`NamedPath<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.NamedPath.html) decodes percent-escapes, and keeps every other character as written: `&` and `+` are literal characters in a path, so `/files/C++` reads as `"C++"` and `/users/a&admin=true` as the single value `"a&admin=true"`.
+Since **0.13.0** the router percent-decodes the path once, segment by segment, and every extractor reads the decoded value — a plain argument, a `FromPathArg` type, `Path<T>` and `NamedPath<T>` alike:
+
+| Request | `/users/{name}` binds |
+|---|---|
+| `GET /users/John%20Doe` | `"John Doe"` |
+| `GET /users/100%25` | `"100%"` |
+| `GET /users/caf%C3%A9` | `"café"` |
+| `GET /users/C++` | `"C++"` — a `+` is a plus sign in a path, not a space |
+| `GET /users/a&admin=true` | `"a&admin=true"` — one value, never split |
+| `GET /users/a%2Fb` | `"a/b"` |
+
+A number is decoded before it is parsed, so `%31` read into a `u32` is `1`.
+
+* **`%2F` never splits a segment.** It decodes to `/` inside its own segment: `GET /users/a%2Fb` reaches `/users/{name}` with `"a/b"` and never reaches a `/users/a/b` route. A catch-all is decoded whole, so `GET /files/a%2Fb/c` binds `"a/b/c"`.
+* **A path that does not decode answers `400`** — a malformed escape (`%zz`, a trailing `%2`) or escapes that are not UTF-8 (`%FF`). It is answered before any route is looked up, and like a `404` it goes through the global middleware and the [error handler](/volga-docs/en/reliability-observability/errors.html), so `map_err` and problem details shape it.
+* **The raw path is still there.** The request's URI keeps the path exactly as it was sent, for a handler or middleware that needs it.
+
+::: warning The value is decoded already
+`%2E%2E` arrives as `..` and `%2F` as `/`, so a single parameter can carry a separator. Check the value your handler receives — refusing `..` or `/` in a file name, say — and do not decode it a second time after checking it: `%252F` would pass the check as `%2F` and turn into `/` afterwards.
+:::
+
+### Literal segments are written as their text
+
+A literal is matched against the decoded path too, so write it as the text it spells: `/lit/a b` or `/café`, which a client sends as `/lit/a%20b` and `/caf%C3%A9`. A literal written with a percent-escape — `app.map_get("/lit/a%20b", ..)` — panics where it is mapped, since it could only ever match `a%2520b`. A group prefix and the prefix of a [static file mount](/volga-docs/en/middleware-infrastructure/static-files.html#path-resolution) are checked the same way.
+
+::: warning Upgrading from 0.12
+Before 0.13.0 a positional extractor read a value as it was written, escapes included. A handler that decoded `String` parameters itself now decodes them twice — `100%25` arrives as `100%`, and decoding that again fails. Remove the extra decoding. A path with a malformed escape, which `String` and `Path<T>` used to accept, now answers `400`.
+:::
 
 Using these examples, you can add dynamic routing to your Volga-based web server, enhancing the flexibility and functionality of your applications.
 

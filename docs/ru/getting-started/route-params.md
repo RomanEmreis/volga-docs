@@ -1,6 +1,6 @@
 # Параметры маршрута
 
-Волга предоставляет мощные возможности маршрутизации, позволяя использовать динамические маршруты с параметрами. Используя аргументы функций, которые реализуют trait [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html), вы можете передавать их напрямую обработчику запросов.
+Волга предоставляет мощные возможности маршрутизации, позволяя использовать динамические маршруты с параметрами. Аргумент обработчика, тип которого реализует [`FromPathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArg.html), читается прямо из пути: примитивы, `String`, адреса из `std::net`, `PathBuf`, а с feature `uuid` — и [`Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html), — а также [ваши собственные типы](#параметры-собственных-типов).
 
 ## Пример: Один параметр
 
@@ -68,6 +68,166 @@ Hello beautiful world!
 Важно строго соблюдать порядок аргументов функции-обработчика, как указано в маршруте.  
 Например, для маршрута `hello/{descr}/{name}` аргументы должны быть `|descr: String, name: String|`.
 :::
+
+## Использование `Path<T>`
+[`Path<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.Path.html) читает параметры по позиции в одно значение: в кортеж — в том порядке, в каком их объявляет маршрут, или, начиная с **0.13.0**, в один тип — на маршруте, который объявляет ровно один параметр:
+```rust compile
+use volga::{App, Path, ok};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /hello/beautiful/world
+    app.map_get("/hello/{descr}/{name}", |Path((descr, name)): Path<(String, String)>| {
+        ok!("Hello {descr} {name}!")
+    });
+
+    // GET /users/42
+    app.map_get("/users/{id}", |Path(id): Path<u32>| ok!("user {id}"));
+
+    app.run().await
+}
+```
+
+::: warning `Path<T>` одного типа читает ровно один параметр
+`Path<u32>` на маршруте с двумя параметрами отвечает `500`: он никогда не берёт первый из нескольких, поэтому `Path<OrderId>` на `/users/{user_id}/orders/{order_id}` не прочитает идентификатор пользователя как идентификатор заказа. Такой маршрут читайте кортежем, `Path<(u64, OrderId)>`, или по именам через [`NamedPath<T>`](#использование-namedpath-t).
+
+То же правило действует и для обычных аргументов: обработчик, который принимает больше позиционных параметров, чем объявляет его маршрут, отвечает `500`, а лишний `Option<T>` читается как `None`.
+:::
+
+Структура с именованными полями — это не `Path<T>`: она читается через `NamedPath<T>`, и ошибка компиляции для `Path<MyStruct>` прямо об этом говорит.
+
+## Параметры собственных типов
+Начиная с **0.13.0** любой тип становится параметром пути, если реализует [`FromPathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArg.html). [`PathArg::parse`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArg.html#method.parse) читает значение через `FromStr` и отвечает `400`, если оно не разбирается, поэтому для newtype хватает одной строки:
+```rust compile
+use volga::{App, Path, error::Error, ok};
+use volga::http::endpoints::args::{FromPathArg, PathArg};
+
+struct OrderId(u64);
+
+impl FromPathArg for OrderId {
+    fn from_path_arg(arg: &PathArg) -> Result<Self, Error> {
+        arg.parse().map(OrderId)
+    }
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /orders/42
+    app.map_get("/orders/{id}", |id: OrderId| ok!("order {}", id.0));
+
+    // GET /users/7/orders/42
+    app.map_get(
+        "/users/{user_id}/orders/{order_id}",
+        |Path((user, order)): Path<(u64, OrderId)>| ok!("order {} of user {user}", order.0),
+    );
+
+    app.run().await
+}
+```
+
+Такой тип подходит везде, где подходит встроенный: как отдельный аргумент обработчика, как элемент кортежа `Path<(..)>` или как `T` в `Path<T>`.
+
+Помимо `parse`, [`PathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArg.html) даёт имя параметра `name()` — так, как его записывает шаблон маршрута, — и его значение `value()`, уже [декодированное](#как-декодируются-значения-параметров). Собственная проверка возвращает любую подходящую ошибку — здесь это `400` с именем параметра:
+```rust compile
+use volga::{App, error::Error, ok};
+use volga::http::endpoints::args::{FromPathArg, PathArg};
+
+struct Slug(String);
+
+impl FromPathArg for Slug {
+    fn from_path_arg(arg: &PathArg) -> Result<Self, Error> {
+        let value = arg.value();
+        let valid = !value.is_empty()
+            && value.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
+
+        if !valid {
+            return Err(Error::client_error(format!("`{}` is not a valid slug", arg.name())));
+        }
+        Ok(Slug(value.to_owned()))
+    }
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /posts/hello-world
+    app.map_get("/posts/{slug}", |slug: Slug| ok!("post {}", slug.0));
+
+    app.run().await
+}
+```
+
+::: tip
+Одиночный параметр собственного типа можно [валидировать](/volga-docs/ru/requests-responses/validation.html#валидация-параметра-пути) как `Valid<Path<T>>`, если он реализует ещё и `Validate`. Пусть `FromPathArg` отвечает только за *чтение* значения, а `Validate` — за правила, которым оно должно соответствовать.
+:::
+
+### `Uuid`
+Feature `uuid`, входящая в `full`, делает [`uuid::Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html) параметром пути. Volga не реэкспортирует этот тип, поэтому добавьте и крейт `uuid`:
+```toml
+[dependencies]
+volga = { version = "0.13", features = ["uuid"] }
+uuid = "1"
+```
+```rust compile
+use volga::{App, Path, ok};
+use uuid::Uuid;
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /files/0199a0f1-1111-7000-8000-000000000001
+    app.map_get("/files/{id}", |id: Uuid| ok!("file {id}"));
+
+    // GET /users/0199a0f1-1111-7000-8000-000000000001/files/0199a0f1-1111-7000-8000-000000000002
+    app.map_get("/users/{user}/files/{file}", |Path((user, file)): Path<(Uuid, Uuid)>| {
+        ok!("file {file} of user {user}")
+    });
+
+    app.run().await
+}
+```
+Значение, которое не является UUID, получает `400` ещё до вызова обработчика.
+
+### Чтение всех параметров сразу
+`Path<T>` читает свой `T` через [`FromPathArgs`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArgs.html), а [`PathArgs`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArgs.html) перебирает параметры в том порядке, в каком их объявляет маршрут, поэтому тип может прочитать сразу несколько:
+```rust compile
+use volga::{App, Path, error::Error, ok};
+use volga::http::endpoints::args::{FromPathArgs, PathArgs};
+
+struct Range {
+    from: u32,
+    to: u32,
+}
+
+impl FromPathArgs for Range {
+    fn from_path_args(args: &PathArgs) -> Result<Self, Error> {
+        let mut args = args.iter();
+        match (args.next(), args.next(), args.next()) {
+            (Some(from), Some(to), None) => Ok(Range { from: from.parse()?, to: to.parse()? }),
+            _ => Err(Error::server_error("`Range` reads exactly two path parameters")),
+        }
+    }
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /pages/3/7
+    app.map_get("/pages/{from}/{to}", |Path(range): Path<Range>| {
+        ok!("pages {} to {}", range.from, range.to)
+    });
+
+    app.run().await
+}
+```
+Маршрут, который не объявляет того, что читает тип, — это ошибка в коде, а не в запросе, поэтому пример отвечает на неё `500`, как и `Path<T>` одного типа.
 
 ## Использование `NamedPath<T>`
 
@@ -177,7 +337,7 @@ async fn main() -> std::io::Result<()> {
 ```
 
 * **Он читает хотя бы один сегмент.** `/files/{*path}` не отвечает на `/files` и `/files/`, так что на этой позиции может быть свой маршрут.
-* **Значение — это путь в том виде, в каком его записал запрос**, от первого прочитанного сегмента до конца, включая разделители и завершающий `/`: `GET /files/a/b/` связывает `"a/b/"`. Декодируется он так же, как любой параметр: `String` и `Path<T>` читают его без декодирования, `NamedPath<T>` декодирует percent-escape-последовательности.
+* **Значение — это весь остаток пути**, от первого прочитанного сегмента до конца, включая разделители и завершающий `/`: `GET /files/a/b/` связывает `"a/b/"`. Он [декодируется](#как-декодируются-значения-параметров) целиком, поэтому `GET /files/a%2Fb/c` связывает `"a/b/c"`.
 * **У него наименьший приоритет.** На каждой позиции сначала читается литерал, затем параметр, и только потом catch-all; выбор между двумя маршрутами решает первая позиция, на которой они различаются, в каком бы порядке их ни зарегистрировали.
 * **Он всегда последний сегмент.** Маршрут, продолжающийся после него, — включая маршрут внутри группы, префикс которой заканчивается catch-all, — вызывает панику при регистрации.
 * **Он именуется как любой другой параметр**, и [два случая, приводящих к панике при регистрации](#два-случая-приводящих-к-панике-при-регистрации), относятся к нему точно так же.
@@ -202,6 +362,33 @@ app.map_get("/{*path}", |path: String| async move { path });
 
 ## Как декодируются значения параметров
 
-Позиционный экстрактор — `String`, тип с `FromStr`, [`Path<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.Path.html) — читает значение в том виде, в каком его записал запрос, вместе с percent-escape-последовательностями. [`NamedPath<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.NamedPath.html) декодирует percent-escape-последовательности, а все остальные символы оставляет как есть: `&` и `+` в пути — обычные символы, поэтому `/files/C++` читается как `"C++"`, а `/users/a&admin=true` — как одно значение `"a&admin=true"`.
+Начиная с **0.13.0** маршрутизатор один раз декодирует percent-escape-последовательности в пути, посегментно, и каждый экстрактор читает уже декодированное значение — обычный аргумент, тип с `FromPathArg`, `Path<T>` и `NamedPath<T>` одинаково:
+
+| Запрос | `/users/{name}` связывает |
+|---|---|
+| `GET /users/John%20Doe` | `"John Doe"` |
+| `GET /users/100%25` | `"100%"` |
+| `GET /users/caf%C3%A9` | `"café"` |
+| `GET /users/C++` | `"C++"` — `+` в пути означает плюс, а не пробел |
+| `GET /users/a&admin=true` | `"a&admin=true"` — одно значение, без разбиения |
+| `GET /users/a%2Fb` | `"a/b"` |
+
+Число декодируется до разбора, поэтому `%31`, прочитанное в `u32`, — это `1`.
+
+* **`%2F` никогда не делит сегмент.** Он декодируется в `/` внутри своего сегмента: `GET /users/a%2Fb` попадает в `/users/{name}` со значением `"a/b"` и никогда не попадает в маршрут `/users/a/b`. Catch-all декодируется целиком, поэтому `GET /files/a%2Fb/c` связывает `"a/b/c"`.
+* **Путь, который не декодируется, получает `400`** — некорректная escape-последовательность (`%zz`, `%2` в конце) или последовательность, которая не декодируется в UTF-8 (`%FF`). Ответ даётся ещё до поиска маршрута и, как и `404`, проходит через глобальный middleware и [обработчик ошибок](/volga-docs/ru/reliability-observability/errors.html), так что его оформляют `map_err` и problem details.
+* **Исходный путь никуда не девается.** URI запроса хранит путь ровно в том виде, в каком его прислали, — для обработчика или middleware, которым он нужен.
+
+::: warning Значение уже декодировано
+`%2E%2E` приходит как `..`, а `%2F` — как `/`, поэтому даже одиночный параметр может содержать разделитель. Проверяйте то значение, которое получает обработчик, — например, отклоняя `..` или `/` в имени файла, — и не декодируйте его повторно после проверки: `%252F` пройдёт проверку как `%2F` и лишь потом превратится в `/`.
+:::
+
+### Литеральные сегменты записываются как текст
+
+Литерал тоже сравнивается с декодированным путём, поэтому записывайте его тем текстом, который он означает: `/lit/a b` или `/café` — клиент пришлёт их как `/lit/a%20b` и `/caf%C3%A9`. Литерал с percent-escape-последовательностью — `app.map_get("/lit/a%20b", ..)` — вызывает панику при регистрации, ведь он мог бы совпасть только с `a%2520b`. Точно так же проверяются префикс группы и префикс [раздачи статических файлов](/volga-docs/ru/middleware-infrastructure/static-files.html#разбор-пути).
+
+::: warning Обновление с 0.12
+До 0.13.0 позиционный экстрактор читал значение в том виде, в каком оно было записано, вместе с escape-последовательностями. Обработчик, который сам декодировал параметры `String`, теперь декодирует их дважды: `100%25` приходит как `100%`, и повторное декодирование завершается ошибкой. Уберите лишнее декодирование. Путь с некорректной escape-последовательностью, который `String` и `Path<T>` раньше принимали, теперь получает `400`.
+:::
 
 Полный пример доступен по [ссылке](https://github.com/RomanEmreis/volga/blob/main/examples/route_params/src/main.rs).

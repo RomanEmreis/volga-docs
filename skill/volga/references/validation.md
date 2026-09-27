@@ -24,9 +24,39 @@ because `Json`, `Query`, `Form` and `NamedPath` deref to their payload, so one
 blanket impl covers them; `Valid<E>` derefs to `E`, so field access still works
 without unwrapping.
 
-`ValidPath` is the **named** path extractor. `Path<T>` reads a tuple, and a
-downstream crate cannot implement `Validate` for a tuple — reaching for
-`Valid<Path<..>>` is the predictable slip.
+`ValidPath` is the **named** path extractor. `Path<T>` of several
+parameters reads a tuple, and a downstream crate cannot implement
+`Validate` for a tuple — reaching for `Valid<Path<(..)>>` is the predictable
+slip. Since 0.13.0 a **single** parameter of your own type works as
+`Valid<Path<T>>` once `T` implements both `FromPathArg` (reading) and
+`Validate` (the rules):
+
+```rust
+use volga::{Path, error::Error, ok};
+use volga::http::endpoints::args::{FromPathArg, PathArg};
+use volga::validation::{Valid, Validate, ValidationError};
+
+struct Page(u32);
+
+impl FromPathArg for Page {
+    fn from_path_arg(arg: &PathArg) -> Result<Self, Error> {
+        arg.parse().map(Page) // not a number -> 400, before validate()
+    }
+}
+
+impl Validate for Page {
+    type Error = ValidationError;
+
+    fn validate(&self) -> Result<(), Self::Error> {
+        if self.0 == 0 {
+            return Err(ValidationError::field("page", "must be at least 1"));
+        }
+        Ok(())
+    }
+}
+
+app.map_get("/pages/{page}", |Valid(Path(Page(page))): Valid<Path<Page>>| ok!("{page}"));
+```
 
 ```rust
 use serde::Deserialize;
