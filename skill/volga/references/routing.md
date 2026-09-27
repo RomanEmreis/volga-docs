@@ -261,7 +261,10 @@ parameter validates as `Valid<Path<T>>` (see `references/validation.md`).
 `FromPathArgs` (what `Path<T>` reads its `T` through) is implementable too:
 `PathArgs::iter()` yields the parameters in pattern order, with `len()` /
 `is_empty()`. Answer `500` when the route does not declare what the type
-reads — that is a code mistake, not a bad request.
+reads — that is a code mistake, not a bad request. A `FromPathArgs` type is
+read **only** through `Path<T>` (`|Path(range): Path<Range>|`); unlike a
+`FromPathArg` type it is not a handler argument of its own, and
+`|range: Range|` fails with "not an extractor".
 
 `uuid::Uuid` needs the `uuid` feature **and** the `uuid` crate as a
 dependency for the type name — volga does not re-export it:

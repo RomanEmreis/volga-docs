@@ -218,6 +218,8 @@ async fn main() -> std::io::Result<()> {
 ```
 A route that does not declare what the type reads is a mistake in the code, not in the request — which is why the example answers `500` for it, as `Path<T>` of a single type does.
 
+Such a type is always read through `Path<T>`: unlike a `FromPathArg` type, it is not a handler argument of its own, so `|range: Range|` does not compile — write `|Path(range): Path<Range>|`.
+
 ## Using `NamedPath<T>`
 Alternatively, use the [`NamedPath<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.NamedPath.html) to wrap the route parameters into a dedicated struct. Where `T` should be either deserializable struct or `HashMap`. Make sure that you also have [serde](https://crates.io/crates/serde) installed:
 ```rust compile
