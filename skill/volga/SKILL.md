@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.13.0"
+  volga-version: "0.13.1"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -30,7 +30,9 @@ its mount; 0.11.2 let OpenAPI inputs be described by hand; 0.12.0 made a
 handler's `Err` an error handed to `map_err` instead of a second response,
 with `IntoError` as the one impl an error type needs; 0.13.0 made the router
 percent-decode the path once for every extractor and let a type of your
-own be a path parameter through `FromPathArg`. The
+own be a path parameter through `FromPathArg`; 0.13.1 let a route group
+and a single route set a request body limit of their own and answers a
+body over the limit `413`. The
 response macros use a **semicolon** before custom headers. Most volga
 code a model has seen predates all of it. The
 [Non-negotiables](#non-negotiables) below are the places where writing
@@ -49,7 +51,8 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.13"` or `"0.13.0"` | This skill applies as written — a caret requirement resolves to the newest 0.13.x |
+| `volga = "0.13"` or `"0.13.1"` | This skill applies as written — a caret requirement resolves to the newest 0.13.x |
+| `volga = "=0.13.0"` pinned exactly | As written, except that there is no `with_body_limit` / `without_body_limit` on a `RouteGroup` or `Route` — only on `App` — and a body over the limit answers `400` instead of `413`. See 0.13.0 → 0.13.1 in `references/migration.md` |
 | `volga = "0.12"` or `"0.12.0"` | Positional path extractors (`String`, `u32`, `Path<T>`) read values **undecoded** and accept malformed escapes; `FromPathArg` is private, there is no `uuid` feature, and `Path<T>` takes tuples only. Read the 0.12.x → 0.13.0 path in `references/migration.md` before upgrading — it changes values without a compile error |
 | `volga = "0.11"` or `"0.11.x"` | A handler's `Err` must implement `IntoResponse` and is sent as a response, skipping `map_err`; error types implement `From<T> for Error`; no `IntoError`, no `Error::with_response`. Read the 0.11.x → 0.12.0 path in `references/migration.md` before upgrading — part of it changes answers without a compile error |
 | `volga = "0.11.0"` or `"0.11.1"` pinned exactly | As 0.11.x; 0.11.0 also lacks `RouteGroup::map_fallback`, and its fallback file answers every method. `OpenApiSchema` is unreachable before 0.11.2 |
@@ -74,7 +77,7 @@ Each file is self-contained; load only what the task calls for.
 
 | The task | Read |
 |---|---|
-| Routes, groups, path/query/JSON/form/file/multipart/header/cookie/raw-body extraction, path parameters of your own types (`FromPathArg`, `Uuid`) | `references/routing.md` |
+| Routes, groups, path/query/JSON/form/file/multipart/header/cookie/raw-body extraction, path parameters of your own types (`FromPathArg`, `Uuid`), request body limits per app / group / route | `references/routing.md` |
 | Validating an extracted payload — `Validate`, `Valid<E>`, `#[derive(Validate)]`, `ValidationError` | `references/validation.md` |
 | Returning a response, status codes, streaming, errors (`Result<T, E>`, `IntoError`, `with_response`), Problem Details | `references/responses.md` |
 | `with` / `wrap` / `attach` / `filter` / `tap_req` / `map_ok` / `map_err`, CORS, compression, static files, rate limiting | `references/middleware.md` |
@@ -82,7 +85,7 @@ Each file is self-contained; load only what the task calls for.
 | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, DPoP, machine-to-machine grants, TLS, HSTS | `references/security.md` |
 | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events | `references/realtime.md` |
 | Feature flags, tracing, cancellation, graceful shutdown, OpenAPI (hand-written schemas included), tests, deployment | `references/operations.md` |
-| A compile error on code that "used to work", or upgrading from 0.12.x / 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
+| A compile error on code that "used to work", or upgrading from 0.13.0 / 0.12.x / 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
 
 ## An app that works
 
@@ -482,6 +485,33 @@ decode (`%zz`, `%FF`) answers `400` before routing, through `map_err`.
   `"/files/a%20b"` — **panics** at mapping.
 * The raw path is still in the request's `Uri` if you need it.
 
+### 25. Set a body limit where the body is read — and expect `413`
+
+Since 0.13.1 a route group and a single route take their own request body
+limit, and the most specific one wins (route → nested group → group →
+app). Don't raise the whole application's limit, or call
+`App::without_body_limit()`, for the one route that takes uploads:
+
+```rust
+use volga::{App, Limit, http::HttpBodyStream, ok};
+
+let mut app = App::new();
+
+app.group("/api", |api| {
+    api.with_body_limit(Limit::Limited(64 * 1024));     // &mut self, any order
+    api.map_post("/attachments", |_body: HttpBodyStream| async { ok!() })
+        .with_body_limit(Limit::Limited(20 * 1024 * 1024));
+});
+```
+
+* A body over the limit answers **`413 Content Too Large`**, never `400`,
+  whichever extractor reads it. A `Content-Length` over the limit fails
+  the first read, before any of the body arrives.
+* `Limit::Default` means the framework's 5 MB, **not** "inherit the
+  group's" — to inherit, set nothing.
+* `without_body_limit()` belongs only on a route that streams and counts
+  the bytes itself, never on one that collects the body into memory.
+
 ## Checklist before handing code back
 
 - [ ] Every custom-header array is preceded by `;`, not `,`
@@ -502,4 +532,5 @@ decode (`%zz`, `%FF`) answers `400` before routing, through `map_err`.
 - [ ] Error types implement `IntoError`, never `From<T> for Error`; bodies for errors go through `with_response`
 - [ ] Path parameters of your own types implement `FromPathArg`; `Path<T>` of a single type only on a one-parameter route
 - [ ] No handler percent-decodes a path parameter itself, and no literal segment or prefix is written with a `%XX` escape
+- [ ] A large body limit is set on the route or group that needs it, not on the whole app; nothing expects `400` for a body over the limit — that is `413`
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean

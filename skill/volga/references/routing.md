@@ -98,8 +98,8 @@ app.group("/api/v1", |api| {
 });
 ```
 
-A group is the unit that middleware, CORS policies, rate-limit policies and
-authorization attach to — anything callable on a `Route` is callable on the
+A group is the unit that middleware, CORS policies, rate-limit policies,
+request body limits (0.13.1+) and authorization attach to — anything callable on a `Route` is callable on the
 group, and applies to every route inside it.
 
 Since 0.10.0 a group is a real **scope**: it applies what it holds once its
@@ -108,8 +108,8 @@ reaches that route too. Before 0.10.0 the group read its configuration at
 each `map_*`, and anything registered after a route silently missed it —
 which is how routes ended up escaping their group's `authorize` or
 `token_bucket`. Middleware still *runs* in registration order, an outer
-scope wraps an inner one, and a CORS policy chosen by a route or a nested
-group is not replaced by the enclosing group's.
+scope wraps an inner one, and a CORS policy or body limit chosen by a
+route or a nested group is not replaced by the enclosing group's.
 
 ## Handlers
 
@@ -384,8 +384,8 @@ missing non-`Option` field is a `400` with the serde message; wrap fields in
 
 Only **one** body extractor per handler: the body is a stream that is consumed
 once. Head-only extractors (`Path`, `Query`, `HttpHeaders`, `Dc`) combine with
-it freely. The default body limit is 5 MB — `with_body_limit(..)` raises it,
-`without_body_limit()` removes it.
+it freely. The default body limit is 5 MB; a body over it answers **`413`**
+however it is read (see [Body size limits](#body-size-limits)).
 
 ```rust
 use serde::Deserialize;
@@ -487,6 +487,59 @@ choice when a name or filename comes from untrusted input.
 `Multipart::from_stream` emits parts lazily; `Multipart::into_outgoing()`
 re-encodes an incoming multipart for proxying (boundary is regenerated, so
 it is not byte-perfect — forward the raw `HttpBody` when that matters).
+
+
+### Body size limits
+
+The limit is set at three levels, and the **most specific one wins**: a
+route's over its group's, a nested group's over the outer group's, a
+group's over the application's. Group and route limits are 0.13.1+; they
+replace the application's, so they can raise it as well as lower it.
+
+```rust
+use volga::{App, Json, Limit, http::HttpBodyStream, ok};
+
+let mut app = App::new().with_body_limit(Limit::Limited(1024 * 1024)); // app: 1 MB
+
+app.group("/api", |api| {
+    api.with_body_limit(Limit::Limited(64 * 1024));          // the group: 64 KB
+
+    api.map_post("/messages", |Json(text): Json<String>| async move { ok!(text) });
+
+    api.map_post("/attachments", |_stream: HttpBodyStream| async move {
+        // stream it somewhere
+        ok!()
+    })
+    .with_body_limit(Limit::Limited(20 * 1024 * 1024));    // one route: 20 MB
+});
+
+app.map_post("/proxy", |body: volga::HttpBody| async move {
+    volga::HttpResponse::builder().status(200).body(body)
+})
+.without_body_limit();                                      // counts bytes elsewhere
+```
+
+* `App::with_body_limit` / `without_body_limit` consume `self`;
+  `RouteGroup::with_body_limit` / `without_body_limit` take `&mut self`
+  inside the closure; `Route::with_body_limit` / `without_body_limit`
+  chain after `map_*`. No feature needed. `[server] body_limit_bytes` in a
+  config file sets the application's.
+* A group's limit reaches every route it registered, nested groups'
+  included, **whatever the order** in the closure, and its `map_fallback`.
+  A route or nested group with its own keeps it. A request no route or
+  group claims gets the application's.
+* `Limit::Default` is the **framework default (5 MB)**, not the enclosing
+  limit — to inherit, set nothing. `Limit::Unlimited` = `without_body_limit()`.
+* `HttpRequest::body_limit() -> Option<usize>` is the limit the request got.
+* Over the limit → **`413 Content Too Large`** through `Json`, `Form`,
+  `File`, `Multipart`, `HttpBody`, streams, and decompression limits too.
+  A `Content-Length` over the limit fails the **first** read, before any
+  byte (an `Expect: 100-continue` client gets `413` and never uploads); a
+  chunked body fails once it has sent more than fits. A refused body
+  yields one error, then ends. A handler that never reads the body is not
+  affected.
+* Only lift the limit on a route that counts the bytes itself — never on
+  one that collects the body into memory.
 
 ## Headers
 

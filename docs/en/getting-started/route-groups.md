@@ -42,7 +42,7 @@ async fn create_user(name: String) -> HttpResult {
 
 ## Group-Wide Configuration
 
-A group is a **scope**: everything it holds — middleware (`wrap`, `with`, `filter`, `map_ok`, `map_err`, `tap_req`, `attach`), a CORS policy, rate limiting, `authorize`, OpenAPI metadata — applies to every route the group registered, whatever the order inside the closure.
+A group is a **scope**: everything it holds — middleware (`wrap`, `with`, `filter`, `map_ok`, `map_err`, `tap_req`, `attach`), a CORS policy, rate limiting, `authorize`, a [request body limit](/volga-docs/en/requests-responses/body.html#per-route-group-and-per-route), OpenAPI metadata — applies to every route the group registered, whatever the order inside the closure.
 
 ```rust compile
 use volga::{App, HttpResult, ok};
@@ -75,7 +75,7 @@ A group's configuration was read at each `map_*` call, so anything registered *b
 * Middleware still **runs** in registration order.
 * A group's middleware runs before that of a route or of a nested group inside it — an outer scope always wraps an inner one.
 * A sub-group inherits the parent's configuration wherever it is declared.
-* A CORS policy that a route or a nested group chose for itself is **not** replaced by the enclosing group's.
+* A CORS policy or a request body limit that a route or a nested group chose for itself is **not** replaced by the enclosing group's.
 
 ```rust compile
 use volga::{App, HttpResult, ok};
@@ -132,7 +132,7 @@ The router resolves it the way it resolves routes, so there is no extra rule to 
 
 * **The most specific prefix wins.** The fallback of `/api` answers `/api/nope` ahead of anything mapped under `/` — a `/{*path}` route, or an SPA shell served from the root — and the fallback of `/api/v2` answers ahead of the one on `/api`.
 * **A route still answers first.** A route mapped at the path the request is aimed at answers it for its own method, and a request for another method is that route's `405` with the methods it does have. That holds at the prefix itself too.
-* **The group's middleware and CORS policy wrap it**, along with those of every group around it. An unknown path under an `authorize`d group is refused the way a known one is, instead of telling the caller which paths exist.
+* **The group's middleware and CORS policy wrap it**, along with those of every group around it, and the group's request body limit applies to it. An unknown path under an `authorize`d group is refused the way a known one is, instead of telling the caller which paths exist.
 
 The handler takes what `App::map_fallback` takes — anything implementing [`FromRequestParts`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestParts.html) — and reads the path it was aimed at from `Uri`. It also binds the parameters its prefix declares, and nothing else, the same at the prefix and below it:
 

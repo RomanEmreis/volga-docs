@@ -243,7 +243,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-A fallback runs inside a full per-request scope, so it takes the same extractors any other handler takes — `ClientIp`, `CancellationToken`, `Config<T>`, `HostEnv`, `Dc<T>` — and the configured request body limit applies to it. An error it returns is answered by the application's `map_err` handler, as an error from any other handler is, so a service that shapes its errors shapes them here too.
+A fallback runs inside a full per-request scope, so it takes the same extractors any other handler takes — `ClientIp`, `CancellationToken`, `Config<T>`, `HostEnv`, `Dc<T>` — and the application's request body limit applies to it. A [group's fallback](/volga-docs/en/getting-started/route-groups.html#a-fallback-for-the-group) takes the group's limit instead. An error it returns is answered by the application's `map_err` handler, as an error from any other handler is, so a service that shapes its errors shapes them here too.
 
 ### One Fallback per Part of the API
 
