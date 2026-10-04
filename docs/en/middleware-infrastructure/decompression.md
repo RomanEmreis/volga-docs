@@ -61,4 +61,6 @@ When a request is received, the decompression middleware checks the `Content-Enc
 
 If the `Content-Encoding` header specifies an unsupported algorithm, the middleware responds with a [`415 Unsupported Media Type`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/415) status code.
 
+A body that goes over a decompression limit, set with [`with_decompression_limits()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_decompression_limits), is answered [`413 Content Too Large`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/413), as one over the [request body limit](/volga-docs/en/requests-responses/body.html#limiting-the-body-size) is. The body limit is counted on the decompressed body.
+
 Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/decompression/src/main.rs)

@@ -105,10 +105,40 @@ is rejected for no obvious reason, look here before rewriting anything.
 | `500` with `` `Path<T>` of a single type reads one path parameter `` | `Path<u32>` on a route declaring two or none. Use a tuple or `NamedPath<T>` |
 | `500` with `the handler reads more path parameters than the route declares` | more positional arguments than the pattern has `{..}` segments. Fix the pattern or the signature |
 | a static file under `/st%61tic/..` or `//static/..` is now served | 0.13.0: a mount matches its prefix against decoded segments, as the router does |
+| a body over the limit answers `413` where tests expected `400` | 0.13.1: `413 Content Too Large`, through `Json` / `Form` / `File` / `Multipart` / raw reads and decompression limits alike, same message. Update the assertion |
+| a handler that read only the start of a large upload now gets `413` | 0.13.1: a `Content-Length` over the limit fails the first read, before any byte. Raise the limit on that route with `.with_body_limit(..)` |
+| an `Expect: 100-continue` client never sends the body and gets `413` | 0.13.1: refused on its `Content-Length` before `100 Continue`. Expected |
+| one route needs a bigger body than the rest, so the whole app's limit was raised | since 0.13.1 set it on that route (`.with_body_limit(..)`) or its group, and lower the app's back |
+| a route keeps a small limit inside a group that raised it | the most specific limit wins — the route set its own. `Limit::Default` on a route means 5 MB, not "inherit" |
 | a debug build warns `OpenAPI: ... describes ... as a map` at startup | 0.11.2: a `#[serde(flatten)]` input cannot be inferred. Describe it with `with_request_schema` / `with_query_schema` |
 | a debug build warns `OpenAPI: ... is described as ...` at startup, or the spec shows another route's parameter name | 0.11.2: routes naming one position differently share one templated path. Name the parameters alike |
 
 ## Version-by-version
+
+### 0.13.1 — body limits per group and per route
+No API break; new API is additive. What differs at runtime:
+
+* **`RouteGroup::with_body_limit` / `without_body_limit`** and
+  **`Route::with_body_limit` / `without_body_limit`** set the request body
+  limit in place of the application's — raising it or lowering it. The most
+  specific limit wins (route → nested group → group → app); a group's limit
+  reaches every route it registered, whatever the order, and its fallback.
+  `Limit::Default` is the framework 5 MB, not the enclosing limit.
+  `HttpRequest::body_limit()` reports the limit the request got.
+* A body over the limit answers **`413 Content Too Large`** (it was `400`),
+  however it is read, with the same message. A body over a decompression
+  limit is `413` too.
+* A `Content-Length` over the limit fails the **first** read, before any of
+  the body is read: a handler reading only the start of such a body gets the
+  `413`, and an `Expect: 100-continue` client is refused instead of sent
+  `100 Continue`. A handler that never reads the body is not affected; a
+  chunked body is still refused once it has sent more than fits.
+* A refused body yields one `413` and then ends: reads after it return the
+  end of the body.
+* Over HTTP/1 a connection that answered with part of the body unread is
+  closed after the response, and lingers first — reading and discarding
+  for up to 2 s (500 ms once quiet) — so the client gets the response, not
+  a reset. Graceful shutdown waits for lingering connections.
 
 ### 0.13.0 — decoded paths, path parameters of your own types
 **Breaking** at runtime for positional extractors; new API is additive.
@@ -513,6 +543,20 @@ Nothing to rewrite. Check three things instead:
    implementing `FromPathArg`, `Path<(T,)>` with `Path<T>`, and a
    `NamedPath` wrapper around a single validated field with
    `Valid<Path<T>>`; turn on `uuid` for UUID ids.
+
+## Upgrading 0.13.0 → 0.13.1
+
+1. Bump the version; nothing to change in code.
+2. Update tests and clients that expected `400` for an oversized body —
+   it is `413` now.
+3. Check handlers that read only the start of a body (sniffing a header,
+   a magic number): with a `Content-Length` over the limit they get `413`
+   on the first read. Give the route the limit it needs.
+4. Optional: if the application's limit was raised for a few upload
+   routes, lower it back and set the bigger limit on those routes or their
+   group with `with_body_limit(..)`; replace an app-wide
+   `without_body_limit()` kept for one streaming route with that route's
+   `.without_body_limit()`.
 
 ## Upgrading 0.8.x → 0.9.x, in order
 

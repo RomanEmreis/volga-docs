@@ -65,8 +65,8 @@ security fix).
 <!-- snippet: skip -->
 ```rust
 App::new()
-    .with_body_limit(Limit::Limited(10 * 1024 * 1024))   // default 5 MB
-    .without_body_limit()
+    .with_body_limit(Limit::Limited(10 * 1024 * 1024))   // default 5 MB; over it -> 413
+    .without_body_limit()       // a group or route can still set its own (0.13.1)
     .with_max_connections(Limit::Limited(1_000))
     .with_max_header_count(Limit::Limited(64))
     .with_max_header_list_size(Limit::Limited(16 * 1024))   // Unlimited panics

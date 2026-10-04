@@ -54,4 +54,6 @@ curl -v -X POST --location 'http://127.0.0.1:7878/users' \
 
 Если заголовок `Content-Encoding` указывает на неподдерживаемый алгоритм, то middleware отвечает кодом состояния [`415 Unsupported Media Type`](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/415).
 
+На тело, превысившее ограничение распаковки, заданное через [`with_decompression_limits()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_decompression_limits), Волга отвечает [`413 Content Too Large`](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/413) — так же, как на тело больше [ограничения размера тела запроса](/volga-docs/ru/requests-responses/body.html#ограничение-размера-тела). Ограничение размера тела считается по распакованному телу.
+
 Полный пример можно посмотреть [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/decompression/src/main.rs)
