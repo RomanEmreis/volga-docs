@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.13.1"
+  volga-version: "0.13.2"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -32,7 +32,9 @@ with `IntoError` as the one impl an error type needs; 0.13.0 made the router
 percent-decode the path once for every extractor and let a type of your
 own be a path parameter through `FromPathArg`; 0.13.1 let a route group
 and a single route set a request body limit of their own and answers a
-body over the limit `413`. The
+body over the limit `413`; 0.13.2 let issuer-based validation fetch keys
+from an explicit `jwks_uri` and built a `DecodingKey` from a JSON Web Key.
+The
 response macros use a **semicolon** before custom headers. Most volga
 code a model has seen predates all of it. The
 [Non-negotiables](#non-negotiables) below are the places where writing
@@ -51,8 +53,9 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.13"` or `"0.13.1"` | This skill applies as written — a caret requirement resolves to the newest 0.13.x |
-| `volga = "=0.13.0"` pinned exactly | As written, except that there is no `with_body_limit` / `without_body_limit` on a `RouteGroup` or `Route` — only on `App` — and a body over the limit answers `400` instead of `413`. See 0.13.0 → 0.13.1 in `references/migration.md` |
+| `volga = "0.13"` or `"0.13.2"` | This skill applies as written — a caret requirement resolves to the newest 0.13.x |
+| `volga = "=0.13.1"` pinned exactly | As written, except that there is no `OAuthConfig::with_jwks_uri` (nor `jwks_uri` in `[oauth.client]`) and no `DecodingKey::from_jwk`. See 0.13.1 → 0.13.2 in `references/migration.md` |
+| `volga = "=0.13.0"` pinned exactly | As `=0.13.1`, and there is no `with_body_limit` / `without_body_limit` on a `RouteGroup` or `Route` — only on `App` — and a body over the limit answers `400` instead of `413`. See 0.13.0 → 0.13.1 in `references/migration.md` |
 | `volga = "0.12"` or `"0.12.0"` | Positional path extractors (`String`, `u32`, `Path<T>`) read values **undecoded** and accept malformed escapes; `FromPathArg` is private, there is no `uuid` feature, and `Path<T>` takes tuples only. Read the 0.12.x → 0.13.0 path in `references/migration.md` before upgrading — it changes values without a compile error |
 | `volga = "0.11"` or `"0.11.x"` | A handler's `Err` must implement `IntoResponse` and is sent as a response, skipping `map_err`; error types implement `From<T> for Error`; no `IntoError`, no `Error::with_response`. Read the 0.11.x → 0.12.0 path in `references/migration.md` before upgrading — part of it changes answers without a compile error |
 | `volga = "0.11.0"` or `"0.11.1"` pinned exactly | As 0.11.x; 0.11.0 also lacks `RouteGroup::map_fallback`, and its fallback file answers every method. `OpenApiSchema` is unreachable before 0.11.2 |
@@ -85,7 +88,7 @@ Each file is self-contained; load only what the task calls for.
 | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, DPoP, machine-to-machine grants, TLS, HSTS | `references/security.md` |
 | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events | `references/realtime.md` |
 | Feature flags, tracing, cancellation, graceful shutdown, OpenAPI (hand-written schemas included), tests, deployment | `references/operations.md` |
-| A compile error on code that "used to work", or upgrading from 0.13.0 / 0.12.x / 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
+| A compile error on code that "used to work", or upgrading from 0.13.1 / 0.13.0 / 0.12.x / 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
 
 ## An app that works
 
@@ -267,10 +270,12 @@ policy and expecting it globally is silent, not an error.
 ### 10. `jsonwebtoken` is not in the public API
 
 `EncodingKey`, `DecodingKey` and `Algorithm` are volga's own types at
-`volga::auth::*`. `jsonwebtoken::ErrorKind`, `DecodingKey::from_jwk`,
-`EncodingKey::from_rsa_der` and friends are unreachable — use the
-`from_secret` / `from_pem` / `from_base64` / `from_env` / `from_file`
-constructors instead.
+`volga::auth::*`. `jsonwebtoken::ErrorKind`, `EncodingKey::from_rsa_der`
+and friends are unreachable — use volga's constructors: `from_secret`,
+`from_base64_secret`, `from_rsa_pem` / `from_ec_pem` / `from_ed_pem`,
+`from_pem_file`, `from_file`, `from_env`, `from_env_base64`.
+`DecodingKey::from_jwk` exists again since 0.13.2, as volga's own: it takes
+one key as JSON **text** (`&str`), not a `jsonwebtoken::jwk::Jwk`.
 
 ### 11. `run_blocking()` must not run inside a Tokio runtime
 
@@ -512,6 +517,32 @@ app.group("/api", |api| {
 * `without_body_limit()` belongs only on a route that streams and counts
   the bytes itself, never on one that collects the body into memory.
 
+### 26. Issuer unreachable from the server — keep `with_issuer`, add `with_jwks_uri`
+
+When tokens name an issuer the server cannot reach (`localhost` from inside
+a container, a public ingress host from inside a cluster), don't point
+`with_issuer` at the internal URL — every token is then rejected for its
+`iss`, and discovery fails too, since the metadata's `issuer` must equal the
+URL it came from. Since 0.13.2 keep the issuer as tokens name it and say
+where the keys are:
+
+```rust
+let mut app = App::new()
+    .with_oauth(|oauth| oauth
+        .with_issuer("http://localhost:8787")                     // = `iss`
+        .with_jwks_uri("http://host.docker.internal:8787/jwks")   // keys, no discovery
+        .with_client_config(|client| client.require_https(false))); // plain http
+app.use_oauth();
+```
+
+* `with_issuer` stays **required**; caching, refresh on an unknown `kid`,
+  `with_max_key_age`, the stale set and the `503` work as with discovery.
+* The transport policy covers the `jwks_uri` — an `http://` URL needs
+  `require_https(false)`, or every fetch fails and protected routes `503`.
+* For a static key the issuer publishes as a JWK,
+  `DecodingKey::from_jwk(json)` with `with_alg(..)` — but it does not follow
+  rotations; prefer `with_oauth` when the issuer rotates.
+
 ## Checklist before handing code back
 
 - [ ] Every custom-header array is preceded by `;`, not `,`
@@ -533,4 +564,5 @@ app.group("/api", |api| {
 - [ ] Path parameters of your own types implement `FromPathArg`; `Path<T>` of a single type only on a one-parameter route
 - [ ] No handler percent-decodes a path parameter itself, and no literal segment or prefix is written with a `%XX` escape
 - [ ] A large body limit is set on the route or group that needs it, not on the whole app; nothing expects `400` for a body over the limit — that is `413`
+- [ ] `with_issuer` is the `iss` tokens carry, never an internal URL; an unreachable issuer gets `with_jwks_uri`, and an `http://` one `require_https(false)`
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean

@@ -108,12 +108,47 @@ let app = App::new()
 ```toml
 [oauth.client]
 issuer = "https://auth.example.com"
+jwks_uri = "https://auth.internal/jwks"  # опционально, без discovery (0.13.2+)
 refresh_cooldown_secs = 60   # опционально
 max_key_age_secs = 900       # опционально
 require_https = true         # опционально
 timeout_secs = 30            # опционально
 max_redirects = 5            # опционально
 ```
+
+### Когда URL эмитента недоступен с сервера
+
+Discovery загружает метаданные эмитента по URL, который токены несут в `iss`, а значит, рассчитывает, что сервер может до этого URL достучаться. В некоторых развёртываниях это не так: эмитент запущен на хосте как `http://localhost:8787`, а API — в контейнере и видит его как `http://host.docker.internal:8787`; или сервис в Kubernetes обращается к провайдеру идентификации по внутрикластерному имени, а в токенах указан публичный хост ingress.
+
+Начиная с **0.13.2**, [`with_jwks_uri(...)`](https://docs.rs/volga/latest/volga/auth/oauth_client/struct.OAuthConfig.html#method.with_jwks_uri) задаёт URL, с которого загружается JSON Web Key Set, и discovery пропускается:
+
+```rust compile-fragment
+let mut app = App::new()
+    .with_bearer_auth(|auth| auth.with_aud(["https://api.example.com"]))
+    .with_oauth(|oauth| oauth
+        // `iss`, который несут токены, — без изменений
+        .with_issuer("http://localhost:8787")
+        // откуда этот сервер загружает ключи
+        .with_jwks_uri("http://host.docker.internal:8787/jwks")
+        // URL работает по обычному HTTP
+        .with_client_config(|client| client.require_https(false)));
+
+app.use_oauth();
+```
+
+Меняется только то, откуда берутся ключи. `with_issuer` по-прежнему обязателен и по-прежнему задаёт `iss`, который должен нести каждый токен. Ленивая первая загрузка, обновление на неизвестный `kid`, `with_max_key_age`, последний известный набор, который продолжает работать, пока URL недоступен, и `503`, пока ключи ни разу не загрузились, — всё работает так же, как с discovery. В файле конфигурации тот же URL задаётся полем `jwks_uri` в `[oauth.client]`.
+
+::: warning
+Не направляйте вместо этого `with_issuer` на внутренний URL. Discovery требует, чтобы `issuer` в метаданных совпадал с URL, с которого они загружены, `jwks_uri` в этих метаданных всё равно указывает на публичный хост, а токенам пришлось бы нести внутренний URL в `iss` — так что валидация не проходит в любом случае. Оставьте `with_issuer` таким, каким его называют токены, и задайте `with_jwks_uri`.
+:::
+
+::: tip
+Транспортная политика из `with_client_config` распространяется и на этот URL: для обычного `http://` нужен `require_https(false)`, как в примере выше. Если URL — `https://`, оставьте проверку HTTPS включённой.
+:::
+
+::: info
+`OAuthConfig::with_jwks_uri` указывает, откуда *этот сервер* загружает чужие ключи. Он не имеет отношения к `with_jwks_uri` в [`with_oauth_server_metadata`](#authorization-server-metadata-rfc-8414-и-oidc-discovery), который публикует URL *ваших собственных* ключей в отдаваемом вами документе метаданных.
+:::
 
 ## Отдача документов метаданных
 

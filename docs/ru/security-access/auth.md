@@ -155,7 +155,7 @@ let mut app = App::new()
 ```
 
 ::: info
-`EncodingKey`, `DecodingKey` и `Algorithm` — собственные типы Волги в `volga::auth::*`, а не реэкспорты из `jsonwebtoken`, поэтому `jsonwebtoken::ErrorKind` и его конструкторы ключей недоступны: ключи создаются конструкторами PEM / base64 / secret / env / file, которые предоставляет Волга. Параметры валидации токена настраиваются через [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html).
+`EncodingKey`, `DecodingKey` и `Algorithm` — собственные типы Волги в `volga::auth::*`, а не реэкспорты из `jsonwebtoken`, поэтому `jsonwebtoken::ErrorKind` и его конструкторы ключей недоступны: ключи создаются конструкторами PEM / base64 / secret / env / file, которые предоставляет Волга, а начиная с **0.13.2** — и из [JSON Web Key](#ключ-опубликованныи-как-json-web-key). Параметры валидации токена настраиваются через [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html).
 
 Начиная с **v0.9.8**, `volga::auth::Algorithm` — это реэкспорт [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) из `volga-oauth-core`: варианты, значение по-умолчанию `HS256` и поведение не изменились, но теперь тип общий с клиентскими крейтами — утверждение `private_key_jwt` и bearer-токен, который выпускает сервер, описываются одним словарём. Он также реэкспортируется из `volga::auth::oauth`, где его можно назвать без флага `jwt-auth`.
 :::
@@ -203,6 +203,29 @@ struct Claims {
 ::: warning
 Для корректной работы JWT-аутентификации, необходимо использовать один и тот же `JWT_SECRET` как при генерации токена, так и при его проверке на защищённых маршрутах.
 Этот секрет используется для подписания токена на этапе генерации и проверки подписи на этапе валидации. Если секреты отличаются - токен будет отклонён как недействительный.
+:::
+
+### Ключ, опубликованный как JSON Web Key
+
+Эмитенты публикуют ключи проверки подписи в виде JSON Web Key (RFC 7517), а не PEM-файлов. Начиная с **0.13.2**, [`DecodingKey::from_jwk()`](https://docs.rs/volga/latest/volga/auth/decoding_key/struct.DecodingKey.html#method.from_jwk) создаёт ключ из такого описания — RSA, EC, Ed25519 (`OKP`) или симметричный `oct`. Он принимает один ключ в виде JSON-текста, например один элемент массива `keys` из JWKS эмитента:
+
+```rust compile-fragment
+use volga::auth::{Algorithm, DecodingKey};
+
+let key = DecodingKey::from_jwk(
+    r#"{"kty":"OKP","crv":"Ed25519","x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}"#,
+)?;
+
+let app = App::new()
+    .with_bearer_auth(|auth| auth
+        .set_decoding_key(key)
+        .with_alg(Algorithm::EdDSA));
+```
+
+Собственные поля ключа `alg`, `use` и `key_ops` не читаются: алгоритм, которым должны быть подписаны токены, задаётся через [`with_alg()`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_alg) — так же, как для PEM-ключа. `from_jwk` возвращает ошибку, если текст не является JSON Web Key — целый набор ключей (`{"keys": [...]}`) тоже им не является — или указывает неподдерживаемый тип ключа или кривую.
+
+::: warning
+Ключ, загруженный таким образом, статичен: он не следует за ротацией ключей эмитента, и токены, подписанные новым ключом, отклоняются до повторного развёртывания приложения. Для эмитента, который ротирует ключи, используйте валидацию по эмитенту (ниже) — с [`with_jwks_uri`](./oauth.md#когда-url-эмитента-недоступен-с-сервера), если сервер не может достучаться до собственного URL эмитента.
 :::
 
 ### Валидация токенов по OAuth 2.1 / OIDC-эмитенту
