@@ -4,7 +4,7 @@ A packaged [Agent Skill](https://agentskills.io/specification) that teaches a
 coding assistant to write Volga correctly — the same material as this site,
 reorganised for a model rather than a reader.
 
-<SkillDownload href="/volga-skill.zip" label="Download volga-skill.zip" note="~50 KiB · MIT · tracks volga 0.13.1" />
+<SkillDownload href="/volga-skill.zip" label="Download volga-skill.zip" note="~50 KiB · MIT · tracks volga 0.13.2" />
 
 Source: [`skill/volga`](https://github.com/RomanEmreis/volga-docs/tree/main/skill/volga).
 
@@ -18,7 +18,8 @@ what they hold, 0.10.1 changed what a rejected token is answered with, and
 0.11.1 gave a route group a fallback of its own, 0.12.0 turned a
 handler's `Err` into an error for `map_err` rather than a second response,
 0.13.0 made every path parameter arrive percent-decoded,
-and 0.13.1 let a route group or a route set its own request body limit,
+0.13.1 let a route group or a route set its own request body limit,
+and 0.13.2 let a resource server fetch an issuer's keys from a URL of its choosing,
 while most Volga code a model has seen predates all of it.
 So the failure mode is not a forgotten method name. It is an assistant
 writing `ok!("hi", [("x-key", "v")])` with a comma instead of a semicolon,
@@ -43,7 +44,7 @@ The skill front-loads exactly those traps, then routes to detail on demand.
 | `references/security.md` | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, the client crate, TLS, HSTS |
 | `references/realtime.md` | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events |
 | `references/operations.md` | Feature flags, graceful shutdown, cancellation, tracing, OpenAPI and hand-written schemas, `TestServer` |
-| `references/migration.md` | Symptom → cause, and the 0.13.0 → 0.13.1, 0.12.x → 0.13.0, 0.11.x → 0.12.0, 0.10.x → 0.11.0, 0.10.0 → 0.10.1, 0.9.x → 0.10.x and 0.8.x → 0.9.x upgrade paths |
+| `references/migration.md` | Symptom → cause, and the 0.13.1 → 0.13.2, 0.13.0 → 0.13.1, 0.12.x → 0.13.0, 0.11.x → 0.12.0, 0.10.x → 0.11.0, 0.10.0 → 0.10.1, 0.9.x → 0.10.x and 0.8.x → 0.9.x upgrade paths |
 
 `SKILL.md` stays short on purpose: an entrypoint an agent always reads, and
 eight references it loads only when the task needs one.
@@ -125,6 +126,9 @@ before anything else:
 * **A body limit belongs where the body is read** since 0.13.1: a route
   group or a route raises or lowers it for itself, the most specific limit
   wins, and a body over it answers `413`.
+* **`with_issuer` is the `iss` tokens carry** — when the server cannot
+  reach it (a container, an ingress host), 0.13.2 fetches the keys from
+  `with_jwks_uri` instead of pointing the issuer at an internal URL.
 
 ## The code in it compiles
 
@@ -142,12 +146,12 @@ python3 ci/check-snippets.py --docs-dir skill --default-mode compile-fragment --
 
 ## Version
 
-The skill tracks volga **0.13.1** on MSRV **1.90**. The frontmatter records
+The skill tracks volga **0.13.2** on MSRV **1.90**. The frontmatter records
 both, so an assistant can tell whether the skill matches the crate in front
 of it:
 
 ```yaml
 metadata:
-  volga-version: "0.13.1"
+  volga-version: "0.13.2"
   msrv: "1.90"
 ```

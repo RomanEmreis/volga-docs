@@ -108,12 +108,47 @@ With the `config` feature the same knobs can be described in the `[oauth.client]
 ```toml
 [oauth.client]
 issuer = "https://auth.example.com"
+jwks_uri = "https://auth.internal/jwks"  # optional, skips discovery (0.13.2+)
 refresh_cooldown_secs = 60   # optional
 max_key_age_secs = 900       # optional
 require_https = true         # optional
 timeout_secs = 30            # optional
 max_redirects = 5            # optional
 ```
+
+### When the Issuer's URL Is Not Reachable From the Server
+
+Discovery fetches the issuer's metadata from the URL tokens carry in `iss`, so it assumes the server can reach that URL. Some deployments can't: the issuer runs on the host as `http://localhost:8787` while the API runs in a container and reaches it as `http://host.docker.internal:8787`, or a Kubernetes service talks to the identity provider by its in-cluster name while tokens name the public ingress host.
+
+Since **0.13.2**, [`with_jwks_uri(...)`](https://docs.rs/volga/latest/volga/auth/oauth_client/struct.OAuthConfig.html#method.with_jwks_uri) names the URL the JSON Web Key Set is fetched from, and discovery is skipped:
+
+```rust compile-fragment
+let mut app = App::new()
+    .with_bearer_auth(|auth| auth.with_aud(["https://api.example.com"]))
+    .with_oauth(|oauth| oauth
+        // the `iss` tokens carry — unchanged
+        .with_issuer("http://localhost:8787")
+        // where this server fetches the keys from
+        .with_jwks_uri("http://host.docker.internal:8787/jwks")
+        // the URL is plain HTTP
+        .with_client_config(|client| client.require_https(false)));
+
+app.use_oauth();
+```
+
+Only where the keys come from changes. `with_issuer` is still required and is still the `iss` every token must carry. The lazy first fetch, the refresh on an unknown `kid`, `with_max_key_age`, the last known set served while the URL is unreachable and the `503` before any keys have loaded all work as they do with discovery. In the configuration file the same URL is `jwks_uri` in `[oauth.client]`.
+
+::: warning
+Don't point `with_issuer` at the internal URL instead. Discovery requires the metadata's `issuer` to equal the URL it was fetched from, the `jwks_uri` in that metadata still names the public host, and tokens would have to carry the internal URL in `iss` — so validation fails either way. Keep `with_issuer` as the tokens name it and set `with_jwks_uri`.
+:::
+
+::: tip
+The transport policy from `with_client_config` applies to this URL too: a plain `http://` URL needs `require_https(false)`, as above. Keep HTTPS enforced whenever the URL is `https://`.
+:::
+
+::: info
+`OAuthConfig::with_jwks_uri` says where *this server* fetches someone else's keys from. It is unrelated to `with_jwks_uri` on [`with_oauth_server_metadata`](#authorization-server-metadata-rfc-8414-oidc-discovery), which publishes the URL of *your own* keys in the metadata document you serve.
+:::
 
 ## Serving Metadata Documents
 

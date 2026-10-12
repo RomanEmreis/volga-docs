@@ -205,7 +205,7 @@ These are applied automatically and need no `bind_section`:
 | `[tracing]` | `tracing` | tracing / header settings |
 | `[openapi]` | `openapi` | specification settings |
 | `[cors]` | `middleware` | CORS policy |
-| `[oauth.client]` / `[oauth.server]` / `[oauth.resource]` | `oauth*` | issuer and metadata documents |
+| `[oauth.client]` / `[oauth.server]` / `[oauth.resource]` | `oauth*` | issuer (and `jwks_uri`, 0.13.2+), metadata documents |
 
 Built-in sections are **startup-only** — hot reload does not touch them.
 `[server] host` accepts host names, resolved at startup like `App::bind`.

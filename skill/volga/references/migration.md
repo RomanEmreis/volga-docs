@@ -36,7 +36,9 @@ is rejected for no obvious reason, look here before rewriting anything.
 | `with_hsts_preload` / `with_hsts_max_age` not found | removed in 0.9.1 | `.with_hsts(\|h\| h.with_preload())` |
 | `this function takes 0 arguments but 1 was supplied` on `with_credentials` / `with_preload` / `with_sub_domains` / `with_vary_header` / `with_accept_unmasked_frames` | they stopped taking `bool` in 0.9.1 | drop the argument, or call the `without_*` twin |
 | `field status of struct Error is private` | fields became methods in 0.9.0 | `error.status()`, `error.instance()` |
-| `no function from_jwk` / `from_rsa_der` / `ErrorKind` not found | `jsonwebtoken` left the public API in 0.9.1 | use `from_secret` / `from_pem` / `from_base64` / `from_env` / `from_file` |
+| `no function from_rsa_der` / `ErrorKind` not found | `jsonwebtoken` left the public API in 0.9.1 | use `from_secret` / `from_base64_secret` / `from_rsa_pem` / `from_ec_pem` / `from_ed_pem` / `from_env` / `from_file` |
+| `no function from_jwk` on `DecodingKey` | before 0.13.2 | upgrade to 0.13.2, or convert the key to PEM. It takes JSON text (`&str`), not a `jsonwebtoken::jwk::Jwk` |
+| `no method named with_jwks_uri` on `OAuthConfig` | before 0.13.2 | upgrade to 0.13.2 |
 | cannot construct `Problem` / `TlsConfig` / `RedirectionConfig` with a struct literal | `#[non_exhaustive]` since 0.9.2 | use the builders |
 | non-exhaustive match on `Authorizer`, `Encoding`, `WsEvent`, `OAuthErrorCode` | `#[non_exhaustive]` | add a `_ =>` arm |
 | `future cannot be sent between threads safely` | a `std::sync` guard held across `.await` | drop the guard first, or use `tokio::sync` |
@@ -54,7 +56,10 @@ is rejected for no obvious reason, look here before rewriting anything.
 | `400` with `invalid_request` | the `Authorization` header is present but malformed |
 | `401` with `invalid_token` | the token was parsed and rejected — expired, bad signature, wrong claim, or malformed. **`403` before 0.10.1** |
 | `403` with `insufficient_scope` | the token is valid but lacks the role or permission the route asks for |
-| `503` from a protected route | validation could not complete: issuer-based validation with no JWKS ever loaded, or an unreadable verification key |
+| `503` from a protected route | validation could not complete: issuer-based validation with no JWKS ever loaded, or an unreadable verification key. With `with_jwks_uri`: that URL is unreachable, or `http://` while `require_https` is on |
+| `OAuth issuer discovery failed` in a container / cluster while the issuer is up | the server cannot reach the URL tokens carry in `iss`. Since 0.13.2 keep `with_issuer` and add `with_jwks_uri(<reachable URL>)` |
+| every token `401 invalid_token` after `with_issuer` was pointed at an internal URL | tokens carry the public `iss`. Restore it and fetch keys with `with_jwks_uri` (0.13.2+) |
+| startup fails on `unknown field jwks_uri` in `[oauth.client]` | the file targets 0.13.2; the crate is older. Upgrade |
 | panic at startup: CORS | `use_cors()` without `with_cors(..)`, or credentials combined with a wildcard |
 | panic at startup: HSTS | `with_preload()` with `max_age` under one year |
 | panic at startup: config | `with_default_config()` and no `app_config.toml` / `.json`, or a required `bind_section` missing |
@@ -114,6 +119,20 @@ is rejected for no obvious reason, look here before rewriting anything.
 | a debug build warns `OpenAPI: ... is described as ...` at startup, or the spec shows another route's parameter name | 0.11.2: routes naming one position differently share one templated path. Name the parameters alike |
 
 ## Version-by-version
+
+### 0.13.2 — keys from an explicit `jwks_uri`, `DecodingKey::from_jwk`
+No API break; new API is additive. Nothing changes at runtime for code that
+does not use it.
+
+* **`OAuthConfig::with_jwks_uri(url)`**, and `jwks_uri` in
+  `[oauth.client]`: the key store fetches the JWKS from that URL and skips
+  discovery — for a server that cannot reach the URL tokens carry in `iss`
+  (container, ingress). `with_issuer` is still required and still the
+  `iss`. The key lifecycle is the same as with discovery. The transport
+  policy applies, so `http://` needs `require_https(false)`.
+* **`DecodingKey::from_jwk(&str)`**: a static verification key from one
+  JSON Web Key (RSA, EC, `OKP`, `oct`). The algorithm still comes from
+  `BearerAuthConfig::with_alg`; the key does not follow rotations.
 
 ### 0.13.1 — body limits per group and per route
 No API break; new API is additive. What differs at runtime:
@@ -430,6 +449,8 @@ responses now carry `application/problem+json`.
   `DecodingKey` and `Algorithm` became volga's own at the same paths.
   `ErrorKind`, `from_jwk` and the `*_der` constructors went away; the
   `from_env` / `from_file` / `from_pem_file` families arrived.
+  (`DecodingKey::from_jwk` came back in 0.13.2, as volga's own, taking JSON
+  text.)
 * `with_credentials`, `with_vary_header`, `with_preload`, `with_sub_domains`,
   `with_accept_unmasked_frames` lost their `bool` argument and gained
   `without_*` twins.
@@ -557,6 +578,17 @@ Nothing to rewrite. Check three things instead:
    group with `with_body_limit(..)`; replace an app-wide
    `without_body_limit()` kept for one streaming route with that route's
    `.without_body_limit()`.
+
+## Upgrading 0.13.1 → 0.13.2
+
+1. Bump the version; nothing to change in code.
+2. Optional: if a resource server's `with_issuer` was pointed at an
+   internal URL (or a proxy rewrote discovery) so a container could reach
+   the issuer, put the issuer back to the `iss` tokens carry and add
+   `.with_jwks_uri(<internal JWKS URL>)` — or `jwks_uri` in `[oauth.client]`.
+3. Optional: a key kept as a JWK and converted to PEM by hand can be loaded
+   with `DecodingKey::from_jwk(..)` and `with_alg(..)`; if the issuer
+   rotates keys, prefer `with_oauth` instead.
 
 ## Upgrading 0.8.x → 0.9.x, in order
 

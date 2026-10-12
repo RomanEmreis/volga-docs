@@ -94,13 +94,32 @@ async fn generate(payload: Json<Login>, bts: BearerTokenService) -> HttpResult {
 ```
 
 Key constructors on both `EncodingKey` and `DecodingKey`:
-`from_secret`, `from_base64`, `from_pem`, `from_pem_file`, `from_file`,
+`from_secret`, `from_base64_secret`, `from_rsa_pem` / `from_ec_pem` /
+`from_ed_pem` (these return `Result`), and `from_pem_file`, `from_file`,
 `from_env`, `from_env_base64`, each with a `try_*` sibling that returns
 `Result` instead of panicking. The panicking forms are meant to run once at
 startup.
 
-`jsonwebtoken` types are **not** re-exported — `DecodingKey::from_jwk`,
-`EncodingKey::from_rsa_der` and `ErrorKind` do not exist here.
+`jsonwebtoken` types are **not** re-exported — `EncodingKey::from_rsa_der`
+and `ErrorKind` do not exist here.
+
+Since 0.13.2 `DecodingKey::from_jwk` builds a verification key from a JSON
+Web Key — RSA, EC, Ed25519 (`OKP`) or `oct` — taken as JSON **text**, one
+key (an entry of a JWKS's `keys`, not the whole set):
+
+```rust
+use volga::{App, auth::{Algorithm, DecodingKey}};
+
+let key = DecodingKey::from_jwk(
+    r#"{"kty":"OKP","crv":"Ed25519","x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}"#,
+)?;
+App::new().with_bearer_auth(|auth| auth
+    .set_decoding_key(key)
+    .with_alg(Algorithm::EdDSA));      // the JWK's own `alg` is not read
+```
+
+It is a static key: it does not follow the issuer's rotations. For an
+issuer that rotates, validate against the issuer (below).
 
 ### Validating and authorizing
 
@@ -220,6 +239,35 @@ For a local issuer on plain HTTP:
     .with_issuer("http://127.0.0.1:5000")
     .with_client_config(|client| client.require_https(false)))
 ```
+
+#### Keys from a URL other than the issuer's (0.13.2)
+
+When the URL tokens carry in `iss` is not reachable from the server — the
+issuer is `http://localhost:8787` on the host and the API runs in a
+container, or tokens name a public ingress host — name the key set's URL
+with `with_jwks_uri`. Discovery is skipped:
+
+```rust
+let mut app = App::new()
+    .with_bearer_auth(|auth| auth.with_aud(["https://api.example.com"]))
+    .with_oauth(|oauth| oauth
+        .with_issuer("http://localhost:8787")                     // still the `iss`
+        .with_jwks_uri("http://host.docker.internal:8787/jwks")
+        .with_client_config(|client| client.require_https(false)));
+app.use_oauth();
+```
+
+* `with_issuer` is still required and still constrains `iss`; only where
+  the keys come from changes. Lifecycle (lazy fetch, refresh on unknown
+  `kid`, max key age, stale set, `503` before any keys) is unchanged.
+* **Don't** point `with_issuer` at the internal URL instead: discovery
+  requires the metadata's `issuer` to match the URL it was fetched from,
+  its `jwks_uri` names the public host, and tokens carry the public `iss`.
+* The transport policy applies to the `jwks_uri`: `http://` needs
+  `require_https(false)`.
+* Config file: `jwks_uri = "..."` in `[oauth.client]`.
+* Not to be confused with `with_jwks_uri` on `with_oauth_server_metadata`,
+  which **publishes** your own key set's URL.
 
 ### Serving metadata
 

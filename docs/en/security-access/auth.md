@@ -155,7 +155,7 @@ let mut app = App::new()
 ```
 
 ::: info
-`EncodingKey`, `DecodingKey` and `Algorithm` are Volga's own types at `volga::auth::*` rather than re-exports of `jsonwebtoken`, so `jsonwebtoken::ErrorKind` and its key constructors are not reachable — build keys with the PEM / base64 / secret / env / file constructors Volga provides. Token validation settings live on [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html).
+`EncodingKey`, `DecodingKey` and `Algorithm` are Volga's own types at `volga::auth::*` rather than re-exports of `jsonwebtoken`, so `jsonwebtoken::ErrorKind` and its key constructors are not reachable — build keys with the PEM / base64 / secret / env / file constructors Volga provides, or, since **0.13.2**, from a [JSON Web Key](#a-key-published-as-a-json-web-key). Token validation settings live on [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html).
 
 Since **v0.9.8**, `volga::auth::Algorithm` is a re-export of [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) from `volga-oauth-core` — the variants, the `HS256` default and the behaviour are unchanged, but the type is now shared with the client crates, so a `private_key_jwt` assertion and a bearer token the server issues are described in one vocabulary. It is also re-exported from `volga::auth::oauth`, where it can be named without the `jwt-auth` feature.
 :::
@@ -204,6 +204,29 @@ struct Claims {
 ::: warning
 To ensure proper JWT functionality, you must use the same `JWT_SECRET` both when generating the token and when validating it on protected routes.
 This secret is used to sign the token during generation and to verify the signature during validation. If these values differ - the token will be rejected as invalid.
+:::
+
+### A Key Published as a JSON Web Key
+
+Issuers publish their verification keys as JSON Web Keys (RFC 7517) rather than PEM files. Since **0.13.2**, [`DecodingKey::from_jwk()`](https://docs.rs/volga/latest/volga/auth/decoding_key/struct.DecodingKey.html#method.from_jwk) builds a key from one of them — RSA, EC, Ed25519 (`OKP`) or a symmetric `oct` key. It takes a single key as JSON text, such as one entry of the `keys` array of the issuer's JWKS:
+
+```rust compile-fragment
+use volga::auth::{Algorithm, DecodingKey};
+
+let key = DecodingKey::from_jwk(
+    r#"{"kty":"OKP","crv":"Ed25519","x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}"#,
+)?;
+
+let app = App::new()
+    .with_bearer_auth(|auth| auth
+        .set_decoding_key(key)
+        .with_alg(Algorithm::EdDSA));
+```
+
+The key's own `alg`, `use` and `key_ops` members are not read: the algorithm tokens must be signed with comes from [`with_alg()`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_alg), as it does for a PEM key. `from_jwk` returns an error when the text is not a JSON Web Key — a whole key set (`{"keys": [...]}`) is not one either — or names a key type or curve that is not supported.
+
+::: warning
+A key loaded this way is static: it does not follow the issuer's key rotations, and tokens signed with a new key are rejected until the application is redeployed. For an issuer that rotates its keys, validate against the issuer instead (below) — with [`with_jwks_uri`](./oauth.md#when-the-issuer-s-url-is-not-reachable-from-the-server) if the server cannot reach the issuer's own URL.
 :::
 
 ### Validating Tokens Against an OAuth 2.1 / OIDC Issuer
