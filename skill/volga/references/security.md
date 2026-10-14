@@ -121,6 +121,43 @@ App::new().with_bearer_auth(|auth| auth
 It is a static key: it does not follow the issuer's rotations. For an
 issuer that rotates, validate against the issuer (below).
 
+### Algorithms and keys
+
+`HS256` with an HMAC secret is the default. `with_alg` names the list of
+accepted algorithms: since 0.13.3 the first call **replaces** `HS256` and
+later calls add. `BearerTokenService::encode` signs with the **first**.
+
+```rust
+use volga::{App, auth::{Algorithm, DecodingKey, EncodingKey}};
+
+App::new().with_bearer_auth(|auth| auth
+    .set_encoding_key(EncodingKey::from_pem_file("/etc/volga/rs256.pem"))
+    .set_decoding_key(DecodingKey::from_pem_file("/etc/volga/rs256.pub.pem"))
+    .with_alg(Algorithm::RS256)        // replaces HS256; `encode` signs RS256
+    .with_alg(Algorithm::PS256));      // accepted as well
+```
+
+| Algorithms | Key | Constructors |
+|---|---|---|
+| `HS256` `HS384` `HS512` | HMAC secret | `from_secret`, `from_base64_secret`, `from_file`, `from_env`, `from_env_base64`, `oct` JWK |
+| `RS256`…`RS512`, `PS256`…`PS512` | RSA | `from_rsa_pem`, `from_pem_file`, `RSA` JWK |
+| `ES256` `ES384` | EC (P-256, P-384) | `from_ec_pem`, `from_pem_file`, `EC` JWK |
+| `EdDSA` | Ed25519 | `from_ed_pem`, `from_pem_file`, `OKP` JWK |
+
+* The decoding key must fit **every** listed algorithm, the encoding key
+  the **first**. Otherwise `App::run` returns `Err` before serving, naming
+  the key and what it can serve. Usually the list is what is wrong: an
+  asymmetric key always needs `with_alg`, and one list holds one family:
+
+  ```text
+  Bearer auth: the decoding key is an RSA key, which cannot verify HS256 tokens (the default without `with_alg`); `with_alg` must name only RS256, RS384, RS512, PS256, PS384 or PS512
+  ```
+* `.with_alg(Algorithm::HS512)` alone refuses `HS256` tokens. While moving
+  from one to the other, name both — `.with_alg(HS512).with_alg(HS256)`
+  issues `HS512` and still accepts `HS256`.
+* Issuer-based validation does not use `with_alg` to verify: each token is
+  checked with the algorithm the issuer's JWKS gives its key.
+
 ### Validating and authorizing
 
 <!-- snippet: skip -->
@@ -174,6 +211,7 @@ App::new().with_bearer_auth(|auth| auth
     .strip_token_from_request(false)   // default true
     .with_aud(["https://api.example.com"])
     .without_strict_aud()              // aud is required once with_aud is set
+    .with_iss(["https://auth.example.com"])            // iss required, no opt-out
     .with_resource("https://api.example.com")          // RFC 8707
     .with_resource_metadata_url("https://api.example.com/.well-known/oauth-protected-resource"));
 ```
@@ -184,6 +222,9 @@ App::new().with_bearer_auth(|auth| auth
 * **`strip_token_from_request` is on.** The `Authorization` header is gone
   after successful validation.
 * **`with_aud` makes `aud` required.** `without_strict_aud()` opts out.
+* **`with_iss` makes `iss` required** (0.13.3). There is no opt-out: a
+  token without `iss` is `401 invalid_token`, so leave `with_iss` out if
+  tokens that must pass carry none. An empty set is a no-op.
 * `BearerTokenService::validation()` no longer exists — all token policy
   lives on `BearerAuthConfig`.
 

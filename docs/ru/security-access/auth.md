@@ -154,6 +154,25 @@ let mut app = App::new()
     );
 ```
 
+Валидация эмитента через [`with_iss(...)`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_iss) работает так же, но без возможности отказаться: начиная с **0.13.3** claim `iss` становится обязательным, поэтому токен без него отклоняется с `401` — так же, как токен с эмитентом не из списка. Пустой список оставляет конфигурацию как есть.
+
+```rust compile-fragment
+use volga::auth::DecodingKey;
+
+let secret = std::env::var("JWT_SECRET")?;
+
+let app = App::new()
+    .with_bearer_auth(|auth| auth
+        .set_decoding_key(DecodingKey::from_secret(secret.as_bytes()))
+        .with_iss(["https://auth.example.com"])
+        .with_aud(["my-service"])
+    );
+```
+
+::: warning
+`with_iss` — это то, чем сервер ресурсов отличает свои токены от остальных, подписанных тем же ключом, например HMAC-секретом, общим для нескольких сервисов. Если часть токенов, которые он должен принимать, не несёт `iss`, начиная с **0.13.3** они отклоняются: попросите эмитента добавить claim или не задавайте `with_iss`.
+:::
+
 ::: info
 `EncodingKey`, `DecodingKey` и `Algorithm` — собственные типы Волги в `volga::auth::*`, а не реэкспорты из `jsonwebtoken`, поэтому `jsonwebtoken::ErrorKind` и его конструкторы ключей недоступны: ключи создаются конструкторами PEM / base64 / secret / env / file, которые предоставляет Волга, а начиная с **0.13.2** — и из [JSON Web Key](#ключ-опубликованныи-как-json-web-key). Параметры валидации токена настраиваются через [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html).
 
@@ -204,6 +223,61 @@ struct Claims {
 Для корректной работы JWT-аутентификации, необходимо использовать один и тот же `JWT_SECRET` как при генерации токена, так и при его проверке на защищённых маршрутах.
 Этот секрет используется для подписания токена на этапе генерации и проверки подписи на этапе валидации. Если секреты отличаются - токен будет отклонён как недействительный.
 :::
+
+### Алгоритмы и типы ключей
+
+Если не указано иное, токены подписываются и проверяются алгоритмом `HS256` с HMAC-секретом. Любой другой алгоритм — и любой ключ RSA, EC или Ed25519 — задаётся через [`with_alg()`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_alg). Первый вызов заменяет `HS256` по-умолчанию, а последующие добавляют алгоритмы в список:
+
+```rust compile-fragment
+use volga::auth::{Algorithm, DecodingKey, EncodingKey};
+
+let app = App::new()
+    .with_bearer_auth(|auth| auth
+        .set_encoding_key(EncodingKey::from_pem_file("/etc/volga/rs256.pem"))
+        .set_decoding_key(DecodingKey::from_pem_file("/etc/volga/rs256.pub.pem"))
+        .with_alg(Algorithm::RS256)   // заменяет HS256
+        .with_alg(Algorithm::PS256)); // и принимает ещё и токены PS256
+```
+
+Токен принимается, только если он подписан одним из алгоритмов списка. [`BearerTokenService::encode`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerTokenService.html#method.encode) подписывает первым из них — здесь `RS256`, а если `with_alg` не вызывался, то `HS256`.
+
+Каждый алгоритм относится к своему семейству, и каждому семейству нужен свой вид ключа:
+
+| Алгоритмы | Ключ | Конструкторы |
+|---|---|---|
+| `HS256`, `HS384`, `HS512` | HMAC-секрет | `from_secret`, `from_base64_secret`, `from_file`, `from_env`, `from_env_base64`, JWK вида `oct` |
+| `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512` | RSA-ключ | `from_rsa_pem`, `from_pem_file`, JWK вида `RSA` |
+| `ES256`, `ES384` | EC-ключ (P-256, P-384) | `from_ec_pem`, `from_pem_file`, JWK вида `EC` |
+| `EdDSA` | ключ Ed25519 | `from_ed_pem`, `from_pem_file`, JWK вида `OKP` |
+
+Ключ проверки (decoding) должен подходить **каждому** алгоритму, который называет `with_alg`, а ключ подписи (encoding) — **первому**. Начиная с **0.13.3** неподходящий ключ останавливает приложение при старте: `App::run` возвращает ошибку, в которой названы ключ, алгоритмы, которые он обслужить не может, и те, которые может.
+
+```text
+Bearer auth: the decoding key is an RSA key, which cannot verify HS256 tokens (the default without `with_alg`); `with_alg` must name only RS256, RS384, RS512, PS256, PS384 or PS512
+```
+
+::: tip
+Ключ RSA, EC или Ed25519 всегда идёт вместе с `with_alg`: без него в списке остаётся `HS256` по-умолчанию, а его обслуживает только HMAC-секрет, — это и есть ошибка выше. А поскольку ключ проверки один, все перечисленные алгоритмы относятся к одному семейству.
+:::
+
+::: warning
+`with_alg` задаёт список целиком. Начиная с **0.13.3**, один `.with_alg(Algorithm::HS512)` принимает только токены `HS512`; чтобы по-прежнему принимать и `HS256` — например, пока клиенты переходят с одного на другой, — назовите оба, первым тот, которым должен подписывать `encode`:
+
+```rust compile-fragment
+use volga::auth::{Algorithm, DecodingKey, EncodingKey};
+
+let secret = std::env::var("JWT_SECRET")?;
+
+let app = App::new()
+    .with_bearer_auth(|auth| auth
+        .set_encoding_key(EncodingKey::from_secret(secret.as_bytes()))
+        .set_decoding_key(DecodingKey::from_secret(secret.as_bytes()))
+        .with_alg(Algorithm::HS512)   // токены, выпускаемые с этого момента
+        .with_alg(Algorithm::HS256)); // выпущенные раньше, пока не истекут
+```
+:::
+
+[Валидации по эмитенту](#валидация-токенов-по-oauth-2-1-oidc-эмитенту) `with_alg` для проверки токенов не нужен: статического ключа проверки нет, и каждый токен проверяется алгоритмом, который JWKS эмитента указывает для его ключа.
 
 ### Ключ, опубликованный как JSON Web Key
 
