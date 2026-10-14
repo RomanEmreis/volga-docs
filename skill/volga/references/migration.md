@@ -60,6 +60,10 @@ is rejected for no obvious reason, look here before rewriting anything.
 | `OAuth issuer discovery failed` in a container / cluster while the issuer is up | the server cannot reach the URL tokens carry in `iss`. Since 0.13.2 keep `with_issuer` and add `with_jwks_uri(<reachable URL>)` |
 | every token `401 invalid_token` after `with_issuer` was pointed at an internal URL | tokens carry the public `iss`. Restore it and fetch keys with `with_jwks_uri` (0.13.2+) |
 | startup fails on `unknown field jwks_uri` in `[oauth.client]` | the file targets 0.13.2; the crate is older. Upgrade |
+| `run()` returns `Err` with `Bearer auth: the decoding key is ..., which cannot verify ... tokens` | 0.13.3: a static key must fit every algorithm `with_alg` names (the encoding key the first). Name the key's family — an RSA / EC / Ed25519 key with no `with_alg` is left with `HS256` |
+| `HS256` tokens `401` after upgrading, with `with_alg(Algorithm::HS512)` set | 0.13.3: the first `with_alg` replaces `HS256`. Name both, the one to issue first |
+| tokens without `iss` `401 invalid_token` after upgrading | 0.13.3: `with_iss` makes `iss` required. Have the issuer add it, or drop `with_iss` |
+| another service rejects tokens this app issues after upgrading | 0.13.3: `encode` signs with the first `with_alg`, no longer always `HS256`. Put the algorithm the verifier expects first |
 | panic at startup: CORS | `use_cors()` without `with_cors(..)`, or credentials combined with a wildcard |
 | panic at startup: HSTS | `with_preload()` with `max_age` under one year |
 | panic at startup: config | `with_default_config()` and no `app_config.toml` / `.json`, or a required `bind_section` missing |
@@ -119,6 +123,24 @@ is rejected for no obvious reason, look here before rewriting anything.
 | a debug build warns `OpenAPI: ... is described as ...` at startup, or the spec shows another route's parameter name | 0.11.2: routes naming one position differently share one templated path. Name the parameters alike |
 
 ## Version-by-version
+
+### 0.13.3 — `with_alg` replaces `HS256`, keys checked at startup, `iss` required
+No API break. What differs at runtime, all in bearer auth; issuer-based
+validation takes its algorithms from the JWKS and is not affected by
+`with_alg`:
+
+* **`with_alg`**: the first call replaces the default `HS256`, later calls
+  add. `with_alg(RS256).with_alg(PS256)` accepts `RS256` and `PS256`, no
+  `HS256`; `with_alg(HS512)` alone no longer accepts `HS256` — name both.
+  Without `with_alg` the list is `HS256`, as before.
+* **`BearerTokenService::encode`** signs with the first `with_alg`
+  algorithm (`HS256` by default), instead of always `HS256`.
+* **Startup check**: a decoding key that does not fit every listed
+  algorithm, or an encoding key that does not fit the first, makes
+  `App::run` return `Err` naming the key and the algorithms. `HS*` — HMAC
+  secret, `RS*` / `PS*` — RSA, `ES*` — EC, `EdDSA` — Ed25519.
+* **`with_iss`** makes `iss` a required claim: a token without it is `401`.
+  No opt-out. An empty set is a no-op.
 
 ### 0.13.2 — keys from an explicit `jwks_uri`, `DecodingKey::from_jwk`
 No API break; new API is additive. Nothing changes at runtime for code that
@@ -589,6 +611,17 @@ Nothing to rewrite. Check three things instead:
 3. Optional: a key kept as a JWK and converted to PEM by hand can be loaded
    with `DecodingKey::from_jwk(..)` and `with_alg(..)`; if the issuer
    rotates keys, prefer `with_oauth` instead.
+
+## Upgrading 0.13.2 → 0.13.3
+
+1. Bump the version and run the app once: if `run()` returns
+   `Bearer auth: the ... key is ..., which cannot ...`, set `with_alg` to
+   the key's family (the error lists the algorithms it takes).
+2. Check every `with_alg` list. It is the whole list now — if `HS256`
+   tokens must still pass, name `HS256`. The first entry is what `encode`
+   signs with; make sure whoever verifies this app's tokens accepts it.
+3. If `with_iss` is set, check that every token that must pass carries
+   `iss` — tokens without it are `401` now. Drop `with_iss` otherwise.
 
 ## Upgrading 0.8.x → 0.9.x, in order
 

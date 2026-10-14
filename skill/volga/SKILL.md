@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.13.2"
+  volga-version: "0.13.3"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -33,8 +33,10 @@ percent-decode the path once for every extractor and let a type of your
 own be a path parameter through `FromPathArg`; 0.13.1 let a route group
 and a single route set a request body limit of their own and answers a
 body over the limit `413`; 0.13.2 let issuer-based validation fetch keys
-from an explicit `jwks_uri` and built a `DecodingKey` from a JSON Web Key.
-The
+from an explicit `jwks_uri` and built a `DecodingKey` from a JSON Web Key;
+0.13.3 made `with_alg` replace the default `HS256`, stops the app at startup
+when a static key does not fit its algorithms, and made `with_iss` require
+`iss`. The
 response macros use a **semicolon** before custom headers. Most volga
 code a model has seen predates all of it. The
 [Non-negotiables](#non-negotiables) below are the places where writing
@@ -53,8 +55,9 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.13"` or `"0.13.2"` | This skill applies as written — a caret requirement resolves to the newest 0.13.x |
-| `volga = "=0.13.1"` pinned exactly | As written, except that there is no `OAuthConfig::with_jwks_uri` (nor `jwks_uri` in `[oauth.client]`) and no `DecodingKey::from_jwk`. See 0.13.1 → 0.13.2 in `references/migration.md` |
+| `volga = "0.13"` or `"0.13.3"` | This skill applies as written — a caret requirement resolves to the newest 0.13.x |
+| `volga = "=0.13.2"` pinned exactly | As written, except bearer auth: `with_alg` adds to the default `HS256` instead of replacing it, `encode` always signs `HS256`, `with_iss` does not require `iss`, and a key that does not fit its algorithms is not reported at startup. See 0.13.2 → 0.13.3 in `references/migration.md` |
+| `volga = "=0.13.1"` pinned exactly | As `=0.13.2`, and there is no `OAuthConfig::with_jwks_uri` (nor `jwks_uri` in `[oauth.client]`) and no `DecodingKey::from_jwk`. See 0.13.1 → 0.13.2 in `references/migration.md` |
 | `volga = "=0.13.0"` pinned exactly | As `=0.13.1`, and there is no `with_body_limit` / `without_body_limit` on a `RouteGroup` or `Route` — only on `App` — and a body over the limit answers `400` instead of `413`. See 0.13.0 → 0.13.1 in `references/migration.md` |
 | `volga = "0.12"` or `"0.12.0"` | Positional path extractors (`String`, `u32`, `Path<T>`) read values **undecoded** and accept malformed escapes; `FromPathArg` is private, there is no `uuid` feature, and `Path<T>` takes tuples only. Read the 0.12.x → 0.13.0 path in `references/migration.md` before upgrading — it changes values without a compile error |
 | `volga = "0.11"` or `"0.11.x"` | A handler's `Err` must implement `IntoResponse` and is sent as a response, skipping `map_err`; error types implement `From<T> for Error`; no `IntoError`, no `Error::with_response`. Read the 0.11.x → 0.12.0 path in `references/migration.md` before upgrading — part of it changes answers without a compile error |
@@ -88,7 +91,7 @@ Each file is self-contained; load only what the task calls for.
 | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, DPoP, machine-to-machine grants, TLS, HSTS | `references/security.md` |
 | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events | `references/realtime.md` |
 | Feature flags, tracing, cancellation, graceful shutdown, OpenAPI (hand-written schemas included), tests, deployment | `references/operations.md` |
-| A compile error on code that "used to work", or upgrading from 0.13.1 / 0.13.0 / 0.12.x / 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
+| A compile error on code that "used to work", or upgrading from 0.13.2 / 0.13.1 / 0.13.0 / 0.12.x / 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
 
 ## An app that works
 
@@ -231,10 +234,13 @@ it reaches a handler — the classic "works locally, 400 everywhere" report —
 and the `Authorization` header is gone by the time a handler runs. Both are
 deliberate; turn them off knowingly, not by accident.
 
-### 5. `with_aud` makes `aud` a required claim
+### 5. `with_aud` and `with_iss` make their claims required
 
 Configuring audiences rejects tokens that carry no `aud` at all. Call
-`without_strict_aud()` to accept them.
+`without_strict_aud()` to accept them. Since 0.13.3 `with_iss` does the same
+for `iss`, with no opt-out: a token without `iss` is `401`. Leave `with_iss`
+out when tokens that must pass do not carry one. An empty set is a no-op
+for both.
 
 ### 6. The `with_default_*` helpers are gone
 
@@ -543,6 +549,31 @@ app.use_oauth();
   `DecodingKey::from_jwk(json)` with `with_alg(..)` — but it does not follow
   rotations; prefer `with_oauth` when the issuer rotates.
 
+### 27. `with_alg` names the whole list, and the key must fit it
+
+The default is `HS256` with an HMAC secret. Since 0.13.3 the **first**
+`with_alg` replaces it and later ones add; `encode` signs with the first.
+
+```rust
+use volga::{App, auth::{Algorithm, DecodingKey, EncodingKey}};
+
+App::new().with_bearer_auth(|auth| auth
+    .set_encoding_key(EncodingKey::from_pem_file("/etc/volga/es256.pem"))
+    .set_decoding_key(DecodingKey::from_pem_file("/etc/volga/es256.pub.pem"))
+    .with_alg(Algorithm::ES256));   // replaces HS256; `encode` signs ES256
+```
+
+* Families: `HS*` — HMAC secret; `RS*` / `PS*` — RSA key; `ES256` /
+  `ES384` — EC key; `EdDSA` — Ed25519 key. The decoding key must fit
+  **every** listed algorithm, the encoding key the **first**. A key that
+  does not makes `App::run` return `Err` at startup, naming the key and the
+  algorithms — typically an RSA / EC / Ed25519 key with no `with_alg`,
+  which leaves `HS256`. One decoding key means one family per list.
+* `with_alg(Algorithm::HS512)` alone refuses `HS256` tokens. To accept both
+  — rotating from one to the other — name both, the one to issue first.
+* Issuer-based validation (`with_oauth` + `use_oauth`) needs no `with_alg`:
+  each token is checked with the algorithm the JWKS gives its key.
+
 ## Checklist before handing code back
 
 - [ ] Every custom-header array is preceded by `;`, not `,`
@@ -565,4 +596,6 @@ app.use_oauth();
 - [ ] No handler percent-decodes a path parameter itself, and no literal segment or prefix is written with a `%XX` escape
 - [ ] A large body limit is set on the route or group that needs it, not on the whole app; nothing expects `400` for a body over the limit — that is `413`
 - [ ] `with_issuer` is the `iss` tokens carry, never an internal URL; an unreachable issuer gets `with_jwks_uri`, and an `http://` one `require_https(false)`
+- [ ] A static RSA / EC / Ed25519 key comes with `with_alg` of its family; the algorithm `encode` should sign with is named first, and `HS256` is named explicitly if it must still be accepted
+- [ ] `with_iss` is set only where every token that must pass carries `iss`
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean
