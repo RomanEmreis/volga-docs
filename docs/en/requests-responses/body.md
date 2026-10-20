@@ -99,6 +99,8 @@ Use this for bodies you would rather not hold in memory at once — hashing an u
 
 Every request body has a limit — 5 MB unless you set another. A body over it is answered [`413 Content Too Large`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/413), whichever way the handler reads it: [`Json<T>`](/volga-docs/en/requests-responses/json-payload.html), [`Form<T>`](/volga-docs/en/requests-responses/form.html), [`File`](/volga-docs/en/requests-responses/files.html), [`Multipart`](/volga-docs/en/requests-responses/files.html#multipart-uploading), `HttpBody` or a stream.
 
+Since **0.14.0** the message is the same whichever reader it is, `request body is larger than the limit`, so it reaches [`map_err()`](/volga-docs/en/reliability-observability/errors.html) and the client as it is. `Json<T>` and `Form<T>` no longer put `JSON parsing error` or `Form Data parsing error` in front of it: a body refused for its size, often before a byte of it was read, was never parsed. The same goes for any other failure to read the body, while a body that does not deserialize is still a parsing error. The limit itself is not in the message; [`HttpRequest::body_limit()`](#per-route-group-and-per-route) reports it, for a handler or a `map_err()` that wants to tell the client.
+
 The application-wide limit is set with [`with_body_limit()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_body_limit), or with the `body_limit_bytes` key of the `[server]` section in a [configuration file](/volga-docs/en/middleware-infrastructure/config-files.html#built-in-sections):
 
 ```rust compile

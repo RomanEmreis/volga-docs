@@ -137,7 +137,7 @@ app.group("/positive", |g| {
     g.map_get("/sum/{x}/{y}", |x: i32, y: i32| async move { x + y });
 });
 
-app.map_get("/sum", |x: i32, y: i32| async move { x + y })
+app.map_get("/sum/{x}/{y}", |x: i32, y: i32| async move { x + y })
     .tap_req(add_req_header)
     .map_ok(add_resp_header);
 
@@ -168,7 +168,7 @@ request goes to the error handler:
 
 | Verdict | Answer |
 |---|---|
-| `false`, `FilterResult::err()` | `400`, generic message |
+| `false`, `FilterResult::err()` | `400`, `Request rejected by filter` (0.14.0+; before: `Validation: One or more request parameters are incorrect`) |
 | `Err` with a status — `Error`, `StatusCode`, `(StatusCode, E)`, `io::Error` (by kind), `OAuthError`, `ValidationError`, `Problem`, your `IntoError` type | that status (0.12.0+) |
 | `Err` of a string or `Box<dyn Error + Send + Sync>` | `400` with the message — unlike a handler, where it is `500` |
 

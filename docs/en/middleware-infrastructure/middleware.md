@@ -46,9 +46,11 @@ A filter's verdict is a `bool`, `()`, a [`FilterResult`](https://docs.rs/volga/l
 
 | The filter returns | Answer |
 |---|---|
-| `false`, or `FilterResult::err()` | `400 Bad Request` with a generic message |
+| `false`, or `FilterResult::err()` | `400 Bad Request` with the message `Request rejected by filter` |
 | `Err` of anything with a status — `Error`, `StatusCode`, `(StatusCode, E)`, `std::io::Error`, `ValidationError`, `OAuthError`, `Problem`, a type of your own implementing [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) | that status, as the same `Err` would get from a [handler](/volga-docs/en/reliability-observability/errors.html#returning-errors-from-a-handler) |
 | `Err` of a string or a `Box<dyn std::error::Error + Send + Sync>` | `400 Bad Request` with that message |
+
+A filter refuses a request for any reason — a missing API key as often as a bad parameter — so the message for `false` names none. Before **0.14.0** it said `Validation: One or more request parameters are incorrect`, and since a global filter also decides requests no route matches, a request for a path that does not exist was told the same. A filter that wants a status or a message of its own returns `Err`.
 
 The last row is the one difference from a handler, where a string is a `500`: an error without a status of its own, returned from a filter, is taken as the reason the request is refused. Since **0.12.0**, an error with a status keeps it — an `OAuthError` answers `401` for `invalid_token` and `403` for `insufficient_scope`, an `Error` keeps its instance and [attached response](/volga-docs/en/reliability-observability/errors.html#answering-with-a-body-of-its-own).
 
@@ -65,7 +67,7 @@ async fn main() -> std::io::Result<()> {
         None => Err((StatusCode::UNAUTHORIZED, "missing API key")),
     });
 
-    app.map_get("/sum", |x: i32, y: i32| x + y);
+    app.map_get("/sum/{x}/{y}", |x: i32, y: i32| x + y);
 
     app.run().await
 }
@@ -93,7 +95,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app
-        .map_get("/sum", |x: i32, y: i32| async move { x + y })
+        .map_get("/sum/{x}/{y}", |x: i32, y: i32| async move { x + y })
         .tap_req(|mut req: HttpRequestMut| async move { 
             req.try_insert_header::<CustomHeader>("Custom Value")?;
             Ok(req)

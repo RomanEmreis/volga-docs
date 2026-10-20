@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.13.3"
+  volga-version: "0.14.0"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -18,7 +18,7 @@ server configuration. Handlers are plain functions or closures — async, or
 since 0.11.0 synchronous — whose arguments are extractors and whose return
 value is anything that implements `IntoResponse`.
 
-**This skill describes volga 0.13.x.** The 0.9 line changed security
+**This skill describes volga 0.14.x.** The 0.9 line changed security
 defaults and removed a set of `with_default_*` helpers; 0.10.0 rebuilt how
 requests reach middleware, renamed the static file mount and made route
 groups a real scope; 0.10.1 moved a rejected bearer token from `403` to
@@ -36,7 +36,9 @@ body over the limit `413`; 0.13.2 let issuer-based validation fetch keys
 from an explicit `jwks_uri` and built a `DecodingKey` from a JSON Web Key;
 0.13.3 made `with_alg` replace the default `HS256`, stops the app at startup
 when a static key does not fit its algorithms, and made `with_iss` require
-`iss`. The
+`iss`; 0.14.0 made `Dc<T>` read-only, stops the app at startup when a
+handler or middleware takes a service nobody registered, and panics where a
+handler reading path parameters its route does not declare is mapped. The
 response macros use a **semicolon** before custom headers. Most volga
 code a model has seen predates all of it. The
 [Non-negotiables](#non-negotiables) below are the places where writing
@@ -55,8 +57,9 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.13"` or `"0.13.3"` | This skill applies as written — a caret requirement resolves to the newest 0.13.x |
-| `volga = "=0.13.2"` pinned exactly | As written, except bearer auth: `with_alg` adds to the default `HS256` instead of replacing it, `encode` always signs `HS256`, `with_iss` does not require `iss`, and a key that does not fit its algorithms is not reported at startup. See 0.13.2 → 0.13.3 in `references/migration.md` |
+| `volga = "0.14"` or `"0.14.0"` | This skill applies as written — a caret requirement resolves to the newest 0.14.x |
+| `volga = "0.13"` or `"0.13.3"` | As written, except: `Dc<T>` has `DerefMut`, and a write through it changes a private copy; a handler or middleware taking an unregistered `Dc<T>`, or a handler reading path parameters its route does not declare, starts and answers `500` on every request; a handler taking `HttpRequest` sees no path parameters; a filter's `false` and a body over the limit answer with the old messages. Read 0.13.x → 0.14.0 in `references/migration.md` before upgrading — two of these surface at startup, not at compile time |
+| `volga = "=0.13.2"` pinned exactly | As 0.13.x, and bearer auth: `with_alg` adds to the default `HS256` instead of replacing it, `encode` always signs `HS256`, `with_iss` does not require `iss`, and a key that does not fit its algorithms is not reported at startup. See 0.13.2 → 0.13.3 in `references/migration.md` |
 | `volga = "=0.13.1"` pinned exactly | As `=0.13.2`, and there is no `OAuthConfig::with_jwks_uri` (nor `jwks_uri` in `[oauth.client]`) and no `DecodingKey::from_jwk`. See 0.13.1 → 0.13.2 in `references/migration.md` |
 | `volga = "=0.13.0"` pinned exactly | As `=0.13.1`, and there is no `with_body_limit` / `without_body_limit` on a `RouteGroup` or `Route` — only on `App` — and a body over the limit answers `400` instead of `413`. See 0.13.0 → 0.13.1 in `references/migration.md` |
 | `volga = "0.12"` or `"0.12.0"` | Positional path extractors (`String`, `u32`, `Path<T>`) read values **undecoded** and accept malformed escapes; `FromPathArg` is private, there is no `uuid` feature, and `Path<T>` takes tuples only. Read the 0.12.x → 0.13.0 path in `references/migration.md` before upgrading — it changes values without a compile error |
@@ -91,7 +94,7 @@ Each file is self-contained; load only what the task calls for.
 | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, DPoP, machine-to-machine grants, TLS, HSTS | `references/security.md` |
 | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events | `references/realtime.md` |
 | Feature flags, tracing, cancellation, graceful shutdown, OpenAPI (hand-written schemas included), tests, deployment | `references/operations.md` |
-| A compile error on code that "used to work", or upgrading from 0.13.2 / 0.13.1 / 0.13.0 / 0.12.x / 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
+| A compile error on code that "used to work", or upgrading from 0.13.x / 0.13.2 / 0.13.1 / 0.13.0 / 0.12.x / 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
 
 ## An app that works
 
@@ -189,8 +192,9 @@ One handler picks **one** style for path parameters:
 ```
 
 `Path<T>` is a **tuple**, or a single `FromPathArg` type on a one-parameter
-route (`500` on any other); `NamedPath<T>` is the named-struct one. Reaching
-for `Path<Params>` with a struct is the usual slip — it does not compile.
+route (mapping it on any other panics since 0.14.0 — see #28); `NamedPath<T>`
+is the named-struct one. Reaching for `Path<Params>` with a struct is the
+usual slip — it does not compile.
 The same distinction makes `ValidPath<T>` an alias for
 `Valid<NamedPath<T>>`; a single parameter of your own type validates as
 `Valid<Path<T>>`.
@@ -365,6 +369,8 @@ A factory declares its own arguments, so `add_scoped_factory(|c: Dc<Cache>| ..)`
 needs nothing extra. A cycle reached at resolution time panics naming the
 path, `A -> B -> A`, instead of deadlocking a worker thread (scoped) or
 aborting the process (transient).
+
+Since 0.14.0 the same check covers handlers and middleware — see #29.
 
 ### 18. `#[http_header]` takes a unit struct, `#[derive(Claims)]` a struct
 
@@ -574,6 +580,76 @@ App::new().with_bearer_auth(|auth| auth
 * Issuer-based validation (`with_oauth` + `use_oauth`) needs no `with_alg`:
   each token is checked with the algorithm the JWKS gives its key.
 
+### 28. A handler reads only the path parameters its route declares
+
+A positional parameter takes the next `{..}` of its route. Since 0.14.0 a
+handler reading more than the route (and its group prefix) declares
+**panics where it is mapped**, naming the route — it used to start and
+answer `500` on every request:
+
+```rust
+use volga::{Query, ok};
+use serde::Deserialize;
+
+// `app.map_get("/sum", |x: i32, y: i32| ..)` panics here
+app.map_get("/sum/{x}/{y}", |x: i32, y: i32| ok!(x + y));
+
+#[derive(Deserialize)]
+struct Operands { x: i32, y: i32 }
+
+app.map_get("/sum", |q: Query<Operands>| ok!(q.x + q.y));
+
+// `Option<T>` reads `None` where no parameter is left
+let posts = |page: Option<u32>| ok!("{page:?}");
+app.map_get("/posts", posts);
+app.map_get("/posts/{page}", posts);
+```
+
+* Counted: positional parameters and `Path<T>` — a tuple of `N` needs at
+  least `N`, a single type exactly one. Reading fewer is fine.
+* `Option<T>` and `Result<T, Error>` opt out.
+* Checked: `map_*` of the app and of a group, `map_ws`, `map_msg`,
+  `map_fallback`, a group's fallback against its prefix. Not checked:
+  `NamedPath<T>`, middleware.
+* A `FromPathArgs` type of your own states what it reads in
+  `const ARITY: RangeInclusive<usize>`; the default takes any number.
+
+### 29. `Dc<T>` is read-only, and every `Dc<T>` must be registered
+
+`Dc<T>` derefs to `&T` only since 0.14.0 — a singleton is shared by every
+request, a scoped service by its request, so `DerefMut` used to change a
+private copy nobody else saw. State that changes lives behind a `Mutex`,
+an `RwLock` or an atomic inside `T`; `Dc::cloned()` gives a private copy.
+
+`App::run()` also returns `Err` when a handler or middleware takes `Dc<T>`
+of a `T` nobody registered (`` `T` is not registered, and is resolved by
+`GET /x` ``). `Option<Dc<T>>` opts out; `Result<Dc<T>, Error>` does not.
+`wrap`, `attach` and `HttpContext::resolve` resolve at run time and are not
+checked.
+
+```rust
+use volga::{di::Dc, ok};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+#[derive(Default)]
+struct Counter { hits: AtomicU64 }
+
+struct Metrics;
+
+app.add_singleton(Counter::default());
+
+app.map_post("/hit", |counter: Dc<Counter>| async move {
+    // `counter.hits += 1` through `Dc` no longer compiles (E0594)
+    counter.hits.fetch_add(1, Ordering::Relaxed);
+    ok!()
+});
+
+// starts whether `Metrics` is registered or not
+app.map_get("/metrics", |metrics: Option<Dc<Metrics>>| async move {
+    ok!(metrics.is_some())
+});
+```
+
 ## Checklist before handing code back
 
 - [ ] Every custom-header array is preceded by `;`, not `,`
@@ -598,4 +674,8 @@ App::new().with_bearer_auth(|auth| auth
 - [ ] `with_issuer` is the `iss` tokens carry, never an internal URL; an unreachable issuer gets `with_jwks_uri`, and an `http://` one `require_https(false)`
 - [ ] A static RSA / EC / Ed25519 key comes with `with_alg` of its family; the algorithm `encode` should sign with is named first, and `HS256` is named explicitly if it must still be accepted
 - [ ] `with_iss` is set only where every token that must pass carries `iss`
+- [ ] Every path parameter a handler reads is declared by its route or group prefix; an optional one is `Option<T>`
+- [ ] Nothing writes through `Dc<T>` — changing state is behind a `Mutex` / `RwLock` / atomic inside the service
+- [ ] Every `Dc<T>` a handler or middleware takes is registered, or taken as `Option<Dc<T>>`
+- [ ] Nothing matches on the text of a `413` or of a filter's `400` — match on the status
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean

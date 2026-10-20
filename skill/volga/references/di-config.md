@@ -46,6 +46,36 @@ Hold a `std::sync::Mutex` across an `.await` and the future stops being
 awaiting (as above, by cloning out of the map) or use
 `tokio::sync::Mutex`.
 
+### Changing a dependency: `Dc<T>` is `&T` (0.14.0)
+
+`Dc<T>` is a handle on a shared instance — a singleton is shared by every
+request, a scoped service by everything resolving it in one request — and
+derefs to `&T` only. State that handlers change lives inside `T`, behind a
+`Mutex` / `RwLock` (reads outnumber writes) / atomic, changed through
+`&self`. `T` needs no `Arc` of its own for that unless it is `Clone` and
+also resolved by value (`Container::resolve`, `Dc::cloned()`, a field of
+another service) — which is why `Cache` above keeps one.
+
+```rust
+use volga::{di::Dc, ok};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+#[derive(Default)]
+struct Stats { hits: AtomicU64 }
+
+app.add_singleton(Stats::default());
+app.map_post("/hit", |stats: Dc<Stats>| async move {
+    stats.hits.fetch_add(1, Ordering::Relaxed);
+    ok!()
+});
+```
+
+Before 0.14.0 `Dc<T>` had `DerefMut` through `Arc::make_mut`, so a write
+(`stats.count += 1`) cloned the instance and changed a copy no other
+request saw. It is E0594 / E0596 now. `Dc::cloned()` gives a private copy
+where that is what the handler means; a clone of the `Dc<T>` itself is
+another handle on the same instance, for any `T`.
+
 ### Scoped and transient
 
 `add_scoped::<T>()` needs `T: Inject`, which is where a service declares its
@@ -113,6 +143,28 @@ cycle reached while resolving panics naming the path, `A -> B -> A`, where it
 used to deadlock the worker thread (scoped) or overflow the stack and abort
 the process (transient).
 
+**Handlers and middleware are checked too (0.14.0).** `App::run()` returns
+`Err` when a handler, `map_ws` / `map_msg`, `map_err`, `map_fallback` (app
+or group), or `with` / `filter` / `map_ok` / `map_err` / `tap_req` (app,
+group, route) takes `Dc<T>` of a `T` nobody registered — or signed /
+private cookies without their key:
+
+```text
+dependency injection: `app::Db` is not registered, and is resolved by `GET /users/{id}`, `with` on group `/api`. Register a service with ...
+```
+
+* Only what can still run is checked — not a route mapped again, a
+  replaced `map_err` / fallback, or group middleware attached to no route.
+* `Option<Dc<T>>` opts out (it is `None` when nothing is registered);
+  `Result<Dc<T>, Error>` does not.
+* Not checked: `wrap`, `attach`, `HttpContext::resolve`, the `Container`
+  — a missing service there still fails the request.
+* An extractor of your own declares what it resolves through
+  `dependencies(deps: &mut Dependencies)` on `FromContainer`,
+  `FromRequestRef` or `FromRequestParts` (default: nothing). Outside an
+  `App`, `ContainerBuilder::require(consumer, |deps| ..)` declares a
+  consumer, and `validate()` reports `Issue::Unregistered`.
+
 `ContainerBuilder::validate()` runs the same check on a container built
 outside an `App`:
 
@@ -144,6 +196,7 @@ app.wrap(|ctx: HttpContext, next: NextFn| async move {
 });
 ```
 
+`with` is part of the startup check; what `wrap` resolves is not.
 `Dc<T>` also works in WebSocket handlers at every layer — see
 `realtime.md`.
 

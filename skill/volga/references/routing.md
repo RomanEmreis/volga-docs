@@ -217,12 +217,18 @@ addresses, `PathBuf` and, with the `uuid` feature (in `full`, 0.13.0+),
 `uuid::Uuid`. A value that fails to parse answers `400` before the handler
 runs.
 
+* **A handler reads only what its route declares** (0.14.0). Reading more
+  positional parameters than the route (with its group prefix) declares
+  **panics where it is mapped**, naming the route — `map_get("/sum", |x: i32,
+  y: i32| ..)` is one; declare `/sum/{x}/{y}` or use `Query<T>`. Before
+  0.14.0 such a route answered `500` on every request. `Option<T>` and
+  `Result<T, Error>` opt out — an extra `Option<T>` reads `None` — and
+  reading fewer is fine. `NamedPath<T>` and middleware are not checked.
 * **`Path<T>` of a single type reads exactly one parameter** (0.13.0+). On a
-  route declaring two, `Path<u32>` answers `500` rather than take the first —
-  `Path<OrderId>` on `/users/{user_id}/orders/{order_id}` would read the
-  user's id. Use a tuple or `NamedPath<T>` there.
-* A handler reading more positional parameters than its route declares
-  answers `500`; an extra `Option<T>` reads `None`.
+  route declaring two, mapping `Path<u32>` panics (0.14.0; a `500` before)
+  rather than take the first — `Path<OrderId>` on
+  `/users/{user_id}/orders/{order_id}` would read the user's id. Use a
+  tuple or `NamedPath<T>` there. A tuple of `N` needs at least `N`.
 * `Path<SomeStruct>` does not compile — a struct goes into `NamedPath<T>`,
   and the error says so.
 
@@ -260,8 +266,11 @@ parameter validates as `Valid<Path<T>>` (see `references/validation.md`).
 
 `FromPathArgs` (what `Path<T>` reads its `T` through) is implementable too:
 `PathArgs::iter()` yields the parameters in pattern order, with `len()` /
-`is_empty()`. Answer `500` when the route does not declare what the type
-reads — that is a code mistake, not a bad request. A `FromPathArgs` type is
+`is_empty()`. State what it reads in `const ARITY: RangeInclusive<usize>`
+(0.14.0; default: any number) and mapping it on a route that declares
+another number panics. Still answer `500` from `from_path_args` when the
+count is wrong — middleware is not checked — since that is a code mistake,
+not a bad request. A `FromPathArgs` type is
 read **only** through `Path<T>` (`|Path(range): Path<Range>|`); unlike a
 `FromPathArg` type it is not a handler argument of its own, and
 `|range: Range|` fails with "not an extractor".
@@ -538,6 +547,12 @@ app.map_post("/proxy", |body: volga::HttpBody| async move {
   chunked body fails once it has sent more than fits. A refused body
   yields one error, then ends. A handler that never reads the body is not
   affected.
+* The message is `request body is larger than the limit` whichever reader
+  it is (0.14.0) — no `JSON parsing error:` / `Form Data parsing error:`
+  in front; other read failures pass through unprefixed too, and only a
+  body that does not deserialize is a parsing error. The limit is not in
+  the message: read `HttpRequest::body_limit()` if the client should hear
+  it. Match on the `413`, not the text.
 * Only lift the limit on a route that counts the bytes itself — never on
   one that collects the body into memory.
 

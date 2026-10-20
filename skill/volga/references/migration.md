@@ -7,6 +7,7 @@ is rejected for no obvious reason, look here before rewriting anything.
 
 | Error | Cause | Fix |
 |---|---|---|
+| `cannot assign to data in dereference of Dc<T>` (E0594), or `cannot borrow data in dereference of Dc<T> as mutable` (E0596) | 0.14.0: `Dc<T>` has no `DerefMut` — a write through it changed a private copy | interior mutability inside `T` (`Mutex` / `RwLock` / atomic), changed through `&self`; `Dc::cloned()` for a private copy |
 | `argument never used` on an `ok!` / `status!` call | headers passed after a comma | use `;` before the header array |
 | `` `Path<X>` is not an extractor `` with a note that `Path<T>` reads by position | `X` is a struct; `Path<T>` takes a tuple or one `FromPathArg` type | `NamedPath<X>` with `Deserialize`, or a tuple |
 | `` `X` is not an extractor `` with `` the trait `FromPathArg` is not implemented for `X` `` | 0.13.0: a type of your own is a path parameter only through `FromPathArg` (implementing `FromStr` is not enough) | `impl FromPathArg for X { fn from_path_arg(arg: &PathArg) -> Result<Self, Error> { arg.parse().map(X) } }`, or wrap it in `Json` / `Query` / `NamedPath` |
@@ -49,6 +50,13 @@ is rejected for no obvious reason, look here before rewriting anything.
 
 | Symptom | Cause |
 |---|---|
+| `run()` returns `Err` with `` `T` is not registered, and is resolved by `GET /..` `` | 0.14.0: what handlers and middleware take is checked at startup; the route answered `500` before. Register `T`, or take `Option<Dc<T>>` where it is optional. Signed / private cookies need their key |
+| panic at mapping: `` `GET /x`: the handler reads N path parameters, but the route declares M `` | 0.14.0: such a route answered `500` on every request. Declare the parameters (in the route or the group prefix), read them with `Query<T>`, or take `Option<T>` |
+| panic at mapping: `` the handler reads 1 path parameter through `Path<T>`, but the route declares 2 `` | 0.14.0: `Path<T>` of a single type on a route with several. A tuple, or `NamedPath<T>` |
+| a handler taking `HttpRequest` sees path parameters, or `map_msg("/ws/{room}", \|msg: String, room: String\| ..)` starts working | 0.14.0: they used to be taken out of the request even when nothing read them. Expected |
+| a filter's `false` answers `Request rejected by filter` | 0.14.0: was `Validation: One or more request parameters are incorrect`. Match on the `400`, not the text |
+| a body over the limit answers `request body is larger than the limit` | 0.14.0: was `length limit exceeded`, behind `JSON parsing error:` / `Form Data parsing error:` / `File Stream error:`, or `Multipart error: failed to read stream`. Match on the `413` |
+| panic at mapping: `` CORS policy "x" is not configured `` | `cors_with("x")` without a policy named `x` in `with_cors`. It said `cors policy` before 0.14.0 |
 | every request to a protected route answers `400`, but works locally | `require_https` defaults to on; a proxy terminates TLS. `require_https(false)` |
 | a handler cannot read `Authorization` after auth succeeded | `strip_token_from_request` defaults to on |
 | valid-looking tokens rejected as missing a claim | `with_aud` made `aud` required. `without_strict_aud()` |
@@ -76,7 +84,7 @@ is rejected for no obvious reason, look here before rewriting anything.
 | `415` on a request | `Content-Encoding` names an algorithm whose feature is off |
 | the server listens on every interface | that is `App::new()`'s default off Windows. `bind` explicitly |
 | the process hangs or panics on start | `run_blocking()` called inside a Tokio runtime |
-| everything under `/api` answers `400` after adding a filter | a `filter` returning `false` refuses with `400`; return `Err((StatusCode::.., ".."))` for another status |
+| everything under `/api` answers `400` after adding a filter | a `filter` returning `false` refuses with `400` (`Request rejected by filter` since 0.14.0); return `Err((StatusCode::.., ".."))` for another status |
 | a route that answered `200` now answers `401` / `403` / `429` | 0.10.0: its group's `authorize` / `token_bucket` was registered *after* it and used to be skipped; a group is now a scope |
 | a `HEAD` health check that answered `200` now answers `401` / `403` | 0.10.0: `HEAD` travels through the `GET` route's middleware instead of a second bare route |
 | an unknown path answers `401` instead of `404` | 0.10.0: global short-circuiting middleware (`filter`, `authorize`, an early-returning `with`) now runs for unmatched requests |
@@ -111,8 +119,8 @@ is rejected for no obvious reason, look here before rewriting anything.
 | a request that reached a handler now answers `400` before routing | 0.13.0: its path carries a malformed escape (`%zz`, trailing `%2`) or non-UTF-8 (`%FF`); `String` / `Path<T>` used to accept it. It goes through `map_err` |
 | `GET /users/a%2Fb` binds `"a/b"` where it used to bind `"a%2Fb"` | 0.13.0: positional extractors read the decoded value; `%2F` still never splits a segment |
 | a literal route with a space or non-ASCII (`/café`) starts answering | 0.13.0: literals are matched against the decoded path. Expected |
-| `500` with `` `Path<T>` of a single type reads one path parameter `` | `Path<u32>` on a route declaring two or none. Use a tuple or `NamedPath<T>` |
-| `500` with `the handler reads more path parameters than the route declares` | more positional arguments than the pattern has `{..}` segments. Fix the pattern or the signature |
+| `500` with `` `Path<T>` of a single type reads one path parameter `` | `Path<u32>` on a route declaring two or none — in middleware, or in a handler before 0.14.0 (a panic at mapping since). Use a tuple or `NamedPath<T>` |
+| `500` with `the handler reads more path parameters than the route declares` | more positional arguments than the pattern has `{..}` segments — before 0.14.0; since, mapping it panics. Fix the pattern or the signature |
 | a static file under `/st%61tic/..` or `//static/..` is now served | 0.13.0: a mount matches its prefix against decoded segments, as the router does |
 | a body over the limit answers `413` where tests expected `400` | 0.13.1: `413 Content Too Large`, through `Json` / `Form` / `File` / `Multipart` / raw reads and decompression limits alike, same message. Update the assertion |
 | a handler that read only the start of a large upload now gets `413` | 0.13.1: a `Content-Length` over the limit fails the first read, before any byte. Raise the limit on that route with `.with_body_limit(..)` |
@@ -123,6 +131,43 @@ is rejected for no obvious reason, look here before rewriting anything.
 | a debug build warns `OpenAPI: ... is described as ...` at startup, or the spec shows another route's parameter name | 0.11.2: routes naming one position differently share one templated path. Name the parameters alike |
 
 ## Version-by-version
+
+### 0.14.0 — `Dc<T>` read-only, services and path parameters checked at startup
+**Breaking.** One compile error; two checks stop an app that used to answer
+`500` on some routes.
+
+* **`Dc<T>` has no `DerefMut`.** It used `Arc::make_mut`: the container
+  holds a handle on every singleton, and on a scoped service until its
+  request ends, so a write cloned the instance and no other request saw
+  it. A write is E0594 / E0596 now. State goes behind interior mutability
+  in `T`; `Dc::cloned()` gives a private copy. `Dc<T>` is `Clone` for
+  every `T`.
+* **`App::run` returns `Err` for an unregistered `Dc<T>`** taken by a
+  handler, `map_ws` / `map_msg`, `map_err`, `map_fallback` (app or group),
+  or `with` / `filter` / `map_ok` / `map_err` / `tap_req` (app, group,
+  route); signed / private cookies without their key too. Only what can
+  still run is checked. `Option<Dc<T>>` opts out, `Result<Dc<T>, Error>`
+  does not. Not checked: `wrap`, `attach`, `HttpContext::resolve`, the
+  `Container`. An extractor of your own declares through `dependencies` on
+  `FromRequestRef` / `FromRequestParts` / `FromContainer`; `volga-di` adds
+  `ContainerBuilder::require` and `Issue::Unregistered`.
+* **Mapping a handler that reads more path parameters than its route
+  declares panics**, naming the route; it answered `500` on every request.
+  Counted: positional parameters and `Path<T>` (a tuple of `N` needs at
+  least `N`, a single type exactly one). `Option<T>` / `Result<T, Error>`
+  opt out; reading fewer is fine. Checked: `map_*` of the app and of a
+  group (the prefix counts), `map_ws`, `map_msg`, `map_fallback`, a group's
+  fallback. Not checked: `NamedPath<T>`, middleware.
+  `FromPathArgs::ARITY` (default: any number) states what a type of your
+  own reads.
+* A handler taking `HttpRequest` sees its route's path parameters
+  (`path_args()`, `extract::<Path<T>>()`), and `map_ws` / `map_msg` hand
+  them to their handler.
+* Same statuses, new messages: a filter's `false` →
+  `Request rejected by filter`; a body over the limit →
+  `request body is larger than the limit` through every reader, with no
+  parsing prefix — other read failures pass through as they are too;
+  `cors_with` with an unknown name panics naming the policy, at the call.
 
 ### 0.13.3 — `with_alg` replaces `HS256`, keys checked at startup, `iss` required
 No API break. What differs at runtime, all in bearer auth; issuer-based

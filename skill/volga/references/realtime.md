@@ -17,6 +17,9 @@ app.map_msg("/ws", |msg: String| async move {
 
 // synchronous, when there is nothing to await (0.11.0+)
 app.map_msg("/ws-sync", |msg: String| format!("echo: {msg}"));
+
+// arguments after the message read the upgrade request, path included (0.14.0+)
+app.map_msg("/ws/{room}", |msg: String, room: String| format!("[{room}] {msg}"));
 ```
 
 `Json<T>` works as the message and as the reply. It is parsed from a text
