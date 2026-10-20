@@ -80,12 +80,41 @@ async fn main() -> std::io::Result<()> {
 ```
 
 ::: warning `Path<T>` of a single type reads exactly one parameter
-`Path<u32>` on a route that declares two parameters answers `500`: it never picks the first of several, so a `Path<OrderId>` on `/users/{user_id}/orders/{order_id}` cannot read the user's id as the order's. Read such a route as a tuple, `Path<(u64, OrderId)>`, or by name with [`NamedPath<T>`](#using-namedpath-t).
-
-Plain arguments follow the same rule: a handler taking more positional parameters than its route declares answers `500`, and an extra `Option<T>` reads `None`.
+`Path<u32>` on a route that declares two parameters is refused where it is mapped: it never picks the first of several, so a `Path<OrderId>` on `/users/{user_id}/orders/{order_id}` cannot read the user's id as the order's. Read such a route as a tuple, `Path<(u64, OrderId)>`, or by name with [`NamedPath<T>`](#using-namedpath-t).
 :::
 
 A struct with named fields is not a `Path<T>` — it goes into `NamedPath<T>`, and the compile error for `Path<MyStruct>` says so.
+
+## A Handler Reads Only What Its Route Declares
+
+A positional parameter takes the next parameter its route declares, so a handler that reads more than the route has could never succeed. It used to compile, start, and answer `500` on every request. Since **0.14.0** the count is checked where the handler is mapped, and `map_*` panics naming the route:
+
+```rust
+app.map_get("/sum", |x: i32, y: i32| ok!(x + y)); // panics
+```
+
+```text
+`GET /sum`: the handler reads 2 path parameters, but the route declares 0, so it would fail every request that reaches it. A request cannot supply a path parameter that is not declared: declare it, read the value from somewhere else - the query string, through `Query<T>` - or take one that may be missing as `Option<T>`.
+```
+
+Declare the parameters, `/sum/{x}/{y}`, or read the values from the query string with [`Query<T>`](/volga-docs/en/getting-started/query-params.html).
+
+* **Counted:** positional parameters, each taking the next one, and `Path<T>` — a tuple of `N` needs at least `N` parameters, a single type exactly one.
+* **A handler may read fewer:** `|id: u32|` on `/users/{id}/{*rest}` reads `id`, and `Path<(T,)>` reads the first of any number.
+* **`Option<T>` and `Result<T, Error>` take any number** — they read `None` or an `Err` where no parameter is left — so one handler can serve a route with an optional segment:
+
+```rust compile-fragment
+let posts = |page: Option<u32>| ok!("{page:?}");
+app.map_get("/posts", posts);        // None
+app.map_get("/posts/{page}", posts); // Some(3)
+```
+
+* **Checked:** `map_*` of the app and of a [route group](/volga-docs/en/getting-started/route-groups.html), whose prefix declares parameters as a route does, `map_ws()`, `map_msg()`, `map_fallback()`, and a group's fallback against its prefix.
+* **Not checked:** `NamedPath<T>`, which reads by name, and middleware — a `Path<T>` in `with()` runs for every route of its scope.
+
+::: warning Upgrading from 0.13
+A service whose handler reads a parameter its route does not declare now panics at startup, where it used to answer `500` on that route only. Start it, or run its tests, once after upgrading: the panic names the route.
+:::
 
 ## Parameters of Your Own Types
 Since **0.13.0** any type becomes a path parameter by implementing [`FromPathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArg.html). [`PathArg::parse`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArg.html#method.parse) reads the value through `FromStr` and answers `400` if it does not parse, so a newtype takes one line:
@@ -159,7 +188,7 @@ A single parameter of your own type can be [validated](/volga-docs/en/requests-r
 The `uuid` feature, part of `full`, makes [`uuid::Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html) a path parameter. volga does not re-export the type, so add the `uuid` crate as well:
 ```toml
 [dependencies]
-volga = { version = "0.13", features = ["uuid"] }
+volga = { version = "0.14", features = ["uuid"] }
 uuid = "1"
 ```
 ```rust compile
@@ -186,6 +215,7 @@ A value that is not a UUID answers `400` before the handler runs.
 ### Reading every parameter at once
 `Path<T>` reads its `T` through [`FromPathArgs`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArgs.html), and [`PathArgs`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArgs.html) iterates the parameters in the order the route declares them, so a type can take several at once:
 ```rust compile
+use std::ops::RangeInclusive;
 use volga::{App, Path, error::Error, ok};
 use volga::http::endpoints::args::{FromPathArgs, PathArgs};
 
@@ -195,6 +225,9 @@ struct Range {
 }
 
 impl FromPathArgs for Range {
+    // Mapped on a route declaring anything but two, it panics
+    const ARITY: RangeInclusive<usize> = 2..=2;
+
     fn from_path_args(args: &PathArgs) -> Result<Self, Error> {
         let mut args = args.iter();
         match (args.next(), args.next(), args.next()) {
@@ -216,7 +249,7 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-A route that does not declare what the type reads is a mistake in the code, not in the request — which is why the example answers `500` for it, as `Path<T>` of a single type does.
+Since **0.14.0** [`ARITY`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArgs.html#associatedconstant.ARITY) says how many parameters the type reads, and [mapping it](#a-handler-reads-only-what-its-route-declares) on a route that declares another number panics, as it does for a built-in type. The default takes any number and checks nothing. The check inside `from_path_args` stays for a `Path<Range>` in middleware, which is not checked: a route that does not declare what the type reads is a mistake in the code, not in the request, so it answers `500`.
 
 Such a type is always read through `Path<T>`: unlike a `FromPathArg` type, it is not a handler argument of its own, so `|range: Range|` does not compile — write `|Path(range): Path<Range>|`.
 

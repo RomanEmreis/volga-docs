@@ -44,6 +44,12 @@ A message handler with nothing to await can also return its reply directly, sinc
 app.map_msg("/ws", |msg: String| format!("echo: {msg}"));
 ```
 
+The arguments after the message read the request that opened the connection, path parameters included — since **0.14.0**, when `map_ws` and `map_msg` started handing their handler the parameters of its route:
+
+```rust compile-fragment
+app.map_msg("/ws/{room}", |msg: String, room: String| format!("[{room}] {msg}"));
+```
+
 ### JSON Messages
 
 A message handler can take and return [`Json<T>`](https://docs.rs/volga/latest/volga/struct.Json.html). A `Json<T>` is received from a text or a binary frame, and is sent as a **text** frame — the reply of a `map_msg` handler as well as [`WebSocket::send`](https://docs.rs/volga/latest/volga/ws/websocket/struct.WebSocket.html) and `WsSink::send` — so a browser client reads it from `event.data` as a string and passes it to `JSON.parse`:

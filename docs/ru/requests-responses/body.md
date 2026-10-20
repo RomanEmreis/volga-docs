@@ -99,6 +99,8 @@ async fn main() -> std::io::Result<()> {
 
 У каждого тела запроса есть ограничение — 5 МБ, если не задано другое. На тело больше него Волга отвечает [`413 Content Too Large`](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/413), каким бы способом обработчик его ни читал: [`Json<T>`](/volga-docs/ru/requests-responses/json-payload.html), [`Form<T>`](/volga-docs/ru/requests-responses/form.html), [`File`](/volga-docs/ru/requests-responses/files.html), [`Multipart`](/volga-docs/ru/requests-responses/files.html#загрузка-нескольких-фаилов), `HttpBody` или поток.
 
+Начиная с **0.14.0** и сообщение одно и то же, каким бы ни был способ чтения, — `request body is larger than the limit`, — и в таком виде оно доходит до [`map_err()`](/volga-docs/ru/reliability-observability/errors.html) и клиента. `Json<T>` и `Form<T>` больше не ставят перед ним `JSON parsing error` или `Form Data parsing error`: тело, отклонённое из-за размера, часто ещё до того, как прочитан хоть байт, никто не разбирал. То же относится к любой другой ошибке чтения тела, а тело, которое не десериализуется, по-прежнему даёт ошибку разбора. Самого ограничения в сообщении нет; его сообщает [`HttpRequest::body_limit()`](#для-группы-и-для-маршрута) — для обработчика или `map_err()`, которые хотят сказать о нём клиенту.
+
 Ограничение для всего приложения задаётся через [`with_body_limit()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_body_limit) или ключом `body_limit_bytes` секции `[server]` в [файле конфигурации](/volga-docs/ru/middleware-infrastructure/config-files.html#встроенные-секции):
 
 ```rust compile

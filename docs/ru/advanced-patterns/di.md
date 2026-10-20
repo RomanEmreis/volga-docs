@@ -156,6 +156,61 @@ app.add_scoped_default::<InMemoryCache>();
 
 Поведение аналогично **Scoped**, с ключевым отличием: **новый экземпляр создаётся для каждого внедрения**, а не один раз для каждого запроса или области действия. Transient, полученный через [`Container::resolve`](https://docs.rs/volga/latest/volga/di/struct.Container.html#method.resolve), перемещается из контейнера, а не клонируется, — это стоит держать в голове для типа, у которого `Clone` или `Drop` имеет побочные эффекты.
 
+## Изменение зависимости
+
+[`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) — это ссылка на экземпляр, который контейнер разделяет между потребителями, поэтому он даёт `&T` и никогда `&mut T`. **Singleton** разделяют все запросы, которые обслуживает приложение, а **Scoped** — всё, что резолвит его в течение одного запроса, обработчик и его middleware в том числе. Состояние, которое меняют обработчики, живёт внутри `T` за внутренней изменяемостью (interior mutability), и методы `T` меняют его через `&self`:
+
+```rust compile
+use volga::{App, di::Dc, ok};
+use std::{
+    collections::HashMap,
+    sync::{RwLock, atomic::{AtomicU64, Ordering}},
+};
+
+#[derive(Default)]
+struct Users {
+    names: RwLock<HashMap<String, String>>,
+    writes: AtomicU64,
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+    app.add_singleton(Users::default());
+
+    app.map_put("/user/{id}/{name}", |id: String, name: String, users: Dc<Users>| async move {
+        users.names.write().unwrap().insert(id, name);
+        users.writes.fetch_add(1, Ordering::Relaxed);
+        ok!()
+    });
+
+    app.map_get("/user/writes", |users: Dc<Users>| async move {
+        ok!(users.writes.load(Ordering::Relaxed))
+    });
+
+    app.run().await
+}
+```
+
+* [`Mutex`](https://doc.rust-lang.org/std/sync/struct.Mutex.html) или [`RwLock`](https://doc.rust-lang.org/std/sync/struct.RwLock.html) вокруг данных — `RwLock`, если чтений больше, чем записей.
+* Атомик, например [`AtomicU64`](https://doc.rust-lang.org/std/sync/atomic/struct.AtomicU64.html), для счётчика или флага.
+* [`tokio::sync::Mutex`](https://docs.rs/tokio/latest/tokio/sync/struct.Mutex.html) — только если guard удерживается через `.await`; guard из `std::sync` отпускается до него.
+
+Собственный `Arc` вокруг этого состояния `T` не нужен: контейнер и так разделяет экземпляр. Он нужен, когда `T` реализует `Clone` и резолвится ещё и по значению — через [`Container::resolve`](https://docs.rs/volga/latest/volga/di/struct.Container.html#method.resolve), [`Dc::cloned()`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html#method.cloned) или в поле другого сервиса, — чтобы каждый клон видел одно и то же состояние. Поэтому `Clone`-кэши выше держат `Arc<Mutex<..>>`.
+
+Обработчик, которому нужна собственная копия для изменений, берёт `Dc::cloned()`; зарегистрированный экземпляр остаётся прежним. Клон самого `Dc<T>` — это ещё одна ссылка на тот же экземпляр, и он доступен для любого `T`.
+
+::: warning При переходе с 0.13
+До 0.14.0 `Dc<T>` реализовывал `DerefMut`, и запись через него — `counter.hits += 1` — меняла приватную копию: контейнер держит ссылку на каждый singleton, а на scoped-сервис — до конца его запроса, поэтому первая запись клонировала значение. Другие запросы этого изменения не видели. Теперь такая запись не компилируется:
+
+```text
+error[E0594]: cannot assign to data in dereference of `Dc<Counter>`
+  = help: trait `DerefMut` is required to modify through a dereference, but it is not implemented for `Dc<Counter>`
+```
+
+Перенесите состояние внутрь сервиса за `Mutex`, `RwLock` или атомик либо возьмите `Dc::cloned()` там, где обработчику и нужна была приватная копия.
+:::
+
 ## Граф проверяется при старте
 
 [`App::run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) проверяет граф зависимостей до того, как что-либо запустить, и возвращает `Err`, перечисляя сразу все найденные проблемы, а не первую из них:
@@ -217,9 +272,50 @@ fn main() {
 }
 ```
 
+### Что принимают обработчики и middleware
+
+Начиная с **0.14.0** проверка охватывает и то, что принимают обработчики и middleware. Маршрут, обработчик которого принимает `Dc<T>` для `T`, который никто не зарегистрировал, раньше стартовал и отвечал `500` на каждый запрос. Теперь `App::run()` не запускается и называет тип и всё, что его принимает:
+
+```text
+dependency injection: `myapp::Db` is not registered, and is resolved by `GET /users/{id}`, `with` on group `/api`. Register a service with `add_singleton`, `add_scoped` or `add_transient` (or their `_factory` and `_default` forms), or take `Option<Dc<T>>` where it is optional
+```
+
+* **Проверяются:** обработчики маршрутов, [`map_ws()`](/volga-docs/ru/protocols-realtime/ws.html) и `map_msg()`, `map_err()`, `map_fallback()` приложения и группы, а также `with()`, `filter()`, `map_ok()`, `map_err()` и `tap_req()` приложения, группы или маршрута. Подписанные и приватные cookies считаются принимающими свой ключ.
+* **Проверяется только то, что ещё может выполниться:** маршрут, замапленный повторно, `map_err()` или fallback, заменённые более поздним вызовом или `use_problem_details()`, и middleware группы, не привязанный ни к одному маршруту, не учитываются.
+* **`Option<Dc<T>>` выводит из проверки.** Он говорит, что сервис необязателен, и равен `None`, если ничего не зарегистрировано. `Result<Dc<T>, Error>` — нет: он лишь передаёт ошибку обработчику.
+* **Не проверяются:** сервисы, которые резолвятся во время выполнения, — через `wrap()`, `Middleware`, переданный в `attach()`, [`HttpContext::resolve()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) или сам `Container`. Отсутствующий сервис там по-прежнему роняет запрос.
+
+```rust compile
+use volga::{App, di::Dc, ok};
+
+struct Metrics;
+
+impl Metrics {
+    fn record(&self, _route: &str) {}
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // Стартует, зарегистрирован `Metrics` или нет
+    app.map_get("/", |metrics: Option<Dc<Metrics>>| async move {
+        if let Some(metrics) = metrics {
+            metrics.record("/");
+        }
+        ok!()
+    });
+
+    app.run().await
+}
+```
+
+Собственный экстрактор, который резолвит из контейнера, участвует в проверке так же, как сервис: у [`FromContainer`](https://docs.rs/volga/latest/volga/di/trait.FromContainer.html), [`FromRequestRef`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestRef.html) и [`FromRequestParts`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestParts.html) есть метод `dependencies()`, который декларирует, что он резолвит, а по умолчанию не декларирует ничего.
+
 ## Использование DI в middleware
 Чтобы внедрить зависимость в middleware, в случае использования [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) можно воспользоваться структурой [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) аналогично использованию в обработчиках запросов. Для [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) используйте метод [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve), либо [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) структуры [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
 Основное различие между ними заключается в том, что первый метод требует реализации типажа [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) для `T`, тогда как последний просто возвращает [`Arc<T>`](https://doc.rust-lang.org/std/sync/struct.Arc.html).
+`Dc<T>`, принятый в `with()`, входит в [стартовую проверку](#что-принимают-обработчики-и-middleware); то, что `wrap()` резолвит во время выполнения, — нет.
 
 ```rust
 // Пример .wrap()

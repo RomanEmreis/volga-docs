@@ -156,6 +156,61 @@ A **Transient** dependency creates a **new instance every time it is resolved**,
 
 The behavior is similar to **Scoped**, with the key difference that **a new instance is created for every injection**, not once per request or scope. A transient resolved through [`Container::resolve`](https://docs.rs/volga/latest/volga/di/struct.Container.html#method.resolve) is moved out of the container rather than cloned, which is worth knowing for a type whose `Clone` or `Drop` has side effects.
 
+## Changing a Dependency
+
+A [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) is a handle on an instance the container shares, so it gives `&T` and never `&mut T`. A **singleton** is shared by every request the app serves, and a **scoped** service by everything that resolves it during one request — the handler and its middleware alike. State that handlers change lives inside `T`, behind interior mutability, and `T`'s methods change it through `&self`:
+
+```rust compile
+use volga::{App, di::Dc, ok};
+use std::{
+    collections::HashMap,
+    sync::{RwLock, atomic::{AtomicU64, Ordering}},
+};
+
+#[derive(Default)]
+struct Users {
+    names: RwLock<HashMap<String, String>>,
+    writes: AtomicU64,
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+    app.add_singleton(Users::default());
+
+    app.map_put("/user/{id}/{name}", |id: String, name: String, users: Dc<Users>| async move {
+        users.names.write().unwrap().insert(id, name);
+        users.writes.fetch_add(1, Ordering::Relaxed);
+        ok!()
+    });
+
+    app.map_get("/user/writes", |users: Dc<Users>| async move {
+        ok!(users.writes.load(Ordering::Relaxed))
+    });
+
+    app.run().await
+}
+```
+
+* A [`Mutex`](https://doc.rust-lang.org/std/sync/struct.Mutex.html) or an [`RwLock`](https://doc.rust-lang.org/std/sync/struct.RwLock.html) around the data — an `RwLock` where reads outnumber writes.
+* An atomic, such as [`AtomicU64`](https://doc.rust-lang.org/std/sync/atomic/struct.AtomicU64.html), for a counter or a flag.
+* A [`tokio::sync::Mutex`](https://docs.rs/tokio/latest/tokio/sync/struct.Mutex.html) only where the guard is held across an `.await`; a `std::sync` guard is dropped before one.
+
+`T` needs no `Arc` of its own around that state, since the container already shares the instance. It does when `T` is `Clone` and is also resolved by value — by [`Container::resolve`](https://docs.rs/volga/latest/volga/di/struct.Container.html#method.resolve), [`Dc::cloned()`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html#method.cloned) or into a field of another service — so that every clone reaches the same state. That is why the `Clone` caches above keep an `Arc<Mutex<..>>`.
+
+A handler that wants a copy of its own to change takes `Dc::cloned()`; the registered instance stays as it was. A clone of the `Dc<T>` itself is another handle on the same instance, and is available for every `T`.
+
+::: warning Upgrading from 0.13
+Before 0.14.0, `Dc<T>` implemented `DerefMut`, and a write through it — `counter.hits += 1` — changed a private copy: the container holds a handle on every singleton, and on a scoped service until its request ends, so the first write cloned the value. No other request saw it. Such a write no longer compiles:
+
+```text
+error[E0594]: cannot assign to data in dereference of `Dc<Counter>`
+  = help: trait `DerefMut` is required to modify through a dereference, but it is not implemented for `Dc<Counter>`
+```
+
+Move the state behind a `Mutex`, an `RwLock` or an atomic inside the service, or take `Dc::cloned()` where a private copy is what the handler meant.
+:::
+
 ## The Graph Is Checked at Startup
 
 [`App::run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) checks the dependency graph before it starts anything, and returns an `Err` naming every problem at once rather than the first one:
@@ -217,9 +272,50 @@ fn main() {
 }
 ```
 
+### What Handlers and Middleware Take
+
+Since **0.14.0** the check covers what handlers and middleware take as well. A route whose handler takes `Dc<T>` of a `T` nobody registered used to start and answer `500` on every request to it. Now `App::run()` does not start, and names the type and everything that takes it:
+
+```text
+dependency injection: `myapp::Db` is not registered, and is resolved by `GET /users/{id}`, `with` on group `/api`. Register a service with `add_singleton`, `add_scoped` or `add_transient` (or their `_factory` and `_default` forms), or take `Option<Dc<T>>` where it is optional
+```
+
+* **Checked:** route handlers, [`map_ws()`](/volga-docs/en/protocols-realtime/ws.html) and `map_msg()`, `map_err()`, `map_fallback()` of the app and of a group, and `with()`, `filter()`, `map_ok()`, `map_err()` and `tap_req()` of the app, a group or a route. Signed and private cookies count as taking their key.
+* **Only what can still run is checked:** a route mapped again, a `map_err()` or a fallback replaced by a later call or by `use_problem_details()`, and group middleware attached to no route are left out.
+* **`Option<Dc<T>>` opts out.** It says the service is optional, and is `None` when nothing is registered. `Result<Dc<T>, Error>` does not: it only hands the failure to the handler.
+* **Not checked:** services resolved at run time — through `wrap()`, a `Middleware` passed to `attach()`, [`HttpContext::resolve()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) or the `Container` itself. A missing one there still fails the request.
+
+```rust compile
+use volga::{App, di::Dc, ok};
+
+struct Metrics;
+
+impl Metrics {
+    fn record(&self, _route: &str) {}
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // Starts whether `Metrics` is registered or not
+    app.map_get("/", |metrics: Option<Dc<Metrics>>| async move {
+        if let Some(metrics) = metrics {
+            metrics.record("/");
+        }
+        ok!()
+    });
+
+    app.run().await
+}
+```
+
+An extractor of your own that resolves from the container takes part the way a service does: [`FromContainer`](https://docs.rs/volga/latest/volga/di/trait.FromContainer.html), [`FromRequestRef`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestRef.html) and [`FromRequestParts`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestParts.html) have a `dependencies()` method that declares what it resolves, and declares nothing by default.
+
 ## DI in middleware
 If you need to request/inject a dependency in middleware, if you're using method [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), you may leverage the [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) extractor similarly to request handlers. For the [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) use either [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) or [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) methods of [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
 The main difference between them is that the first one requires to implement the [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) trait for `T` while the latter returns an [`Arc<T>`](https://doc.rust-lang.org/std/sync/struct.Arc.html).
+A `Dc<T>` taken by `with()` is part of the [startup check](#what-handlers-and-middleware-take); what `wrap()` resolves at run time is not.
 ```rust
 // using .wrap()
 app.wrap(|ctx: HttpContext, next: NextFn| async move {

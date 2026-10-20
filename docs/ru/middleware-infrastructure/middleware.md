@@ -46,9 +46,11 @@ async fn sum(x: i32, y: i32) -> i32 {
 
 | Фильтр возвращает | Ответ |
 |---|---|
-| `false` или `FilterResult::err()` | `400 Bad Request` с общим сообщением |
+| `false` или `FilterResult::err()` | `400 Bad Request` с сообщением `Request rejected by filter` |
 | `Err` чего угодно со статусом — `Error`, `StatusCode`, `(StatusCode, E)`, `std::io::Error`, `ValidationError`, `OAuthError`, `Problem`, ваш тип, реализующий [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) | этот статус — тот же, что получил бы такой `Err` из [обработчика](/volga-docs/ru/reliability-observability/errors.html#возврат-ошибок-из-обработчика) |
 | `Err` строки или `Box<dyn std::error::Error + Send + Sync>` | `400 Bad Request` с этим сообщением |
+
+Фильтр отклоняет запрос по любой причине — из-за отсутствующего API-ключа так же часто, как из-за неверного параметра, — поэтому сообщение для `false` никакой причины не называет. До **0.14.0** оно звучало как `Validation: One or more request parameters are incorrect`, а поскольку глобальный фильтр решает судьбу и запросов, для которых не нашлось маршрута, то же самое получал и запрос к несуществующему пути. Фильтр, которому нужен собственный статус или сообщение, возвращает `Err`.
 
 Последняя строка — единственное отличие от обработчика, где строка даёт `500`: ошибка без собственного статуса, возвращённая фильтром, считается причиной отказа в запросе. Начиная с **0.12.0** ошибка со статусом его сохраняет — `OAuthError` отвечает `401` для `invalid_token` и `403` для `insufficient_scope`, а `Error` сохраняет свой instance и [прикреплённый ответ](/volga-docs/ru/reliability-observability/errors.html#ответ-с-собственным-телом).
 
@@ -65,7 +67,7 @@ async fn main() -> std::io::Result<()> {
         None => Err((StatusCode::UNAUTHORIZED, "missing API key")),
     });
 
-    app.map_get("/sum", |x: i32, y: i32| x + y);
+    app.map_get("/sum/{x}/{y}", |x: i32, y: i32| x + y);
 
     app.run().await
 }
@@ -93,7 +95,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     app
-        .map_get("/sum", |x: i32, y: i32| async move { x + y })
+        .map_get("/sum/{x}/{y}", |x: i32, y: i32| async move { x + y })
         .tap_req(|mut req: HttpRequestMut| async move { 
             req.try_insert_header::<CustomHeader>("Custom Value")?;
             Ok(req)

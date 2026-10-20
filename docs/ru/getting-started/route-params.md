@@ -91,12 +91,41 @@ async fn main() -> std::io::Result<()> {
 ```
 
 ::: warning `Path<T>` одного типа читает ровно один параметр
-`Path<u32>` на маршруте с двумя параметрами отвечает `500`: он никогда не берёт первый из нескольких, поэтому `Path<OrderId>` на `/users/{user_id}/orders/{order_id}` не прочитает идентификатор пользователя как идентификатор заказа. Такой маршрут читайте кортежем, `Path<(u64, OrderId)>`, или по именам через [`NamedPath<T>`](#использование-namedpath-t).
-
-То же правило действует и для обычных аргументов: обработчик, который принимает больше позиционных параметров, чем объявляет его маршрут, отвечает `500`, а лишний `Option<T>` читается как `None`.
+`Path<u32>` на маршруте с двумя параметрами отклоняется там, где его регистрируют: он никогда не берёт первый из нескольких, поэтому `Path<OrderId>` на `/users/{user_id}/orders/{order_id}` не прочитает идентификатор пользователя как идентификатор заказа. Такой маршрут читайте кортежем, `Path<(u64, OrderId)>`, или по именам через [`NamedPath<T>`](#использование-namedpath-t).
 :::
 
 Структура с именованными полями — это не `Path<T>`: она читается через `NamedPath<T>`, и ошибка компиляции для `Path<MyStruct>` прямо об этом говорит.
+
+## Обработчик читает только то, что объявляет маршрут
+
+Позиционный параметр берёт следующий параметр, объявленный маршрутом, поэтому обработчик, который читает больше, чем есть в маршруте, не может выполниться успешно. Раньше он компилировался, стартовал и отвечал `500` на каждый запрос. Начиная с **0.14.0** число параметров проверяется при регистрации обработчика, и `map_*` паникует, называя маршрут:
+
+```rust
+app.map_get("/sum", |x: i32, y: i32| ok!(x + y)); // паника
+```
+
+```text
+`GET /sum`: the handler reads 2 path parameters, but the route declares 0, so it would fail every request that reaches it. A request cannot supply a path parameter that is not declared: declare it, read the value from somewhere else - the query string, through `Query<T>` - or take one that may be missing as `Option<T>`.
+```
+
+Объявите параметры — `/sum/{x}/{y}` — или читайте значения из строки запроса через [`Query<T>`](/volga-docs/ru/getting-started/query-params.html).
+
+* **Учитываются:** позиционные параметры, каждый из которых берёт следующий, и `Path<T>` — кортежу из `N` нужно не меньше `N` параметров, одному типу — ровно один.
+* **Обработчик может читать меньше:** `|id: u32|` на `/users/{id}/{*rest}` читает `id`, а `Path<(T,)>` — первый из любого числа.
+* **`Option<T>` и `Result<T, Error>` принимают любое число** — там, где параметров не осталось, они читают `None` или `Err`, — поэтому один обработчик может обслуживать маршрут с необязательным сегментом:
+
+```rust compile-fragment
+let posts = |page: Option<u32>| ok!("{page:?}");
+app.map_get("/posts", posts);        // None
+app.map_get("/posts/{page}", posts); // Some(3)
+```
+
+* **Проверяются:** `map_*` приложения и [группы маршрутов](/volga-docs/ru/getting-started/route-groups.html), префикс которой объявляет параметры так же, как маршрут, `map_ws()`, `map_msg()`, `map_fallback()` и fallback группы — по параметрам её префикса.
+* **Не проверяются:** `NamedPath<T>`, который читает по именам, и middleware — `Path<T>` в `with()` выполняется для каждого маршрута своей области.
+
+::: warning Обновление с 0.13
+Сервис, обработчик которого читает параметр, не объявленный маршрутом, теперь паникует при старте, а раньше отвечал `500` только на этом маршруте. После обновления запустите его или его тесты хотя бы раз: паника называет маршрут.
+:::
 
 ## Параметры собственных типов
 Начиная с **0.13.0** любой тип становится параметром пути, если реализует [`FromPathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArg.html). [`PathArg::parse`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArg.html#method.parse) читает значение через `FromStr` и отвечает `400`, если оно не разбирается, поэтому для newtype хватает одной строки:
@@ -170,7 +199,7 @@ async fn main() -> std::io::Result<()> {
 Feature `uuid`, входящая в `full`, делает [`uuid::Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html) параметром пути. Volga не реэкспортирует этот тип, поэтому добавьте и крейт `uuid`:
 ```toml
 [dependencies]
-volga = { version = "0.13", features = ["uuid"] }
+volga = { version = "0.14", features = ["uuid"] }
 uuid = "1"
 ```
 ```rust compile
@@ -197,6 +226,7 @@ async fn main() -> std::io::Result<()> {
 ### Чтение всех параметров сразу
 `Path<T>` читает свой `T` через [`FromPathArgs`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArgs.html), а [`PathArgs`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArgs.html) перебирает параметры в том порядке, в каком их объявляет маршрут, поэтому тип может прочитать сразу несколько:
 ```rust compile
+use std::ops::RangeInclusive;
 use volga::{App, Path, error::Error, ok};
 use volga::http::endpoints::args::{FromPathArgs, PathArgs};
 
@@ -206,6 +236,9 @@ struct Range {
 }
 
 impl FromPathArgs for Range {
+    // Регистрация на маршруте с другим числом параметров паникует
+    const ARITY: RangeInclusive<usize> = 2..=2;
+
     fn from_path_args(args: &PathArgs) -> Result<Self, Error> {
         let mut args = args.iter();
         match (args.next(), args.next(), args.next()) {
@@ -227,7 +260,7 @@ async fn main() -> std::io::Result<()> {
     app.run().await
 }
 ```
-Маршрут, который не объявляет того, что читает тип, — это ошибка в коде, а не в запросе, поэтому пример отвечает на неё `500`, как и `Path<T>` одного типа.
+Начиная с **0.14.0** [`ARITY`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArgs.html#associatedconstant.ARITY) говорит, сколько параметров читает тип, и [регистрация](#обработчик-читает-только-то-что-объявляет-маршрут) на маршруте с другим числом паникует — так же, как для встроенного типа. Значение по умолчанию принимает любое число и ничего не проверяет. Проверка внутри `from_path_args` остаётся для `Path<Range>` в middleware, который не проверяется: маршрут, который не объявляет того, что читает тип, — это ошибка в коде, а не в запросе, поэтому он отвечает `500`.
 
 Такой тип всегда читается через `Path<T>`: в отличие от типа с `FromPathArg`, сам по себе он не может быть аргументом обработчика, поэтому `|range: Range|` не скомпилируется — пишите `|Path(range): Path<Range>|`.
 

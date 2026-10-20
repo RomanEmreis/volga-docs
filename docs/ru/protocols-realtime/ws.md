@@ -44,6 +44,12 @@ async fn main() -> std::io::Result<()> {
 app.map_msg("/ws", |msg: String| format!("echo: {msg}"));
 ```
 
+Аргументы после сообщения читают запрос, открывший соединение, включая параметры пути, — начиная с **0.14.0**, когда `map_ws` и `map_msg` стали передавать своему обработчику параметры его маршрута:
+
+```rust compile-fragment
+app.map_msg("/ws/{room}", |msg: String, room: String| format!("[{room}] {msg}"));
+```
+
 ### JSON-сообщения
 
 Обработчик сообщений может принимать и возвращать [`Json<T>`](https://docs.rs/volga/latest/volga/struct.Json.html). `Json<T>` принимается из текстового или бинарного фрейма, а отправляется **текстовым** фреймом — и ответ обработчика `map_msg`, и [`WebSocket::send`](https://docs.rs/volga/latest/volga/ws/websocket/struct.WebSocket.html), и `WsSink::send`, — поэтому браузерный клиент читает его из `event.data` как строку и передаёт в `JSON.parse`:
