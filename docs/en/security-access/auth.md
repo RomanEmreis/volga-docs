@@ -143,6 +143,8 @@ let mut app = App::new()
     );
 ```
 
+Since **0.14.1** a `BearerAuthConfig` built elsewhere, such as in a helper the app and its tests share, goes in whole with [`set_bearer_auth(config)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_bearer_auth). It replaces the configuration, where `with_bearer_auth` hands the closure the default to refine.
+
 When configuring audience validation via [`with_aud(...)`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_aud), the `aud` claim is automatically added to required claims — tokens missing it are rejected. Call [`without_strict_aud()`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.without_strict_aud) to allow tokens that do not include `aud`:
 
 ```rust

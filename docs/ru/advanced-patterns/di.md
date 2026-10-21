@@ -281,7 +281,7 @@ dependency injection: `myapp::Db` is not registered, and is resolved by `GET /us
 ```
 
 * **Проверяются:** обработчики маршрутов, [`map_ws()`](/volga-docs/ru/protocols-realtime/ws.html) и `map_msg()`, `map_err()`, `map_fallback()` приложения и группы, а также `with()`, `filter()`, `map_ok()`, `map_err()` и `tap_req()` приложения, группы или маршрута. Подписанные и приватные cookies считаются принимающими свой ключ.
-* **Проверяется только то, что ещё может выполниться:** маршрут, замапленный повторно, `map_err()` или fallback, заменённые более поздним вызовом или `use_problem_details()`, и middleware группы, не привязанный ни к одному маршруту, не учитываются.
+* **Проверяется только то, что ещё может выполниться:** маршрут, замапленный повторно, `map_err()` или fallback, заменённые более поздним вызовом или `map_problem()`, и middleware группы, не привязанный ни к одному маршруту, не учитываются.
 * **`Option<Dc<T>>` выводит из проверки.** Он говорит, что сервис необязателен, и равен `None`, если ничего не зарегистрировано. `Result<Dc<T>, Error>` — нет: он лишь передаёт ошибку обработчику.
 * **Не проверяются:** сервисы, которые резолвятся во время выполнения, — через `wrap()`, `Middleware`, переданный в `attach()`, [`HttpContext::resolve()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) или сам `Container`. Отсутствующий сервис там по-прежнему роняет запрос.
 

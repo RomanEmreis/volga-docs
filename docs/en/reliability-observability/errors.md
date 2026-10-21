@@ -167,7 +167,7 @@ async fn main() -> std::io::Result<()> {
 [`Error::with_response()`](https://docs.rs/volga/latest/volga/error/struct.Error.html#method.with_response) attaches the response an error answers with — a JSON body, a `Problem` — and the error stays an error: `map_err` still receives it, with its status, message and instance as they were.
 
 * The attached response takes the error's status, whatever status it was built with, so passing a body alone — a `Json(..)` value — is enough.
-* The default error handler and [`use_problem_details()`](#global-error-handling-with-problem-details) send it unchanged.
+* The default error handler and [`map_problem()`](#global-error-handling-with-problem-details) send it unchanged.
 * A response that fails to build is dropped, and the error answers as it would have without it.
 
 In a `map_err` of your own, [`has_response()`](https://docs.rs/volga/latest/volga/error/struct.Error.html#method.has_response) tells whether an error carries a response, and [`take_response()`](https://docs.rs/volga/latest/volga/error/struct.Error.html#method.take_response) takes it out. A handler that shapes every error its own way should decide what to do with one — here, it lets the attached body through and wraps everything else:
@@ -212,7 +212,7 @@ impl IntoError for NotFound {
 Before 0.12.0 the `Err` of a handler had to implement `IntoResponse` and was sent as a response of its own, bypassing `map_err`. Now:
 
 * **`Err(String)` and other strings answer `500` instead of `200`.** This still compiles, so nothing flags it — search for such handlers and give each error a status.
-* `Err(StatusCode)` and `Err(Problem)` keep their status, but now reach `map_err`. `Err(StatusCode)` answers with its canonical reason instead of an empty body, or with Problem Details under `use_problem_details()`.
+* `Err(StatusCode)` and `Err(Problem)` keep their status, but now reach `map_err`. `Err(StatusCode)` answers with its canonical reason instead of an empty body, or with Problem Details under `map_problem()`.
 * `Err(HttpResponse)`, `Err(Json<T>)` and other response types no longer compile. Return the response as `Ok`, or return an error and attach the body with `with_response()`.
 * A type with a `From<T> for Error` of its own still converts with `?`, but cannot be a handler's `Err` until that `From` becomes an `IntoError` impl.
 
@@ -369,7 +369,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Global Error Handling With Problem Details
 
-Moreover, you can combine the [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) with [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) by using the [`use_problem_details()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_problem_details) method:
+Moreover, you can combine the [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) with [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) by using the [`map_problem()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_problem) method:
 ```rust compile
 use volga::{App, error::Error};
 
@@ -386,11 +386,16 @@ async fn main() -> std::io::Result<()> {
 
     // Enabling global error handler that produces
     // error responses in Problem details format
-    app.use_problem_details();  
+    app.map_problem();
 
     app.run().await
 }
 ```
+
+`map_problem()` is `map_err` with a handler of volga's own, so whichever of the two is called last handles the errors: `app.map_err(h); app.map_problem();` replaces `h`. A `Route` and a `RouteGroup` have a `map_problem()` of their own, for the errors of their routes.
+
+Before **0.14.1** the method on `App` was called `use_problem_details()`. The old name still compiles, with a deprecation warning.
+
 ### Example Response:
 ```json
 HTTP/1.1 500 Internal Server Error

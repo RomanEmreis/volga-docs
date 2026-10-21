@@ -412,7 +412,7 @@ app.map_post("/users", |user: Json<User>| async move {
 unwraps, and `Deref` gives field access without it.
 
 Since 0.9.9, any of them can be wrapped in `Valid<..>` (`ValidJson<T>`,
-`ValidQuery<T>`, `ValidForm<T>`, `ValidPath<T>`) to run the payload's own
+`ValidQuery<T>`, `ValidForm<T>`, `ValidNamedPath<T>`) to run the payload's own
 `Validate` impl before the handler is entered — see
 `references/validation.md`.
 

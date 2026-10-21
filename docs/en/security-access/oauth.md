@@ -94,6 +94,8 @@ let app = App::new()
         .with_client_config(|client| client.require_https(true)));
 ```
 
+Since **0.14.1** an `OAuthConfig` built elsewhere goes in whole with [`set_oauth(config)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_oauth), the value form of `with_oauth`. `use_oauth()` is still required.
+
 For a local development issuer served over plain HTTP, relax the transport policy:
 
 ```rust compile-fragment

@@ -75,6 +75,10 @@ App::new()
     .without_greeter()          // no startup banner
 ```
 
+`set_http2_limits(Http2Limits)` installs limits built elsewhere (0.14.1).
+It replaces them whole; `with_http2_limits` hands the closure the limits
+already set.
+
 `without_implicit_head()` is **removed** in 0.10.0. A `GET` route answers
 `HEAD` itself rather than through a second bare route, so there is nothing
 left to switch off, and `HEAD` is required of a general-purpose server

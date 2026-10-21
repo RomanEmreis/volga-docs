@@ -231,7 +231,7 @@ app.map_get("/items/{id}", find);
 (a `Json(..)`, a `Problem`) while it stays an `Error`: `map_err` still sees
 its status, message and instance. The attached response takes the error's
 status, whatever it was built with. The default handler and
-`use_problem_details()` send it unchanged; `has_response()` /
+`map_problem()` send it unchanged; `has_response()` /
 `take_response()` inspect it in a `map_err`. A response that fails to build
 is dropped.
 
@@ -318,8 +318,13 @@ app.map_get("/p/{id}", |id: u64| -> Result<Json<u64>, Problem> {
 To turn every unhandled error into Problem Details globally:
 
 ```rust
-app.use_problem_details();
+app.map_problem();
 ```
+
+`map_problem()` is `map_err` with volga's own handler: whichever of the two
+is called last handles the errors. `Route` and `RouteGroup` have their own
+for their routes. On `App` it was `use_problem_details()` before 0.14.1; the
+old name is deprecated.
 
 An error carrying a response of its own (`with_response`, a `Problem` as
 `Err`) is sent as it is.
