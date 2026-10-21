@@ -143,6 +143,8 @@ let mut app = App::new()
     );
 ```
 
+Начиная с **0.14.1** `BearerAuthConfig`, собранный в другом месте — например, во вспомогательной функции, общей для приложения и его тестов, — передаётся целиком через [`set_bearer_auth(config)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_bearer_auth). Он заменяет конфигурацию, тогда как `with_bearer_auth` передаёт замыканию конфигурацию по умолчанию для уточнения.
+
 При настройке валидации аудитории через [`with_aud(...)`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_aud) claim `aud` автоматически добавляется в список обязательных — токены без него отклоняются. Чтобы разрешить токены без `aud`, вызовите [`without_strict_aud()`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.without_strict_aud):
 
 ```rust

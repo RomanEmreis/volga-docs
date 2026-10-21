@@ -281,7 +281,7 @@ dependency injection: `myapp::Db` is not registered, and is resolved by `GET /us
 ```
 
 * **Checked:** route handlers, [`map_ws()`](/volga-docs/en/protocols-realtime/ws.html) and `map_msg()`, `map_err()`, `map_fallback()` of the app and of a group, and `with()`, `filter()`, `map_ok()`, `map_err()` and `tap_req()` of the app, a group or a route. Signed and private cookies count as taking their key.
-* **Only what can still run is checked:** a route mapped again, a `map_err()` or a fallback replaced by a later call or by `use_problem_details()`, and group middleware attached to no route are left out.
+* **Only what can still run is checked:** a route mapped again, a `map_err()` or a fallback replaced by a later call or by `map_problem()`, and group middleware attached to no route are left out.
 * **`Option<Dc<T>>` opts out.** It says the service is optional, and is `None` when nothing is registered. `Result<Dc<T>, Error>` does not: it only hands the failure to the handler.
 * **Not checked:** services resolved at run time — through `wrap()`, a `Middleware` passed to `attach()`, [`HttpContext::resolve()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) or the `Container` itself. A missing one there still fails the request.
 

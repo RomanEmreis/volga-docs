@@ -7,6 +7,8 @@ is rejected for no obvious reason, look here before rewriting anything.
 
 | Error | Cause | Fix |
 |---|---|---|
+| `` use of deprecated method `..::cache_control`: renamed to `with_cache_control` ``, `` `..::use_problem_details`: renamed to `map_problem` `` or `` type alias `..::ValidPath`: renamed to `ValidNamedPath` `` — a warning, an error under `-D warnings` | 0.14.1 renamed them; the old names forward to the new ones | `with_cache_control`, `map_problem()`, `ValidNamedPath<T>` — same behavior |
+| `no method named with_cache_control` on a `Route` / `RouteGroup`, `map_problem` on `App`, or `set_bearer_auth` / `set_oauth` / `set_cache_control` / `set_http2_limits` / `set_decompression_limits`; `cannot find type ValidNamedPath` | before 0.14.1 | upgrade to 0.14.1, or use `cache_control`, `use_problem_details()`, `ValidPath<T>`, `with_X(\|_\| config)` |
 | `cannot assign to data in dereference of Dc<T>` (E0594), or `cannot borrow data in dereference of Dc<T> as mutable` (E0596) | 0.14.0: `Dc<T>` has no `DerefMut` — a write through it changed a private copy | interior mutability inside `T` (`Mutex` / `RwLock` / atomic), changed through `&self`; `Dc::cloned()` for a private copy |
 | `argument never used` on an `ok!` / `status!` call | headers passed after a comma | use `;` before the header array |
 | `` `Path<X>` is not an extractor `` with a note that `Path<T>` reads by position | `X` is a struct; `Path<T>` takes a tuple or one `FromPathArg` type | `NamedPath<X>` with `Deserialize`, or a tuple |
@@ -131,6 +133,25 @@ is rejected for no obvious reason, look here before rewriting anything.
 | a debug build warns `OpenAPI: ... is described as ...` at startup, or the spec shows another route's parameter name | 0.11.2: routes naming one position differently share one templated path. Name the parameters alike |
 
 ## Version-by-version
+
+### 0.14.1 — one naming rule, `set_*` peers
+No API break; the renames keep the old names as deprecated aliases, and
+nothing changes at runtime.
+
+* **Renamed**, old name deprecated: `Route::cache_control` and
+  `RouteGroup::cache_control` → `with_cache_control`, the name `App` had;
+  `App::use_problem_details` → `App::map_problem`, the name `Route` and
+  `RouteGroup` had; `ValidPath<T>` → `ValidNamedPath<T>`, since it is
+  `Valid<NamedPath<T>>` — there is no alias over `Path<T>`.
+* **`set_X(config)` for every `App::with_X(closure)` that builds a
+  config**: `set_bearer_auth`, `set_oauth`, `set_cache_control`,
+  `set_http2_limits`, `set_decompression_limits`. `set_X` replaces the
+  config whole; `with_http2_limits` and `with_decompression_limits` hand
+  their closure the limits already set.
+* `with_cache_control` takes `FnOnce` on all three levels (a relaxed bound
+  on `App`).
+* `map_problem()` is `map_err` with volga's own handler: on `App`,
+  whichever of the two is called last handles the errors.
 
 ### 0.14.0 — `Dc<T>` read-only, services and path parameters checked at startup
 **Breaking.** One compile error; two checks stop an app that used to answer
@@ -667,6 +688,32 @@ Nothing to rewrite. Check three things instead:
    signs with; make sure whoever verifies this app's tokens accepts it.
 3. If `with_iss` is set, check that every token that must pass carries
    `iss` — tokens without it are `401` now. Drop `with_iss` otherwise.
+
+## Upgrading 0.13.x → 0.14.0
+
+1. Build. A write through `Dc<T>` is E0594 / E0596: move the changing
+   state behind a `Mutex` / `RwLock` / atomic inside the service and
+   change it through `&self`, or take `Dc::cloned()` where the change was
+   only ever meant for this handler.
+2. Start the app, or run its tests, once. Mapping a handler that reads
+   more path parameters than its route declares panics and names the
+   route: declare the parameter, read it with `Query<T>`, or take
+   `Option<T>`.
+3. If `run()` returns `` `T` is not registered, and is resolved by .. ``,
+   register `T`, or take `Option<Dc<T>>` where it is optional. Those
+   routes answered `500` before.
+4. Anything matching on the text of a `413` or of a filter's `400` matches
+   on the status instead.
+
+## Upgrading 0.14.0 → 0.14.1
+
+1. Bump the version. Nothing stops compiling.
+2. If `clippy -D warnings` (or `#![deny(deprecated)]`) fails on a
+   deprecated name, rename it: `.cache_control(..)` on a route or group →
+   `.with_cache_control(..)`, `app.use_problem_details()` →
+   `app.map_problem()`, `ValidPath<T>` → `ValidNamedPath<T>`.
+3. Optional: a `with_X(|_| config)` written to install a config built
+   elsewhere becomes `set_X(config)`.
 
 ## Upgrading 0.8.x → 0.9.x, in order
 

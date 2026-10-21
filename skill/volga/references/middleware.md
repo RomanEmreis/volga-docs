@@ -258,7 +258,8 @@ An unsupported `Accept-Encoding` answers `406`; an unsupported
 `Content-Encoding` answers `415`. `with_compression(...)` /
 `with_decompression(...)` configure them, and
 `with_decompression_limits(...)` bounds a decompressed body — set it when
-accepting compressed uploads from untrusted clients.
+accepting compressed uploads from untrusted clients. Since 0.14.1
+`set_decompression_limits(limits)` installs limits built elsewhere.
 
 ## Static files (feature `static-files`)
 
@@ -441,5 +442,11 @@ let mut app = App::new()
     .with_cache_control(|cc| cc.with_max_age(60).with_public().with_immutable());
 
 app.map_get("/assets/{name}", handler)
-    .cache_control(|cc| cc.with_max_age(31_536_000).with_immutable());
+    .with_cache_control(|cc| cc.with_max_age(31_536_000).with_immutable());
 ```
+
+`with_cache_control` is the name on `App`, `RouteGroup` and `Route` since
+0.14.1; a route or a group called it `cache_control`, now deprecated.
+`App::set_cache_control(CacheControl)` installs a policy built elsewhere.
+A route's policy overrides a `Cache-Control` the handler set; the app's
+and a group's fill the header only where it is absent.

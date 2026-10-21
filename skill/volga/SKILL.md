@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.14.0"
+  volga-version: "0.14.1"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -38,7 +38,10 @@ from an explicit `jwks_uri` and built a `DecodingKey` from a JSON Web Key;
 when a static key does not fit its algorithms, and made `with_iss` require
 `iss`; 0.14.0 made `Dc<T>` read-only, stops the app at startup when a
 handler or middleware takes a service nobody registered, and panics where a
-handler reading path parameters its route does not declare is mapped. The
+handler reading path parameters its route does not declare is mapped;
+0.14.1 renamed `cache_control` on a route or group, `use_problem_details` and
+`ValidPath` to `with_cache_control`, `map_problem` and `ValidNamedPath`, and
+gave every `App::with_X` that builds a config a `set_X` peer. The
 response macros use a **semicolon** before custom headers. Most volga
 code a model has seen predates all of it. The
 [Non-negotiables](#non-negotiables) below are the places where writing
@@ -57,8 +60,9 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.14"` or `"0.14.0"` | This skill applies as written — a caret requirement resolves to the newest 0.14.x |
-| `volga = "0.13"` or `"0.13.3"` | As written, except: `Dc<T>` has `DerefMut`, and a write through it changes a private copy; a handler or middleware taking an unregistered `Dc<T>`, or a handler reading path parameters its route does not declare, starts and answers `500` on every request; a handler taking `HttpRequest` sees no path parameters; a filter's `false` and a body over the limit answer with the old messages. Read 0.13.x → 0.14.0 in `references/migration.md` before upgrading — two of these surface at startup, not at compile time |
+| `volga = "0.14"` or `"0.14.1"` | This skill applies as written — a caret requirement resolves to the newest 0.14.x |
+| `volga = "=0.14.0"` pinned exactly | As written, except the 0.14.1 names: a route or group sets `Cache-Control` with `cache_control`, `App` turns on Problem Details with `use_problem_details`, the validated named path is `ValidPath<T>`, and there is no `set_bearer_auth` / `set_oauth` / `set_cache_control` / `set_http2_limits` / `set_decompression_limits`. See 0.14.0 → 0.14.1 in `references/migration.md` |
+| `volga = "0.13"` or `"0.13.3"` | As `=0.14.0`, and: `Dc<T>` has `DerefMut`, and a write through it changes a private copy; a handler or middleware taking an unregistered `Dc<T>`, or a handler reading path parameters its route does not declare, starts and answers `500` on every request; a handler taking `HttpRequest` sees no path parameters; a filter's `false` and a body over the limit answer with the old messages. Read 0.13.x → 0.14.0 in `references/migration.md` before upgrading — two of these surface at startup, not at compile time |
 | `volga = "=0.13.2"` pinned exactly | As 0.13.x, and bearer auth: `with_alg` adds to the default `HS256` instead of replacing it, `encode` always signs `HS256`, `with_iss` does not require `iss`, and a key that does not fit its algorithms is not reported at startup. See 0.13.2 → 0.13.3 in `references/migration.md` |
 | `volga = "=0.13.1"` pinned exactly | As `=0.13.2`, and there is no `OAuthConfig::with_jwks_uri` (nor `jwks_uri` in `[oauth.client]`) and no `DecodingKey::from_jwk`. See 0.13.1 → 0.13.2 in `references/migration.md` |
 | `volga = "=0.13.0"` pinned exactly | As `=0.13.1`, and there is no `with_body_limit` / `without_body_limit` on a `RouteGroup` or `Route` — only on `App` — and a body over the limit answers `400` instead of `413`. See 0.13.0 → 0.13.1 in `references/migration.md` |
@@ -195,9 +199,9 @@ One handler picks **one** style for path parameters:
 route (mapping it on any other panics since 0.14.0 — see #28); `NamedPath<T>`
 is the named-struct one. Reaching for `Path<Params>` with a struct is the
 usual slip — it does not compile.
-The same distinction makes `ValidPath<T>` an alias for
-`Valid<NamedPath<T>>`; a single parameter of your own type validates as
-`Valid<Path<T>>`.
+The same distinction makes `ValidNamedPath<T>` (`ValidPath<T>` before
+0.14.1) an alias for `Valid<NamedPath<T>>`; a single parameter of your own
+type validates as `Valid<Path<T>>`.
 
 A type of your own becomes a path parameter by implementing `FromPathArg`
 (0.13.0+) — not `FromStr` alone, not `Deserialize`:
@@ -678,4 +682,5 @@ app.map_get("/metrics", |metrics: Option<Dc<Metrics>>| async move {
 - [ ] Nothing writes through `Dc<T>` — changing state is behind a `Mutex` / `RwLock` / atomic inside the service
 - [ ] Every `Dc<T>` a handler or middleware takes is registered, or taken as `Option<Dc<T>>`
 - [ ] Nothing matches on the text of a `413` or of a filter's `400` — match on the status
+- [ ] The 0.14.1 names: `with_cache_control` on a route or group, `map_problem()`, `ValidNamedPath<T>` — the old ones are deprecated and fail `clippy -D warnings`
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean

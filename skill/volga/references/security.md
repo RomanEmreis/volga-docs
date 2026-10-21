@@ -227,6 +227,9 @@ App::new().with_bearer_auth(|auth| auth
   tokens that must pass carry none. An empty set is a no-op.
 * `BearerTokenService::validation()` no longer exists — all token policy
   lives on `BearerAuthConfig`.
+* **A config built elsewhere** (a helper shared with tests) goes in whole
+  with `App::set_bearer_auth(config)` (0.14.1); `with_bearer_auth` starts
+  its closure from the default.
 
 Status codes on a guarded route, as RFC 6750 Section 3.1 assigns them:
 
@@ -263,7 +266,8 @@ app.map_get("/protected", protected).authorize::<MyClaims>(roles(["admin"]));
 
 The `iss` claim is constrained to that issuer and made **required**.
 Everything else — `aud`, expiry, roles — still comes from
-`with_bearer_auth`.
+`with_bearer_auth`. Since 0.14.1 `set_oauth(OAuthConfig)` takes a config
+built elsewhere; `use_oauth()` is still required.
 
 Key lifecycle, all automatic: fetched lazily on the first request; an
 unknown `kid` triggers a single-flight refresh rate-limited by

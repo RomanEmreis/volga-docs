@@ -17,19 +17,21 @@ Only `#[derive(Validate)]` is gated, behind `validation-derive` (in `full`).
 | `ValidJson<T>` | `Valid<Json<T>>` | a JSON body |
 | `ValidQuery<T>` | `Valid<Query<T>>` | query parameters |
 | `ValidForm<T>` | `Valid<Form<T>>` | a URL-encoded form |
-| `ValidPath<T>` | `Valid<NamedPath<T>>` | named route parameters |
+| `ValidNamedPath<T>` | `Valid<NamedPath<T>>` | named route parameters |
 
 All four are at the crate root as well as in `volga::validation`. They work
 because `Json`, `Query`, `Form` and `NamedPath` deref to their payload, so one
 blanket impl covers them; `Valid<E>` derefs to `E`, so field access still works
 without unwrapping.
 
-`ValidPath` is the **named** path extractor. `Path<T>` of several
-parameters reads a tuple, and a downstream crate cannot implement
-`Validate` for a tuple — reaching for `Valid<Path<(..)>>` is the predictable
-slip. Since 0.13.0 a **single** parameter of your own type works as
-`Valid<Path<T>>` once `T` implements both `FromPathArg` (reading) and
-`Validate` (the rules):
+Each alias is `Valid` plus the name of the extractor it wraps.
+`ValidNamedPath` was `ValidPath` before 0.14.1; the old name is deprecated
+and fails `clippy -D warnings`. There is no alias over the positional
+`Path<T>`: `Path<T>` of several parameters reads a tuple, and a downstream
+crate cannot implement `Validate` for a tuple — reaching for
+`Valid<Path<(..)>>` is the predictable slip. Since 0.13.0 a **single**
+parameter of your own type works as `Valid<Path<T>>` once `T` implements
+both `FromPathArg` (reading) and `Validate` (the rules):
 
 ```rust
 use volga::{Path, error::Error, ok};
@@ -214,7 +216,7 @@ app.map_post("/b", async |val: Result<ValidJson<KeyValue>, Error>| match val {
 
 ## Problem Details
 
-Under `problem-details`, `app.use_problem_details()` renders a `ValidationError`
+Under `problem-details`, `app.map_problem()` renders a `ValidationError`
 as RFC 9457 with an `errors` extension mapping each field to its messages;
 field-less failures land under an empty key. No extra wiring.
 

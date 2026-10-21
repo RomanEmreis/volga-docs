@@ -94,6 +94,8 @@ let app = App::new()
         .with_client_config(|client| client.require_https(true)));
 ```
 
+Начиная с **0.14.1** `OAuthConfig`, собранный в другом месте, передаётся целиком через [`set_oauth(config)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_oauth) — форму `with_oauth`, принимающую значение. Вызов `use_oauth()` по-прежнему нужен.
+
 Для локального эмитента, работающего по обычному HTTP, ослабьте транспортную политику:
 
 ```rust compile-fragment

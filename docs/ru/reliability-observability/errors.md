@@ -167,7 +167,7 @@ async fn main() -> std::io::Result<()> {
 [`Error::with_response()`](https://docs.rs/volga/latest/volga/error/struct.Error.html#method.with_response) прикрепляет к ошибке ответ, которым она ответит, — JSON-тело, `Problem`, — и ошибка остаётся ошибкой: `map_err` всё так же получает её, с прежними статусом, сообщением и instance.
 
 * Прикреплённый ответ получает статус ошибки, с каким бы статусом он ни был построен, так что достаточно передать одно тело — значение `Json(..)`.
-* Обработчик ошибок по умолчанию и [`use_problem_details()`](#центральная-обработка-ошибок-с-problem-details) отправляют его без изменений.
+* Обработчик ошибок по умолчанию и [`map_problem()`](#центральная-обработка-ошибок-с-problem-details) отправляют его без изменений.
 * Ответ, который не удалось построить, отбрасывается, и ошибка отвечает так, как ответила бы без него.
 
 В собственном `map_err` метод [`has_response()`](https://docs.rs/volga/latest/volga/error/struct.Error.html#method.has_response) сообщает, несёт ли ошибка ответ, а [`take_response()`](https://docs.rs/volga/latest/volga/error/struct.Error.html#method.take_response) забирает его. Обработчику, который оформляет все ошибки по-своему, стоит решить, что делать с таким ответом, — здесь прикреплённое тело пропускается, а всё остальное оборачивается:
@@ -212,7 +212,7 @@ impl IntoError for NotFound {
 До 0.12.0 `Err` обработчика должен был реализовывать `IntoResponse` и отправлялся как самостоятельный ответ, минуя `map_err`. Теперь:
 
 * **`Err(String)` и другие строки отвечают `500` вместо `200`.** Это по-прежнему компилируется, и ничто об этом не предупредит — найдите такие обработчики и дайте каждой ошибке статус.
-* `Err(StatusCode)` и `Err(Problem)` сохраняют свой статус, но теперь доходят до `map_err`. `Err(StatusCode)` отвечает канонической фразой статуса вместо пустого тела, а под `use_problem_details()` — в формате Problem Details.
+* `Err(StatusCode)` и `Err(Problem)` сохраняют свой статус, но теперь доходят до `map_err`. `Err(StatusCode)` отвечает канонической фразой статуса вместо пустого тела, а под `map_problem()` — в формате Problem Details.
 * `Err(HttpResponse)`, `Err(Json<T>)` и другие типы ответов больше не компилируются. Верните ответ как `Ok` или верните ошибку и прикрепите тело через `with_response()`.
 * Тип с собственным `From<T> for Error` по-прежнему преобразуется через `?`, но не может быть `Err` обработчика, пока этот `From` не станет реализацией `IntoError`.
 
@@ -369,7 +369,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Центральная обработка ошибок с Problem Details
 
-Кроме того, вы можете комбинировать [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) с [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err), используя метод [`use_problem_details()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_problem_details):
+Кроме того, вы можете комбинировать [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) с [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err), используя метод [`map_problem()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_problem):
 ```rust compile
 use volga::{App, error::Error};
 
@@ -386,11 +386,16 @@ async fn main() -> std::io::Result<()> {
 
     // Регистрируем централизованный обработчик ошибок, который выдает
     // ответы в формате Problem Details
-    app.use_problem_details();  
+    app.map_problem();
 
     app.run().await
 }
 ```
+
+`map_problem()` — это `map_err` с обработчиком самой Волги, поэтому ошибки обрабатывает тот из двух, что вызван последним: `app.map_err(h); app.map_problem();` заменяет `h`. У `Route` и `RouteGroup` есть собственный `map_problem()` — для ошибок их маршрутов.
+
+До **0.14.1** этот метод `App` назывался `use_problem_details()`. Старое имя по-прежнему компилируется, но с предупреждением об устаревании.
+
 ### Пример ответа:
 ```json
 HTTP/1.1 500 Internal Server Error

@@ -62,16 +62,19 @@ covers them all, and each has a shorthand alias:
 | [`ValidJson<T>`](https://docs.rs/volga/latest/volga/validation/valid/type.ValidJson.html) | `Valid<Json<T>>` | a JSON body |
 | [`ValidQuery<T>`](https://docs.rs/volga/latest/volga/validation/valid/type.ValidQuery.html) | `Valid<Query<T>>` | query string parameters |
 | [`ValidForm<T>`](https://docs.rs/volga/latest/volga/validation/valid/type.ValidForm.html) | `Valid<Form<T>>` | a URL-encoded form |
-| [`ValidPath<T>`](https://docs.rs/volga/latest/volga/validation/valid/type.ValidPath.html) | `Valid<NamedPath<T>>` | named route parameters |
+| [`ValidNamedPath<T>`](https://docs.rs/volga/latest/volga/validation/valid/type.ValidNamedPath.html) | `Valid<NamedPath<T>>` | named route parameters |
 
 All four are re-exported from the crate root, so `use volga::ValidJson;` and
 `use volga::validation::ValidJson;` are the same import.
 
 ::: tip
-`ValidPath<T>` is the **named** path extractor, not the positional one: a `Path<T>` of several parameters reads a
-tuple, and a tuple is not a type your crate can implement `Validate` for. Use a struct with `Deserialize`, as
-described in [Route Params](/volga-docs/en/getting-started/route-params.html#using-namedpath-t), or validate a
+There is no alias over the positional `Path<T>`: a `Path<T>` of several parameters reads a tuple, and a tuple is
+not a type your crate can implement `Validate` for. Use a struct with `Deserialize`, as described in
+[Route Params](/volga-docs/en/getting-started/route-params.html#using-namedpath-t), or validate a
 [single parameter](#validating-a-path-parameter) of your own type.
+
+Before **0.14.1** `ValidNamedPath<T>` was called `ValidPath<T>`, which read as a validated `Path<T>`. The old name still
+compiles, with a deprecation warning.
 :::
 
 The wrapper forwards the inner extractor's payload source, so a validated body still reads the body and a validated
@@ -338,12 +341,12 @@ app.map_post("/items", async |val: Result<ValidJson<KeyValue>, Error>| match val
 
 Under the `problem-details` feature a `ValidationError` renders as
 [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) with an `errors` extension mapping each field to the messages it
-collected. [`use_problem_details()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_problem_details)
+collected. [`map_problem()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_problem)
 picks it up with no extra wiring:
 ```rust
 let mut app = App::new();
 
-app.use_problem_details();
+app.map_problem();
 
 app.map_post("/put", async |val: ValidJson<KeyValue>| {
     ok!("{}={}", val.key, val.value)

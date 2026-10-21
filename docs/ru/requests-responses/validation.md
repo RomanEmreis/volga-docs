@@ -63,16 +63,19 @@ key: key is required
 | [`ValidJson<T>`](https://docs.rs/volga/latest/volga/validation/valid/type.ValidJson.html) | `Valid<Json<T>>` | тело запроса в формате JSON |
 | [`ValidQuery<T>`](https://docs.rs/volga/latest/volga/validation/valid/type.ValidQuery.html) | `Valid<Query<T>>` | параметры строки запроса |
 | [`ValidForm<T>`](https://docs.rs/volga/latest/volga/validation/valid/type.ValidForm.html) | `Valid<Form<T>>` | URL-encoded форму |
-| [`ValidPath<T>`](https://docs.rs/volga/latest/volga/validation/valid/type.ValidPath.html) | `Valid<NamedPath<T>>` | именованные параметры маршрута |
+| [`ValidNamedPath<T>`](https://docs.rs/volga/latest/volga/validation/valid/type.ValidNamedPath.html) | `Valid<NamedPath<T>>` | именованные параметры маршрута |
 
 Все четыре реэкспортированы из корня крейта, поэтому `use volga::ValidJson;` и `use volga::validation::ValidJson;` —
 это один и тот же импорт.
 
 ::: tip
-`ValidPath<T>` — это **именованный** экстрактор пути, а не позиционный: `Path<T>` из нескольких параметров читает кортеж,
-а для кортежа ваш крейт не может реализовать `Validate`. Используйте структуру с `Deserialize`, как описано в разделе
+Псевдонима над позиционным `Path<T>` нет: `Path<T>` из нескольких параметров читает кортеж, а для кортежа ваш крейт не
+может реализовать `Validate`. Используйте структуру с `Deserialize`, как описано в разделе
 [Параметры маршрута](/volga-docs/ru/getting-started/route-params.html#использование-namedpath-t), или валидируйте
 [одиночный параметр](#валидация-параметра-пути) собственного типа.
+
+До **0.14.1** `ValidNamedPath<T>` назывался `ValidPath<T>` и читался как проверенный `Path<T>`. Старое имя по-прежнему
+компилируется, но с предупреждением об устаревании.
 :::
 
 Обёртка передаёт дальше источник данных внутреннего экстрактора, поэтому проверяемое тело по-прежнему читается из тела
@@ -340,12 +343,12 @@ app.map_post("/items", async |val: Result<ValidJson<KeyValue>, Error>| match val
 
 С фичей `problem-details` `ValidationError` отрисовывается по [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) с
 расширением `errors`, которое сопоставляет каждому полю собранные для него сообщения.
-[`use_problem_details()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_problem_details) подхватывает
+[`map_problem()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_problem) подхватывает
 это без дополнительной настройки:
 ```rust
 let mut app = App::new();
 
-app.use_problem_details();
+app.map_problem();
 
 app.map_post("/put", async |val: ValidJson<KeyValue>| {
     ok!("{}={}", val.key, val.value)
