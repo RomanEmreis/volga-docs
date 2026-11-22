@@ -310,12 +310,12 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-An extractor of your own that resolves from the container takes part the way a service does: [`FromContainer`](https://docs.rs/volga/latest/volga/di/trait.FromContainer.html), [`FromRequestRef`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestRef.html) and [`FromRequestParts`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestParts.html) have a `dependencies()` method that declares what it resolves, and declares nothing by default.
+An [extractor of your own](/volga-docs/en/advanced-patterns/custom-extractors.html#services-from-the-container) that resolves from the container takes part the way a service does: `FromRequestHead::dependencies()` declares what it resolves, and declares nothing by default.
 
 ## DI in middleware
-If you need to request/inject a dependency in middleware, if you're using method [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), you may leverage the [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) extractor similarly to request handlers. For the [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) use either [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) or [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) methods of [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
+If you need to request/inject a dependency in middleware, if you're using method [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), `filter()`, `map_ok()`, `map_err()` or `tap_req()`, you may leverage the [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) extractor similarly to request handlers. For the [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) use either [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve) or [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) methods of [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
 The main difference between them is that the first one requires to implement the [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) trait for `T` while the latter returns an [`Arc<T>`](https://doc.rust-lang.org/std/sync/struct.Arc.html).
-A `Dc<T>` taken by `with()` is part of the [startup check](#what-handlers-and-middleware-take); what `wrap()` resolves at run time is not.
+A `Dc<T>` taken by these is part of the [startup check](#what-handlers-and-middleware-take); what `wrap()` resolves at run time is not.
 ```rust
 // using .wrap()
 app.wrap(|ctx: HttpContext, next: NextFn| async move {

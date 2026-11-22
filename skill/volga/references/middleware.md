@@ -6,7 +6,9 @@ Everything here needs the `middleware` feature (included in `full`).
 
 Five hooks, all registrable on the `App`, a `RouteGroup` or a single
 `Route`. The most specific registration wins for `map_err`; the rest
-compose outward-in.
+compose outward-in. Every closure hook takes extractors of the head after
+its first argument — `with`, `filter`, `map_ok`, `map_err` and, since
+0.15.0, `tap_req` — whatever the features.
 
 | Method | Sees | Use it for |
 |---|---|---|
@@ -14,9 +16,9 @@ compose outward-in.
 | `with` | extractors + `Next`, no body | 80% of cases — DI, headers, timing, short-circuiting |
 | `attach` | a type implementing `Middleware` | reusable, configurable middleware |
 | `filter` | extractors, returns `bool` / `Result<(), E>` | validation and access checks |
-| `tap_req` | `HttpRequestMut` | mutate the request before the handler |
-| `map_ok` | `HttpResponse` | augment a successful response |
-| `map_err` | `Error` | turn an error into a response |
+| `tap_req` | `HttpRequestMut` + extractors | mutate the request before the handler, replace its body |
+| `map_ok` | `HttpResponse` + extractors | augment a successful response — not an error, volga's own `401` / `404` / `429` included (0.15.0) |
+| `map_err` | `Error` + extractors | turn an error into a response; on a route or group it covers the whole scope, whatever the order (0.15.0) |
 
 ### `with` — the default choice
 
@@ -152,10 +154,53 @@ async fn add_resp_header(mut resp: HttpResponse) -> HttpResult {
 }
 ```
 
-Write `tap_req` and `map_ok` bodies as **named async functions**, not inline
-closures. A closure ending in `Ok(resp)` gives the compiler no way to infer
-the error type — `type annotations needed ... cannot infer type of the type
-parameter E`. The return type on a named function settles it.
+Write `map_ok` bodies as **named functions**, not inline closures. A
+closure ending in `Ok(resp)` gives the compiler no way to infer the error
+type — `type annotations needed ... cannot infer type of the type parameter
+E`. The return type on a named function settles it. `tap_req` takes
+`Result<HttpRequestMut, Error>` only, so a closure ending in `Ok(req)` infers.
+
+#### `tap_req`: extractors and the body (0.15.0)
+
+`tap_req` reads its extractors before the closure runs, so they describe
+the request as it arrives. A failing extractor answers instead of the
+closure.
+
+```rust
+use volga::{App, HttpBody, HttpRequestMut, Query, error::Error, headers::headers};
+use http_body_util::BodyExt;
+use serde::Deserialize;
+
+headers! { (Locale, "x-locale") }
+
+#[derive(Deserialize)]
+struct Lang { lang: String }
+
+app.tap_req(|mut req: HttpRequestMut, q: Query<Lang>| {
+    req.try_insert_header::<Locale>(q.lang.as_str())?;
+    Ok(req)
+});
+
+// replace the body: a decoder volga does not have
+app.tap_req(|req: HttpRequestMut| req.try_map_body(decode));
+
+// read it first, e.g. to check a signature, then put the bytes back
+app.tap_req(|req: HttpRequestMut| async move {
+    req.try_map_body_async(|body| async move {
+        let bytes = body.collect().await?.to_bytes();
+        Ok(HttpBody::full(bytes))
+    })
+    .await
+});
+
+fn decode(body: HttpBody) -> Result<HttpBody, Error> { Ok(body) }
+```
+
+* `map_body` / `try_map_body` / `try_map_body_async` keep the new body
+  under the request's body limit (`413` past it) and leave the headers as
+  they are — `remove_header` a stale `Content-Length` / `Content-Encoding`.
+* `HttpRequestMut::into_parts` / `from_parts` are deprecated: they handed
+  out the request's extensions, volga's per-request state included.
 
 Header mutation methods return `&mut Self` since 0.9.0, and
 `append_header` is infallible.
@@ -234,7 +279,9 @@ app.use_cors();                        // required; panics if nothing was config
   `cors_with("api")` is called on a route or group — routes without it emit
   no CORS headers at all, with no warning.
 * `disable_cors()` opts a route or group out of the default policy.
-* Since 0.10.0 a `404` and a `405` carry the policy's headers. A
+* Since 0.10.0 a `404` and a `405` carry the policy's headers, and since
+  0.15.0 every error passing the CORS middleware does — a handler's `Err`,
+  an extractor's `400`, a `401`, a `413` — as error headers. A
   **preflight** is still answered `204` only for a route that exists;
   everything else falls through and picks the headers up on the way out.
 * A group's policy does not reach the static files that group serves — the
@@ -254,8 +301,10 @@ app.use_compression();     // honours Accept-Encoding, sets Content-Encoding
 app.use_decompression();   // honours Content-Encoding on the request
 ```
 
-An unsupported `Accept-Encoding` answers `406`; an unsupported
-`Content-Encoding` answers `415`. `with_compression(...)` /
+An unsupported `Accept-Encoding` answers `406` — an error, with `Vary` and
+`Accept-Encoding` as error headers, so `map_err` shapes it (0.15.0); an
+unsupported `Content-Encoding` answers `415`. A decoder volga does not have
+goes into a `tap_req` with `try_map_body`. `with_compression(...)` /
 `with_decompression(...)` configure them, and
 `with_decompression_limits(...)` bounds a decompressed body — set it when
 accepting compressed uploads from untrusted clients. Since 0.14.1
@@ -420,6 +469,11 @@ Partition keys: `by::ip()`, `by::header("x-api-key")`, `by::query("tenant")`,
 authentication is on. Behind a proxy, register the hops with
 `App::with_trusted_proxies([Ipv4Addr::new(10, 0, 0, 1)])` so `by::ip()` sees
 the real client rather than the proxy.
+
+A request over the limit is refused with `429` through the error handler, so
+`map_err` / `map_problem` shape it (0.15.0; a plain response before). A
+request missing the header or query parameter that `by::header` /
+`by::query` names answers `400`.
 
 Registering a policy does not activate it — the matching `use_*` or
 per-route call is what applies it.

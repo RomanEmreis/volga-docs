@@ -134,7 +134,7 @@ The router resolves it the way it resolves routes, so there is no extra rule to 
 * **A route still answers first.** A route mapped at the path the request is aimed at answers it for its own method, and a request for another method is that route's `405` with the methods it does have. That holds at the prefix itself too.
 * **The group's middleware and CORS policy wrap it**, along with those of every group around it, and the group's request body limit applies to it. An unknown path under an `authorize`d group is refused the way a known one is, instead of telling the caller which paths exist.
 
-The handler takes what `App::map_fallback` takes — anything implementing [`FromRequestParts`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestParts.html) — and reads the path it was aimed at from `Uri`. It also binds the parameters its prefix declares, and nothing else, the same at the prefix and below it:
+The handler takes what `App::map_fallback` takes — extractors of the head, an [extractor of your own](/volga-docs/en/advanced-patterns/custom-extractors.html) among them — and reads the path it was aimed at from `Uri`. It also binds the parameters its prefix declares, and nothing else, the same at the prefix and below it:
 
 ```rust compile
 use volga::{App, NamedPath, not_found, ok};

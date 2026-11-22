@@ -28,6 +28,8 @@ You can test this by sending a request with the `curl`:
 Content-Type: text/plain
 ```
 
+A request without the header is answered `400 Bad Request`, naming the header, before the handler runs. Take `Option<Header<T>>` for a header that may be missing. [`HttpHeaders::try_get()`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) fails the same way. Before **0.15.0** a missing header was a `404`.
+
 ### Reading a custom HTTP header with `Header<T>`
 If you need to read some custom HTTP header, you can specify a **unit struct** that describes your header and then implement the [`FromHeaders`](https://docs.rs/volga/latest/volga/headers/trait.FromHeaders.html) trait for it, here is the example of how you can do it:
 ```rust

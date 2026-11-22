@@ -1,6 +1,6 @@
 # Обработчики
 
-Обработчик запроса — это функция или замыкание, сопоставленные маршруту. Его аргументы — [экстракторы](/volga-docs/ru/getting-started/route-params.html): параметры маршрута и строки запроса, заголовки, JSON-тело, сервисы из [DI](/volga-docs/ru/advanced-patterns/di.html), — а то, что он возвращает, превращается в ответ. Волга принимает обработчик в двух формах и определяет, какая из них перед ней, по сигнатуре.
+Обработчик запроса — это функция или замыкание, сопоставленные маршруту. Его аргументы — [экстракторы](/volga-docs/ru/getting-started/route-params.html): параметры маршрута и строки запроса, заголовки, JSON-тело, сервисы из [DI](/volga-docs/ru/advanced-patterns/di.html), [собственные типы](/volga-docs/ru/advanced-patterns/custom-extractors.html), — а то, что он возвращает, превращается в ответ. Волга принимает обработчик в двух формах и определяет, какая из них перед ней, по сигнатуре.
 
 ## Асинхронные обработчики
 
@@ -85,6 +85,56 @@ async fn main() -> std::io::Result<()> {
 * middleware [`filter`, `map_ok`, `map_err` и `tap_req`](/volga-docs/ru/middleware-infrastructure/middleware.html#синхронные-middleware).
 
 `wrap`, `with` и `attach` принимают только асинхронные middleware: они существуют ради того, чтобы дождаться `next`.
+
+## Какие экстракторы сочетаются
+
+Обработчик читает экстракторы в том порядке, в котором они стоят. Экстракторы заголовочной части (параметры пути и строки запроса, заголовки, cookie, `Dc<T>`, [собственные типы](/volga-docs/ru/advanced-patterns/custom-extractors.html)) свободно сочетаются друг с другом и с одним экстрактором тела:
+
+```rust compile
+use serde::Deserialize;
+use volga::{App, HttpRequest, Json, Query, ok};
+
+#[derive(Deserialize)]
+struct Paging {
+    page: u32,
+}
+
+#[derive(Deserialize)]
+struct Item {
+    name: String,
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // Экстракторы заголовочной части, затем один экстрактор тела
+    app.map_put("/lists/{id}", |id: u64, paging: Query<Paging>, item: Json<Item>| {
+        ok!("list {id}, page {}: {}", paging.page, item.name)
+    });
+
+    // `HttpRequest` забирает весь запрос, поэтому стоит последним
+    app.map_post("/raw/{id}", |id: u64, req: HttpRequest| {
+        ok!("{id}: {}", req.uri())
+    });
+
+    app.run().await
+}
+```
+
+Три сочетания не могут прочитать один запрос, и обработчик с любым из них не собирается:
+
+* **Два экстрактора тела.** Тело — это поток, который читается один раз, поэтому обработчик принимает что-то одно из `Json<T>`, `Form<T>`, `HttpBody`, `ByteStream`, `File`, `Multipart` и `HttpRequest`.
+* **Что угодно после `HttpRequest`.** Он забирает весь запрос вместе с заголовочной частью, поэтому стоит последним: `|id: u64, req: HttpRequest|`, а не `|req: HttpRequest, id: u64|`.
+* **Позиционные параметры рядом с `Path<T>` или `NamedPath<T>`.** Обработчик читает параметры пути либо так, либо так.
+
+Ошибка называет правило:
+
+```text
+`HttpRequest` takes the whole request, so it stands last among the arguments of a handler
+```
+
+Проверка выполняется, когда обработчик инстанцируется, поэтому её показывают `cargo build` и `cargo test`, а `cargo check` — нет.
 
 ## Возврат ошибок
 

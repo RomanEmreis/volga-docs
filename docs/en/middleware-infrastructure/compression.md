@@ -85,6 +85,6 @@ Then you can test in with the `curl` command:
 
 When a request is received, the compression middleware examines the `Accept-Encoding` HTTP header to determine the appropriate compression algorithm, considering the availability of the required feature and the q-value (q-factor) if multiple options are provided. The middleware then compresses the response body using the selected algorithm and sets the `Content-Encoding` HTTP header accordingly.
 
-If the `Accept-Encoding` header specifies an unsupported algorithm, the middleware responds with a [`406 Not Acceptable`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/406) status code.
+If the `Accept-Encoding` header specifies an unsupported algorithm, the request is refused with [`406 Not Acceptable`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/406). The refusal is an error, with `Vary` and `Accept-Encoding` as [error headers](/volga-docs/en/reliability-observability/errors.html#headers-on-an-error), so `map_err` and `map_problem` shape it.
 
 Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/compression/src/main.rs)

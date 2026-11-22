@@ -264,7 +264,49 @@ app.map_err(|error: Error| -> HttpResult {
 
 `status` and `instance` are **methods**, not fields, since 0.9.0.
 
-`map_err` is also available per route and per group; the innermost one wins.
+Answer with `error.status()`, never a fixed status: since 0.15.0 the error
+handler also gets volga's own rejections, so `status!(500, ..)` turns every
+one of them into a `500`:
+
+| Refused by | Status | Error headers |
+|---|---|---|
+| an extractor (body or parameter does not parse, missing header) | `400` | |
+| the body limit | `413` | |
+| the router | `404`; `405` | `Allow` on the `405` |
+| `authorize` | `400`, `401`, `403`, `503` | `WWW-Authenticate`, `Cache-Control: no-store` |
+| rate limiting | `429` | |
+| static files | `403`, `404` | |
+| compression | `406` | `Vary`, `Accept-Encoding` |
+
+The default handler answers them with the message as text ("Not Found",
+"Method Not Allowed", the challenge's description). `map_ok` does not see
+them. A CORS preflight `204`, a static `304`, the HTTPS redirect and an
+implicit `HEAD` stay responses.
+
+`map_err` is also available per route and per group; the innermost one
+wins. Since 0.15.0 a scoped `map_err` / `map_problem` covers its **whole**
+route or group — handlers, middleware, filters, `authorize` — whatever order
+it was registered in, and a second one replaces the first. An error it
+answers with passes to the group around it, then to `App::map_err`; the
+global middleware and the app's fallback reach `App::map_err` only.
+
+### Headers on an error (0.15.0)
+
+`Error::with_header(header)` adds a header to whatever response the error
+is answered with — the default handler, `map_problem` or yours — unless
+that response sets it itself; `Error::headers()` reads them. Volga uses it
+for `WWW-Authenticate`, `Allow` and the CORS headers of an error.
+
+```rust
+use volga::{error::Error, headers::WWW_AUTHENTICATE, http::StatusCode};
+
+app.map_get("/admin", || {
+    Err::<(), _>(
+        Error::from(StatusCode::UNAUTHORIZED)
+            .with_header((WWW_AUTHENTICATE, r#"Basic realm="admin""#)),
+    )
+});
+```
 
 ### Errors in OpenAPI
 
@@ -323,7 +365,7 @@ app.map_problem();
 
 `map_problem()` is `map_err` with volga's own handler: whichever of the two
 is called last handles the errors. `Route` and `RouteGroup` have their own
-for their routes. On `App` it was `use_problem_details()` before 0.14.1; the
+for their whole scope. On `App` it was `use_problem_details()` before 0.14.1; the
 old name is deprecated.
 
 An error carrying a response of its own (`with_response`, a `Problem` as

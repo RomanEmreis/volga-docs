@@ -7,6 +7,15 @@ is rejected for no obvious reason, look here before rewriting anything.
 
 | Error | Cause | Fix |
 |---|---|---|
+| `` `HttpRequest` takes the whole request, so it stands last among the arguments of a handler `` (from `cargo build`, not `cargo check`) | 0.15.0: `HttpRequest` takes the head too, so nothing can follow it | move it last: `\|id: u64, req: HttpRequest\|` |
+| `a handler takes one extractor of the request body, HttpRequest included` | 0.15.0: two body extractors used to panic on every request | keep one; read the rest from it |
+| `a handler reads path parameters either by position or through Path<T> / NamedPath<T>, not both` | 0.15.0: the mix used to answer `400` on every request | pick one style |
+| `` `OrderId` is not an extractor this handler or middleware can take `` for a type implementing `FromPathArg` | 0.15.0: a `FromPathArg` type of your own is read through `Path<T>`; a bare type of your own means `FromRequestHead` | `\|Path(id): Path<OrderId>\|`, `Option<Path<OrderId>>` |
+| `` the trait bound `X: Sealed` is not satisfied `` on an `impl FromRequestRef` / `impl FromRequest` | 0.15.0: both are sealed bounds; such an impl made a type usable in middleware only | `impl FromRequestHead for X { fn from_head(head: &RequestHead<'_>) -> Result<Self, Error> }`, and move `dependencies` there |
+| `cannot find trait FromRequestParts` / `FromContainer` | removed in 0.15.0 | as a bound, `FromRequestRef`; as an impl, `FromRequestHead` |
+| `FromRequestRef::from_request` expects `&RequestHead<'_>`, found `&HttpRequest` | 0.15.0 | `req.extract::<T>()` |
+| `` the trait `TryFrom<&Extensions>` (or `TryFrom<&Parts>`) is not implemented `` for `ClientIp`, `Path<T>`, `NamedPath<T>`, `ShutdownHandle`, `BearerTokenService`, `WebSocketConnection` | 0.15.0: volga's per-request state left the extensions | `req.extract::<ClientIp>()`, or `head.extract()` in a `FromRequestHead` |
+| `` use of deprecated method `HttpRequestMut::into_parts` `` / `from_parts` — a warning, an error under `clippy -D warnings` | 0.15.0: they handed out the extensions | `req.map_body(f)` / `try_map_body(f)` / `try_map_body_async(f)`; headers through `HttpRequestMut`'s own methods |
 | `` use of deprecated method `..::cache_control`: renamed to `with_cache_control` ``, `` `..::use_problem_details`: renamed to `map_problem` `` or `` type alias `..::ValidPath`: renamed to `ValidNamedPath` `` — a warning, an error under `-D warnings` | 0.14.1 renamed them; the old names forward to the new ones | `with_cache_control`, `map_problem()`, `ValidNamedPath<T>` — same behavior |
 | `no method named with_cache_control` on a `Route` / `RouteGroup`, `map_problem` on `App`, or `set_bearer_auth` / `set_oauth` / `set_cache_control` / `set_http2_limits` / `set_decompression_limits`; `cannot find type ValidNamedPath` | before 0.14.1 | upgrade to 0.14.1, or use `cache_control`, `use_problem_details()`, `ValidPath<T>`, `with_X(\|_\| config)` |
 | `cannot assign to data in dereference of Dc<T>` (E0594), or `cannot borrow data in dereference of Dc<T> as mutable` (E0596) | 0.14.0: `Dc<T>` has no `DerefMut` — a write through it changed a private copy | interior mutability inside `T` (`Mutex` / `RwLock` / atomic), changed through `&self`; `Dc::cloned()` for a private copy |
@@ -31,7 +40,7 @@ is rejected for no obvious reason, look here before rewriting anything.
 | `` `Claims` can only be derived for structs `` | 0.10.1 enforces it; an enum expanded to an empty impl before | derive it on the struct the payload deserializes into |
 | `no method named map_static_assets found for struct App` | renamed in 0.10.0 | `use_static_assets()` — there is no route to map any more |
 | `no method named without_implicit_head found for struct App` | removed in 0.10.0 | delete the call; a `GET` route answers `HEAD` itself, and mapping `map_head` overrides it |
-| `cannot find trait FromRawRequest` | removed in 0.10.0 | `map_fallback` takes `FromRequestParts`, which is the same set |
+| `cannot find trait FromRawRequest` | removed in 0.10.0 | `map_fallback` takes extractors of the head, the same set |
 | a hand-written `impl FallbackHandler` no longer compiles | `call` takes `HttpRequest` instead of `Request<Incoming>` in 0.10.0 | change the argument type |
 | `cannot find function with_default_cors` | removed in 0.9.1 | `.set_cors(CorsConfig::default())` |
 | `cannot find function with_default_tracing` | removed in 0.9.1 | `.set_tracing(TracingConfig::default())` |
@@ -52,6 +61,11 @@ is rejected for no obvious reason, look here before rewriting anything.
 
 | Symptom | Cause |
 |---|---|
+| every `401`, `404`, `405` and `429` comes back as `500` (or whatever status `map_err` hard-codes) | 0.15.0: volga's own rejections reach the error handler. Answer with `error.status()` |
+| `map_problem` answers a `401`, `404`, `413` or `429` as problem details; the default `404` / `405` / `401` have a text body; `map_ok` stops seeing them | 0.15.0: they are errors now. A `map_ok` that rewrote a `404` / `401` moves to `map_err`, or to `map_fallback` for the `404` |
+| a scoped `map_err` now also handles a filter's or `authorize`'s rejection; one of two `map_err` on a route stopped running | 0.15.0: a scoped `map_err` covers its whole scope, whatever the order, and a second one replaces the first |
+| a request missing a header answers `400` instead of `404` | 0.15.0: `Header<T>`, `HttpHeaders::try_get`, `by::header`. Expected; take `Option<Header<T>>` if it may be missing |
+| an error response now carries `Access-Control-Allow-Origin` | 0.15.0: the CORS middleware adds its headers to errors too. Expected |
 | `run()` returns `Err` with `` `T` is not registered, and is resolved by `GET /..` `` | 0.14.0: what handlers and middleware take is checked at startup; the route answered `500` before. Register `T`, or take `Option<Dc<T>>` where it is optional. Signed / private cookies need their key |
 | panic at mapping: `` `GET /x`: the handler reads N path parameters, but the route declares M `` | 0.14.0: such a route answered `500` on every request. Declare the parameters (in the route or the group prefix), read them with `Query<T>`, or take `Option<T>` |
 | panic at mapping: `` the handler reads 1 path parameter through `Path<T>`, but the route declares 2 `` | 0.14.0: `Path<T>` of a single type on a route with several. A tuple, or `NamedPath<T>` |
@@ -133,6 +147,48 @@ is rejected for no obvious reason, look here before rewriting anything.
 | a debug build warns `OpenAPI: ... is described as ...` at startup, or the spec shows another route's parameter name | 0.11.2: routes naming one position differently share one templated path. Name the parameters alike |
 
 ## Version-by-version
+
+### 0.15.0 — extractors of your own, rejections as errors, extraction in place
+**Breaking.** Most breaks are compile errors naming the fix; three changes
+compile unchanged and change answers.
+
+* **`FromRequestHead`** is the one trait an extractor of your own
+  implements: `fn from_head(head: &RequestHead<'_>) -> Result<Self, Error>`,
+  plus `dependencies` with `di`. One impl serves handlers, `with` /
+  `filter` / `map_ok` / `map_err` / `map_fallback` / `tap_req`, `Option<T>`,
+  `Result<T, Error>` and `req.extract::<T>()`. `RequestHead` lends
+  `headers()` and `extract()`. The built-in extractors of the head
+  implement it too.
+* **`FromRequest` and `FromRequestRef` are sealed**; `FromRequestParts` and
+  `FromContainer` are removed. `FromRequestRef::from_request` takes a
+  `&RequestHead<'_>`; `ErrorHandler::extract` takes a `RequestHead`.
+* **`HttpRequest` stands last**, and combinations that cannot read one
+  request (two body extractors, anything after `HttpRequest`, positional
+  parameters next to `Path<T>`) fail `cargo build`.
+* **A `FromPathArg` type of your own is taken as `Path<T>`**, no longer
+  bare. Built-in types (`u64`, `String`, `Uuid`, ...) are still bare.
+* **Volga's own rejections are errors** for `map_err` / `map_problem`: the
+  router's `404` / `405` (`Allow`), `authorize`'s `400` / `401` / `403` /
+  `503` (`WWW-Authenticate`, `Cache-Control: no-store`), rate limiting's
+  `429`, static files' `403` / `404`, compression's `406`. `map_ok` no
+  longer sees them; the default handler answers with a text body.
+* **A scoped `map_err` / `map_problem` covers its whole route or group**,
+  whatever order it was registered in; one per scope.
+* **`Error::with_header`** / `Error::headers`: headers that survive any
+  error handler. The CORS middleware puts its headers on errors this way.
+* **`tap_req` takes extractors** after `HttpRequestMut`, with or without
+  `di`. **`HttpRequestMut::map_body` / `try_map_body` /
+  `try_map_body_async`** replace the body under the body limit;
+  `into_parts` / `from_parts` are deprecated.
+* **A missing `Header<T>` answers `400`**, not `404`.
+* `TryFrom<&Extensions>` / `TryFrom<&Parts>` are gone from `ClientIp`,
+  `ShutdownHandle`, `BearerTokenService`, `Path<T>`, `NamedPath<T>`,
+  `WebSocketConnection`.
+* Fixed: `signed-cookie`, `private-cookie`, `cookie-secure` and
+  `compression-zstd` build on their own; `HttpRequest::path_args` is
+  complete next to a path extractor.
+* A handler's future holds the request once: 352 bytes instead of 1160 for
+  a handler taking a `u64`.
 
 ### 0.14.1 — one naming rule, `set_*` peers
 No API break; the renames keep the old names as deprecated aliases, and
@@ -714,6 +770,26 @@ Nothing to rewrite. Check three things instead:
    `app.map_problem()`, `ValidPath<T>` → `ValidNamedPath<T>`.
 3. Optional: a `with_X(|_| config)` written to install a config built
    elsewhere becomes `set_X(config)`.
+
+## Upgrading 0.14.x → 0.15.0
+
+1. Run `cargo build` or the tests, not only `cargo check` — the extractor
+   combinations are checked when a handler is instantiated. Each error says
+   what to write: move `HttpRequest` last; take a `FromPathArg` type of your
+   own as `Path<T>`; turn an `impl FromRequestRef` / `FromRequestParts` /
+   `FromRequest` into `impl FromRequestHead`; name `FromRequestRef` where
+   `FromRequestParts` / `FromContainer` was a bound; `T::from_request(&req)`
+   → `req.extract::<T>()`; replace `into_parts` / `from_parts` with
+   `map_body` / `try_map_body` / `try_map_body_async`.
+2. Check every `map_err`. One answering with a fixed status now also
+   answers volga's own `401` / `404` / `405` / `429`: answer with
+   `error.status()`. A `map_ok` that rewrote the default `404` or a `401`
+   moves to `map_err`, or to `map_fallback` for the `404`.
+3. Check scoped error handlers: with two `map_err` / `map_problem` on one
+   route or group only the last one is left, and one registered before a
+   `filter` or `authorize` now covers it.
+4. Clients and tests expecting `404` for a missing header get `400`; the
+   default `401` / `404` / `405` have a text body.
 
 ## Upgrading 0.8.x → 0.9.x, in order
 

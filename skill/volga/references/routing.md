@@ -46,9 +46,9 @@ Unmatched paths go to the fallback:
 app.map_fallback(|| async { not_found!("no such route") });
 ```
 
-A fallback takes anything implementing `FromRequestParts` — headers, the
-URI, cookies, `ClientIp`, `Dc<T>`, `HostEnv`, `Config<T>` — but not the
-body and not path parameters. Since 0.10.0 the per-request scope is built
+A fallback takes extractors of the head — headers, the URI, cookies,
+`ClientIp`, `Dc<T>`, `HostEnv`, `Config<T>`, a `FromRequestHead` of your
+own — but not the body and not path parameters. Since 0.10.0 the per-request scope is built
 for these requests, so those extractors work rather than failing with a
 `500`, and an error out of a fallback is answered by the application's
 `map_err`. `FromRawRequest` is removed; `FallbackHandler::call` now takes
@@ -235,8 +235,10 @@ runs.
 ### Path parameters of your own types (0.13.0+)
 
 `volga::http::endpoints::args::{FromPathArg, PathArg}` are public. Implement
-`FromPathArg` and the type is a handler argument, a `Path<(..)>` element and
-the `T` of `Path<T>`. `PathArg::parse` goes through `FromStr` and answers
+`FromPathArg` and the type is the `T` of `Path<T>` and a `Path<(..)>`
+element — not a bare handler argument (it was before 0.15.0; a bare type of
+your own is now a [`FromRequestHead`](#extractors-of-your-own-0150)), and an
+optional one is `Option<Path<T>>`. `PathArg::parse` goes through `FromStr` and answers
 `400` on failure, so a newtype takes one line:
 
 ```rust
@@ -251,7 +253,7 @@ impl FromPathArg for OrderId {
     }
 }
 
-app.map_get("/orders/{id}", |id: OrderId| ok!("order {}", id.0));
+app.map_get("/orders/{id}", |Path(id): Path<OrderId>| ok!("order {}", id.0));
 app.map_get(
     "/users/{user_id}/orders/{order_id}",
     |Path((user, order)): Path<(u64, OrderId)>| ok!("order {} of user {user}", order.0),
@@ -271,9 +273,9 @@ parameter validates as `Valid<Path<T>>` (see `references/validation.md`).
 another number panics. Still answer `500` from `from_path_args` when the
 count is wrong — middleware is not checked — since that is a code mistake,
 not a bad request. A `FromPathArgs` type is
-read **only** through `Path<T>` (`|Path(range): Path<Range>|`); unlike a
-`FromPathArg` type it is not a handler argument of its own, and
-`|range: Range|` fails with "not an extractor".
+read **only** through `Path<T>` (`|Path(range): Path<Range>|`), as a
+`FromPathArg` type of your own is, and `|range: Range|` fails with "not an
+extractor".
 
 `uuid::Uuid` needs the `uuid` feature **and** the `uuid` crate as a
 dependency for the type name — volga does not re-export it:
@@ -392,8 +394,12 @@ missing non-`Option` field is a `400` with the serde message; wrap fields in
 | `HttpRequest` | the whole request | — |
 
 Only **one** body extractor per handler: the body is a stream that is consumed
-once. Head-only extractors (`Path`, `Query`, `HttpHeaders`, `Dc`) combine with
-it freely. The default body limit is 5 MB; a body over it answers **`413`**
+once, and `HttpRequest` counts as one. Head-only extractors (`Path`, `Query`,
+`HttpHeaders`, `Dc`, a `FromRequestHead` of your own) combine with it freely.
+Since 0.15.0 three combinations fail `cargo build` (not `cargo check`) with a
+message naming the rule: two body extractors, anything after `HttpRequest`
+(it stands **last**: `|id: u64, req: HttpRequest|`), and positional
+parameters next to `Path<T>` / `NamedPath<T>`. The default body limit is 5 MB; a body over it answers **`413`**
 however it is read (see [Body size limits](#body-size-limits)).
 
 ```rust
@@ -592,7 +598,9 @@ struct ApiKey;
 ```
 
 A `Header<T>` parameter is required: a request without the header answers
-`400`. Take `HttpHeaders` and `get_raw` when the header is optional.
+`400` (0.15.0; `404` before), and so does `HttpHeaders::try_get`. Take
+`Option<Header<T>>`, or `HttpHeaders` and `get_raw`, when the header is
+optional.
 
 Writing headers on a response uses the semicolon form — see
 `responses.md`.
@@ -633,6 +641,53 @@ let c = Cookie::build(("session-id", value))
 (`private-cookie`) work identically but need a key registered in DI —
 `app.add_singleton(SignedKey::generate())` or `PrivateKey::generate()`.
 Both features imply `di`.
+
+## Extractors of your own (0.15.0)
+
+A type your app derives from every request — the current user, a tenant, a
+locale — implements `FromRequestHead` (`volga::http`). One impl serves
+handlers, `with` / `filter` / `map_ok` / `map_err` / `map_fallback` /
+`tap_req`, `Option<T>`, `Result<T, Error>` and `req.extract::<T>()`. It
+reads the head synchronously and leaves the body alone, so it stands next
+to `Json<T>`.
+
+```rust
+use volga::{di::{Dc, Dependencies}, error::Error, ok};
+use volga::http::{FromRequestHead, RequestHead, StatusCode};
+use std::collections::HashMap;
+
+struct ApiKeys(HashMap<String, String>);
+
+struct Client(String);
+
+impl FromRequestHead for Client {
+    fn from_head(head: &RequestHead<'_>) -> Result<Self, Error> {
+        let keys: Dc<ApiKeys> = head.extract()?; // any extractor of the head
+        head.headers()
+            .get("x-api-key")
+            .and_then(|key| key.to_str().ok())
+            .and_then(|key| keys.0.get(key))
+            .map(|name| Client(name.clone()))
+            .ok_or_else(|| (StatusCode::UNAUTHORIZED, "unknown API key").into())
+    }
+
+    // what it resolves, for the startup check of `App::run`
+    fn dependencies(deps: &mut Dependencies) {
+        deps.add::<ApiKeys>();
+    }
+}
+
+app.add_singleton(ApiKeys(HashMap::new()));
+app.map_get("/whoami", |client: Client| ok!("{}", client.0));
+```
+
+* An `Err` answers before the handler, with its status.
+* Asynchronous work (a session lookup) goes to a `with` middleware that
+  fills a scoped slot — `#[derive(Default)] struct Slot(OnceLock<T>)`,
+  `app.add_scoped_default::<Slot>()` — and the extractor reads
+  `Dc<Slot>`.
+* `FromRequest` and `FromRequestRef` are sealed bounds: an `impl` of either
+  does not compile. `FromRequestParts` and `FromContainer` are removed.
 
 ## Other extractors
 
