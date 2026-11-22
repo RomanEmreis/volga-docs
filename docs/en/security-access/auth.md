@@ -440,6 +440,8 @@ Every rejection the bearer middleware makes carries the status and the `WWW-Auth
 | A valid token that does not carry the role or permission the route asks for | `403` | `insufficient_scope` |
 | A validation that could not be completed — an unreadable verification key, an issuer that cannot be reached | `503` | none: the caller has nothing to fix |
 
+Each of these is an error, so it reaches [`map_err` and `map_problem`](/volga-docs/en/reliability-observability/errors.html#errors-volga-produces-itself), and the challenge and `Cache-Control: no-store` stay on whatever response they answer with. The default handler answers with the reason as a text body: the challenge's description, or `Bearer token is missing`.
+
 ::: warning Upgrading from 0.10.0
 A token that failed validation was answered `403`, and a malformed one `400`. Both are `401` now, so anything that reads `403` as "this token cannot be refreshed" — a test, a client's refresh trigger, an alert — has to read `401` instead.
 :::

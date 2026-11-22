@@ -105,6 +105,98 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
+Как `with` и `filter`, `tap_req` принимает экстракторы после первого аргумента: параметры пути и строки запроса, заголовки, `Dc<T>`, [собственный экстрактор](/volga-docs/ru/advanced-patterns/custom-extractors.html). Они читаются до запуска замыкания, поэтому описывают запрос таким, каким он пришёл в этот middleware:
+
+```rust compile
+use serde::Deserialize;
+use volga::{App, HttpRequestMut, Query, headers};
+
+headers! {
+    (Locale, "x-locale")
+}
+
+#[derive(Deserialize)]
+struct Lang {
+    lang: String,
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /hello?lang=fr доходит до обработчика с `x-locale: fr`
+    app.tap_req(|mut req: HttpRequestMut, q: Query<Lang>| {
+        req.try_insert_header::<Locale>(q.lang.as_str())?;
+        Ok(req)
+    });
+
+    app.map_get("/hello", || "hello");
+
+    app.run().await
+}
+```
+
+Если экстрактор не сработал, замыкание не запускается, и на запрос отвечают ошибкой экстрактора. До **0.15.0** `tap_req` принимал только `Dc<T>`, и только с функцией `di`.
+
+### Замена тела
+
+[`map_body()`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html#method.map_body) и [`try_map_body()`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html#method.try_map_body) ставят новое тело на место тела запроса — например, распакованное алгоритмом, которого в Volga нет:
+
+```rust compile
+use volga::{App, HttpBody, HttpRequestMut, Json, error::Error, ok};
+
+fn decompress(body: HttpBody) -> Result<HttpBody, Error> {
+    // например, обернуть поток в декодер
+    Ok(body)
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.tap_req(|req: HttpRequestMut| req.try_map_body(decompress));
+    app.map_post("/items", |item: Json<serde_json::Value>| ok!("{}", item.0));
+
+    app.run().await
+}
+```
+
+[`try_map_body_async()`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html#method.try_map_body_async) сначала читает тело — например, чтобы проверить подпись, — и возвращает байты обработчику:
+
+```rust compile
+use http_body_util::BodyExt;
+use volga::{App, HttpBody, HttpRequestMut, Json, error::Error, http::StatusCode, ok};
+
+fn verify_signature(bytes: &[u8]) -> Result<(), Error> {
+    if bytes.is_empty() {
+        return Err((StatusCode::UNAUTHORIZED, "unsigned payload").into());
+    }
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.tap_req(|req: HttpRequestMut| async move {
+        req.try_map_body_async(|body| async move {
+            let bytes = body.collect().await?.to_bytes();
+            verify_signature(&bytes)?;
+            Ok(HttpBody::full(bytes))
+        })
+        .await
+    });
+
+    app.map_post("/webhook", |event: Json<serde_json::Value>| ok!("{}", event.0));
+
+    app.run().await
+}
+```
+
+* Новое тело читается под [ограничением размера тела](/volga-docs/ru/requests-responses/body.html#ограничение-размера-тела) запроса, как и старое, поэтому тело, которое растёт по пути, получает `413`, как только превысит ограничение.
+* Заголовки остаются как есть. Заголовок, который больше не описывает тело, например `Content-Length` или `Content-Encoding`, удаляется через `remove_header()`.
+* `HttpRequestMut::into_parts()` и `from_parts()` устарели в **0.15.0**: они отдавали расширения запроса, в которых лежит собственное состояние Volga для запроса. Тело заменяйте этими методами, а заголовки — собственными методами `HttpRequestMut`.
+
 ## Обработка успешного ответа
 
 Метод [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok) позволяет изменить или дополнить HTTP-ответ после успешной обработки.
@@ -146,6 +238,8 @@ async fn sum(x: i32, y: i32) -> i32 {
 }
 ```
 
+`map_ok` видит только успешные ответы. Ошибка, в том числе `401`, `404` или `429`, которые [создаёт сама Volga](/volga-docs/ru/reliability-observability/errors.html#ошибки-которые-создает-volga), уходит в `map_err`.
+
 ## Обработка ошибок
 
 Метод [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) позволяет определить кастомную логику обработки ошибок — глобально, для отдельного маршрута или для группы.
@@ -174,6 +268,8 @@ async fn produce_err() -> IoError {
 ```
 
 Начиная с **0.12.0** любой `Err`, который возвращает обработчик, доходит до этого `map_err` как `Error` — включая `Err(StatusCode::NOT_FOUND)` и `Err` вашего собственного типа ошибки.
+
+`map_err` маршрута или группы охватывает всю область вместе с её middleware, в каком бы порядке его ни зарегистрировали, а второй такой вызов заменяет первый. См. [Обработчик ошибок маршрута или группы](/volga-docs/ru/reliability-observability/errors.html#обработчик-ошибок-маршрута-или-группы).
 
 ::: tip
 Если вызвать [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) у [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), вы настроите глобальный обработчик ошибок. Подробнее о глобальной обработке ошибок читайте [здесь](/volga-docs/ru/reliability-observability/errors.html).

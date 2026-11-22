@@ -247,6 +247,13 @@ Status codes on a guarded route, as RFC 6750 Section 3.1 assigns them:
 refreshing could not help, and disagreed with the `invalid_token` code beside
 it. Anything asserting `403` on an expired token is now wrong.
 
+**Since 0.15.0 each of these is an error**, not a plain response: it reaches
+`map_err` / `map_problem` (a scoped one included, whatever order it was
+registered in), the challenge and `Cache-Control: no-store` stay on the
+response as error headers, and the default handler answers with the reason
+as text where the body used to be empty. A `map_err` answering with a fixed
+status rewrites the `401` — answer with `error.status()`.
+
 ## OAuth 2.1 / OpenID Connect
 
 ### Validating against an issuer (feature `oauth-client`)

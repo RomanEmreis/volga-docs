@@ -34,6 +34,8 @@ A **policy** describes the rate limiting behavior:
 
 Policies are configured once at the application level.
 
+A request over the limit is refused with `429 Too Many Requests`. The refusal is an error, so it reaches [`map_err` and `map_problem`](/volga-docs/en/reliability-observability/errors.html#errors-volga-produces-itself) like any other.
+
 ### Partition Key
 
 A **partition key** determines how requests are grouped for counting purposes.
@@ -169,6 +171,8 @@ When authentication is enabled:
 ```rust
 by::user(|claims| claims.sub.as_str())
 ```
+
+A request without the header or the query parameter that `by::header` or `by::query` names is refused with `400 Bad Request`.
 
 You can also layer multiple rate limiters with different keys by stacking middleware.
 

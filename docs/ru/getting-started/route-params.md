@@ -1,6 +1,6 @@
 # Параметры маршрута
 
-Волга предоставляет мощные возможности маршрутизации, позволяя использовать динамические маршруты с параметрами. Аргумент обработчика, тип которого реализует [`FromPathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArg.html), читается прямо из пути: примитивы, `String`, адреса из `std::net`, `PathBuf`, а с feature `uuid` — и [`Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html), — а также [ваши собственные типы](#параметры-собственных-типов).
+Волга предоставляет мощные возможности маршрутизации, позволяя использовать динамические маршруты с параметрами. Аргумент обработчика встроенного типа параметра читается прямо из пути: примитивы, `String`, адреса из `std::net`, `PathBuf`, а с feature `uuid` — и [`Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html). [Собственные типы](#параметры-собственных-типов) читаются через `Path<T>`.
 
 ## Пример: Один параметр
 
@@ -128,7 +128,7 @@ app.map_get("/posts/{page}", posts); // Some(3)
 :::
 
 ## Параметры собственных типов
-Начиная с **0.13.0** любой тип становится параметром пути, если реализует [`FromPathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArg.html). [`PathArg::parse`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArg.html#method.parse) читает значение через `FromStr` и отвечает `400`, если оно не разбирается, поэтому для newtype хватает одной строки:
+Любой тип становится параметром пути, если реализует [`FromPathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArg.html). [`PathArg::parse`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArg.html#method.parse) читает значение через `FromStr` и отвечает `400`, если оно не разбирается, поэтому для newtype хватает одной строки:
 ```rust compile
 use volga::{App, Path, error::Error, ok};
 use volga::http::endpoints::args::{FromPathArg, PathArg};
@@ -146,7 +146,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // GET /orders/42
-    app.map_get("/orders/{id}", |id: OrderId| ok!("order {}", id.0));
+    app.map_get("/orders/{id}", |Path(id): Path<OrderId>| ok!("order {}", id.0));
 
     // GET /users/7/orders/42
     app.map_get(
@@ -158,11 +158,11 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Такой тип подходит везде, где подходит встроенный: как отдельный аргумент обработчика, как элемент кортежа `Path<(..)>` или как `T` в `Path<T>`.
+Такой тип читается через `Path<T>`: как его `T` или как элемент кортежа `Path<(..)>`. Необязательный записывается как `Option<Path<OrderId>>`. В отличие от встроенного типа, сам по себе он не аргумент обработчика, так что по вызову видно, откуда берётся значение. Голый собственный тип в сигнатуре обработчика — это [собственный экстрактор](/volga-docs/ru/advanced-patterns/custom-extractors.html), а до **0.15.0** `|id: OrderId|` компилировался как параметр пути.
 
 Помимо `parse`, [`PathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArg.html) даёт имя параметра `name()` — так, как его записывает шаблон маршрута, — и его значение `value()`, уже [декодированное](#как-декодируются-значения-параметров). Собственная проверка возвращает любую подходящую ошибку — здесь это `400` с именем параметра:
 ```rust compile
-use volga::{App, error::Error, ok};
+use volga::{App, Path, error::Error, ok};
 use volga::http::endpoints::args::{FromPathArg, PathArg};
 
 struct Slug(String);
@@ -185,7 +185,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // GET /posts/hello-world
-    app.map_get("/posts/{slug}", |slug: Slug| ok!("post {}", slug.0));
+    app.map_get("/posts/{slug}", |Path(slug): Path<Slug>| ok!("post {}", slug.0));
 
     app.run().await
 }
@@ -199,7 +199,7 @@ async fn main() -> std::io::Result<()> {
 Feature `uuid`, входящая в `full`, делает [`uuid::Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html) параметром пути. Volga не реэкспортирует этот тип, поэтому добавьте и крейт `uuid`:
 ```toml
 [dependencies]
-volga = { version = "0.14", features = ["uuid"] }
+volga = { version = "0.15", features = ["uuid"] }
 uuid = "1"
 ```
 ```rust compile
@@ -262,7 +262,7 @@ async fn main() -> std::io::Result<()> {
 ```
 Начиная с **0.14.0** [`ARITY`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArgs.html#associatedconstant.ARITY) говорит, сколько параметров читает тип, и [регистрация](#обработчик-читает-только-то-что-объявляет-маршрут) на маршруте с другим числом паникует — так же, как для встроенного типа. Значение по умолчанию принимает любое число и ничего не проверяет. Проверка внутри `from_path_args` остаётся для `Path<Range>` в middleware, который не проверяется: маршрут, который не объявляет того, что читает тип, — это ошибка в коде, а не в запросе, поэтому он отвечает `500`.
 
-Такой тип всегда читается через `Path<T>`: в отличие от типа с `FromPathArg`, сам по себе он не может быть аргументом обработчика, поэтому `|range: Range|` не скомпилируется — пишите `|Path(range): Path<Range>|`.
+Такой тип читается через `Path<T>`, как и собственный тип с `FromPathArg`, поэтому `|range: Range|` не скомпилируется — пишите `|Path(range): Path<Range>|`.
 
 ## Использование `NamedPath<T>`
 

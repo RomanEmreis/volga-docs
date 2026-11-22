@@ -1,6 +1,6 @@
 # Handlers
 
-A request handler is a function or a closure mapped to a route. Its arguments are [extractors](/volga-docs/en/getting-started/route-params.html) — route and query parameters, headers, a JSON body, services from [DI](/volga-docs/en/advanced-patterns/di.html) — and whatever it returns is turned into the response. Volga accepts a handler in two shapes, and reads which one it is off the signature.
+A request handler is a function or a closure mapped to a route. Its arguments are [extractors](/volga-docs/en/getting-started/route-params.html) — route and query parameters, headers, a JSON body, services from [DI](/volga-docs/en/advanced-patterns/di.html), [types of your own](/volga-docs/en/advanced-patterns/custom-extractors.html) — and whatever it returns is turned into the response. Volga accepts a handler in two shapes, and reads which one it is off the signature.
 
 ## Asynchronous Handlers
 
@@ -85,6 +85,56 @@ A synchronous handler runs on the runtime worker that polls the request, exactly
 * the middleware [`filter`, `map_ok`, `map_err` and `tap_req`](/volga-docs/en/middleware-infrastructure/middleware.html#synchronous-middleware).
 
 `wrap`, `with` and `attach` take asynchronous middleware only, since what they exist for is awaiting `next`.
+
+## Extractors That Go Together
+
+A handler reads its extractors in the order they stand. Extractors of the head (path and query parameters, headers, cookies, `Dc<T>`, [types of your own](/volga-docs/en/advanced-patterns/custom-extractors.html)) combine freely, with each other and with one extractor of the body:
+
+```rust compile
+use serde::Deserialize;
+use volga::{App, HttpRequest, Json, Query, ok};
+
+#[derive(Deserialize)]
+struct Paging {
+    page: u32,
+}
+
+#[derive(Deserialize)]
+struct Item {
+    name: String,
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // Extractors of the head, then one of the body
+    app.map_put("/lists/{id}", |id: u64, paging: Query<Paging>, item: Json<Item>| {
+        ok!("list {id}, page {}: {}", paging.page, item.name)
+    });
+
+    // `HttpRequest` takes the whole request, so it stands last
+    app.map_post("/raw/{id}", |id: u64, req: HttpRequest| {
+        ok!("{id}: {}", req.uri())
+    });
+
+    app.run().await
+}
+```
+
+Three combinations cannot read one request, and a handler taking one of them fails to build:
+
+* **Two extractors of the body.** The body is a stream that is read once, so a handler takes one of `Json<T>`, `Form<T>`, `HttpBody`, `ByteStream`, `File`, `Multipart` and `HttpRequest`.
+* **Anything after `HttpRequest`.** It takes the whole request, head included, so it stands last: `|id: u64, req: HttpRequest|`, not `|req: HttpRequest, id: u64|`.
+* **Positional parameters next to `Path<T>` or `NamedPath<T>`.** A handler reads its path parameters one way or the other.
+
+The error names the rule:
+
+```text
+`HttpRequest` takes the whole request, so it stands last among the arguments of a handler
+```
+
+The check runs when the handler is instantiated, so `cargo build` and `cargo test` report it, and `cargo check` does not.
 
 ## Returning Errors
 

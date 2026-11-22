@@ -1,5 +1,5 @@
 # Route Parameters
-Volga offers robust routing configurations allowing you to harness dynamic routes using parameters. A handler argument whose type implements [`FromPathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArg.html) is read straight from the path: the primitives, `String`, the `std::net` addresses, `PathBuf` and, with the `uuid` feature, [`Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html) — and [types of your own](#parameters-of-your-own-types).
+Volga offers robust routing configurations allowing you to harness dynamic routes using parameters. A handler argument of a built-in parameter type is read straight from the path: the primitives, `String`, the `std::net` addresses, `PathBuf` and, with the `uuid` feature, [`Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html). [Types of your own](#parameters-of-your-own-types) are read through `Path<T>`.
 
 ## Example: Single Route Parameter
 
@@ -117,7 +117,7 @@ A service whose handler reads a parameter its route does not declare now panics 
 :::
 
 ## Parameters of Your Own Types
-Since **0.13.0** any type becomes a path parameter by implementing [`FromPathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArg.html). [`PathArg::parse`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArg.html#method.parse) reads the value through `FromStr` and answers `400` if it does not parse, so a newtype takes one line:
+Any type becomes a path parameter by implementing [`FromPathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArg.html). [`PathArg::parse`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArg.html#method.parse) reads the value through `FromStr` and answers `400` if it does not parse, so a newtype takes one line:
 ```rust compile
 use volga::{App, Path, error::Error, ok};
 use volga::http::endpoints::args::{FromPathArg, PathArg};
@@ -135,7 +135,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // GET /orders/42
-    app.map_get("/orders/{id}", |id: OrderId| ok!("order {}", id.0));
+    app.map_get("/orders/{id}", |Path(id): Path<OrderId>| ok!("order {}", id.0));
 
     // GET /users/7/orders/42
     app.map_get(
@@ -147,11 +147,11 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Such a type goes wherever a built-in one does: a handler argument of its own, an element of a `Path<(..)>` tuple, or the `T` of `Path<T>`.
+Such a type is read through `Path<T>`: as its `T`, or as an element of a `Path<(..)>` tuple. An optional one is `Option<Path<OrderId>>`. Unlike a built-in type, it is not a handler argument by itself, so the call site says where the value comes from. A bare type of your own in a handler's signature is an [extractor of your own](/volga-docs/en/advanced-patterns/custom-extractors.html), and before **0.15.0** `|id: OrderId|` compiled as a path parameter.
 
 Besides `parse`, a [`PathArg`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.PathArg.html) gives you the parameter's `name()`, as the route's pattern spells it, and its `value()`, already [decoded](#how-parameter-values-are-decoded). A check of your own returns whatever error fits — here a `400` naming the parameter:
 ```rust compile
-use volga::{App, error::Error, ok};
+use volga::{App, Path, error::Error, ok};
 use volga::http::endpoints::args::{FromPathArg, PathArg};
 
 struct Slug(String);
@@ -174,7 +174,7 @@ async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
     // GET /posts/hello-world
-    app.map_get("/posts/{slug}", |slug: Slug| ok!("post {}", slug.0));
+    app.map_get("/posts/{slug}", |Path(slug): Path<Slug>| ok!("post {}", slug.0));
 
     app.run().await
 }
@@ -188,7 +188,7 @@ A single parameter of your own type can be [validated](/volga-docs/en/requests-r
 The `uuid` feature, part of `full`, makes [`uuid::Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html) a path parameter. volga does not re-export the type, so add the `uuid` crate as well:
 ```toml
 [dependencies]
-volga = { version = "0.14", features = ["uuid"] }
+volga = { version = "0.15", features = ["uuid"] }
 uuid = "1"
 ```
 ```rust compile
@@ -251,7 +251,7 @@ async fn main() -> std::io::Result<()> {
 ```
 Since **0.14.0** [`ARITY`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromPathArgs.html#associatedconstant.ARITY) says how many parameters the type reads, and [mapping it](#a-handler-reads-only-what-its-route-declares) on a route that declares another number panics, as it does for a built-in type. The default takes any number and checks nothing. The check inside `from_path_args` stays for a `Path<Range>` in middleware, which is not checked: a route that does not declare what the type reads is a mistake in the code, not in the request, so it answers `500`.
 
-Such a type is always read through `Path<T>`: unlike a `FromPathArg` type, it is not a handler argument of its own, so `|range: Range|` does not compile — write `|Path(range): Path<Range>|`.
+Such a type is read through `Path<T>`, as a `FromPathArg` type of your own is, so `|range: Range|` does not compile — write `|Path(range): Path<Range>|`.
 
 ## Using `NamedPath<T>`
 Alternatively, use the [`NamedPath<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/path/struct.NamedPath.html) to wrap the route parameters into a dedicated struct. Where `T` should be either deserializable struct or `HashMap`. Make sure that you also have [serde](https://crates.io/crates/serde) installed:

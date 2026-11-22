@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.14.1"
+  volga-version: "0.15.0"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -18,7 +18,7 @@ server configuration. Handlers are plain functions or closures — async, or
 since 0.11.0 synchronous — whose arguments are extractors and whose return
 value is anything that implements `IntoResponse`.
 
-**This skill describes volga 0.14.x.** The 0.9 line changed security
+**This skill describes volga 0.15.x.** The 0.9 line changed security
 defaults and removed a set of `with_default_*` helpers; 0.10.0 rebuilt how
 requests reach middleware, renamed the static file mount and made route
 groups a real scope; 0.10.1 moved a rejected bearer token from `403` to
@@ -41,7 +41,14 @@ handler or middleware takes a service nobody registered, and panics where a
 handler reading path parameters its route does not declare is mapped;
 0.14.1 renamed `cache_control` on a route or group, `use_problem_details` and
 `ValidPath` to `with_cache_control`, `map_problem` and `ValidNamedPath`, and
-gave every `App::with_X` that builds a config a `set_X` peer. The
+gave every `App::with_X` that builds a config a `set_X` peer;
+0.15.0 made `FromRequestHead` the one trait an extractor of your own
+implements, made `HttpRequest` stand last and a `FromPathArg` type of your
+own a `Path<T>`, fails the build on extractors that cannot read one request,
+sent volga's own rejections (`401`, `404`, `405`, `429`, ...) to `map_err`,
+made a scoped `map_err` cover its whole route or group, gave `tap_req`
+extractors and `HttpRequestMut::map_body`, and answers a missing header
+`400`. The
 response macros use a **semicolon** before custom headers. Most volga
 code a model has seen predates all of it. The
 [Non-negotiables](#non-negotiables) below are the places where writing
@@ -60,8 +67,9 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.14"` or `"0.14.1"` | This skill applies as written — a caret requirement resolves to the newest 0.14.x |
-| `volga = "=0.14.0"` pinned exactly | As written, except the 0.14.1 names: a route or group sets `Cache-Control` with `cache_control`, `App` turns on Problem Details with `use_problem_details`, the validated named path is `ValidPath<T>`, and there is no `set_bearer_auth` / `set_oauth` / `set_cache_control` / `set_http2_limits` / `set_decompression_limits`. See 0.14.0 → 0.14.1 in `references/migration.md` |
+| `volga = "0.15"` or `"0.15.0"` | This skill applies as written — a caret requirement resolves to the newest 0.15.x |
+| `volga = "0.14"` or `"0.14.1"` | As written, except 0.15.0: an extractor of your own implements `FromRequestRef` or `FromRequestParts` and is taken by middleware only; a `FromPathArg` type of your own is a bare handler argument; `HttpRequest` may stand anywhere; volga's own `401`, `404`, `405`, `413`, `429` are responses `map_err` and `map_problem` never see, and a scoped `map_err` covers only what was registered after it; `tap_req` takes only `Dc<T>`, and only with `di`; a missing `Header<T>` answers `404`; there is no `map_body` / `Error::with_header`. See 0.14.x → 0.15.0 in `references/migration.md` |
+| `volga = "=0.14.0"` pinned exactly | As 0.14.1, and the 0.14.1 names: a route or group sets `Cache-Control` with `cache_control`, `App` turns on Problem Details with `use_problem_details`, the validated named path is `ValidPath<T>`, and there is no `set_bearer_auth` / `set_oauth` / `set_cache_control` / `set_http2_limits` / `set_decompression_limits`. See 0.14.0 → 0.14.1 in `references/migration.md` |
 | `volga = "0.13"` or `"0.13.3"` | As `=0.14.0`, and: `Dc<T>` has `DerefMut`, and a write through it changes a private copy; a handler or middleware taking an unregistered `Dc<T>`, or a handler reading path parameters its route does not declare, starts and answers `500` on every request; a handler taking `HttpRequest` sees no path parameters; a filter's `false` and a body over the limit answer with the old messages. Read 0.13.x → 0.14.0 in `references/migration.md` before upgrading — two of these surface at startup, not at compile time |
 | `volga = "=0.13.2"` pinned exactly | As 0.13.x, and bearer auth: `with_alg` adds to the default `HS256` instead of replacing it, `encode` always signs `HS256`, `with_iss` does not require `iss`, and a key that does not fit its algorithms is not reported at startup. See 0.13.2 → 0.13.3 in `references/migration.md` |
 | `volga = "=0.13.1"` pinned exactly | As `=0.13.2`, and there is no `OAuthConfig::with_jwks_uri` (nor `jwks_uri` in `[oauth.client]`) and no `DecodingKey::from_jwk`. See 0.13.1 → 0.13.2 in `references/migration.md` |
@@ -90,7 +98,7 @@ Each file is self-contained; load only what the task calls for.
 
 | The task | Read |
 |---|---|
-| Routes, groups, path/query/JSON/form/file/multipart/header/cookie/raw-body extraction, path parameters of your own types (`FromPathArg`, `Uuid`), request body limits per app / group / route | `references/routing.md` |
+| Routes, groups, path/query/JSON/form/file/multipart/header/cookie/raw-body extraction, path parameters of your own types (`FromPathArg`, `Uuid`), extractors of your own (`FromRequestHead`), which extractors go together, request body limits per app / group / route | `references/routing.md` |
 | Validating an extracted payload — `Validate`, `Valid<E>`, `#[derive(Validate)]`, `ValidationError` | `references/validation.md` |
 | Returning a response, status codes, streaming, errors (`Result<T, E>`, `IntoError`, `with_response`), Problem Details | `references/responses.md` |
 | `with` / `wrap` / `attach` / `filter` / `tap_req` / `map_ok` / `map_err`, CORS, compression, static files, rate limiting | `references/middleware.md` |
@@ -98,7 +106,7 @@ Each file is self-contained; load only what the task calls for.
 | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, DPoP, machine-to-machine grants, TLS, HSTS | `references/security.md` |
 | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events | `references/realtime.md` |
 | Feature flags, tracing, cancellation, graceful shutdown, OpenAPI (hand-written schemas included), tests, deployment | `references/operations.md` |
-| A compile error on code that "used to work", or upgrading from 0.13.x / 0.13.2 / 0.13.1 / 0.13.0 / 0.12.x / 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
+| A compile error on code that "used to work", or upgrading from 0.14.x / 0.13.x / 0.13.2 / 0.13.1 / 0.13.0 / 0.12.x / 0.11.x / 0.10.x / 0.9.x / 0.8.x | `references/migration.md` |
 
 ## An app that works
 
@@ -147,7 +155,7 @@ reachable from the network, `bind` explicitly.
 
 ## Non-negotiables
 
-Each one is a real difference between 0.13.x and what older code or an
+Each one is a real difference between 0.15.x and what older code or an
 untrained guess produces.
 
 ### 1. Custom headers come after a semicolon
@@ -204,10 +212,11 @@ The same distinction makes `ValidNamedPath<T>` (`ValidPath<T>` before
 type validates as `Valid<Path<T>>`.
 
 A type of your own becomes a path parameter by implementing `FromPathArg`
-(0.13.0+) — not `FromStr` alone, not `Deserialize`:
+(0.13.0+) — not `FromStr` alone, not `Deserialize` — and is taken as
+`Path<T>` (0.15.0+; it was a bare argument before):
 
 ```rust
-use volga::{error::Error, ok};
+use volga::{Path, error::Error, ok};
 use volga::http::endpoints::args::{FromPathArg, PathArg};
 
 struct OrderId(u64);
@@ -218,7 +227,7 @@ impl FromPathArg for OrderId {
     }
 }
 
-app.map_get("/orders/{id}", |id: OrderId| ok!("order {}", id.0));
+app.map_get("/orders/{id}", |Path(id): Path<OrderId>| ok!("order {}", id.0));
 ```
 
 `uuid::Uuid` is one out of the box with the `uuid` feature (in `full`) and
@@ -654,6 +663,96 @@ app.map_get("/metrics", |metrics: Option<Dc<Metrics>>| async move {
 });
 ```
 
+### 30. An extractor of your own implements `FromRequestHead`
+
+Since 0.15.0 one trait makes a type an extractor: `FromRequestHead`, read
+synchronously from the head of the request. The same impl serves handlers,
+`with` / `filter` / `map_ok` / `map_err` / `map_fallback` / `tap_req`,
+`Option<T>`, `Result<T, Error>` and `req.extract::<T>()`. `FromRequest` and
+`FromRequestRef` are sealed bounds — an `impl` of either does not compile —
+and `FromRequestParts` / `FromContainer` are gone.
+
+```rust
+use volga::{Json, error::Error, ok};
+use volga::http::{FromRequestHead, RequestHead, StatusCode};
+
+struct CurrentUser(String);
+
+impl FromRequestHead for CurrentUser {
+    fn from_head(head: &RequestHead<'_>) -> Result<Self, Error> {
+        head.headers()
+            .get("x-user-id")
+            .and_then(|id| id.to_str().ok())
+            .map(|id| CurrentUser(id.to_owned()))
+            .ok_or_else(|| (StatusCode::UNAUTHORIZED, "who are you?").into())
+    }
+}
+
+app.map_post("/notes", |me: CurrentUser, note: Json<String>| ok!("{}: {}", me.0, note.0));
+```
+
+* `head.extract::<T>()` reads any built-in extractor of the head (`Query<T>`,
+  `Path<T>`, `Dc<T>`, ...) or another `FromRequestHead`.
+* A `Dc<T>` it reads goes into `fn dependencies(deps: &mut Dependencies) {
+  deps.add::<T>(); }`, or `App::run()` cannot check it.
+* Asynchronous work goes to a middleware that fills a scoped service
+  (`add_scoped_default::<Slot>()`); the extractor reads the slot.
+* `HttpRequest` stands **last**, a handler takes **one** body extractor
+  (`HttpRequest` counts), and positional parameters do not mix with
+  `Path<T>` / `NamedPath<T>`. Breaking one of these fails `cargo build` —
+  not `cargo check` — with a message naming the rule.
+
+### 31. Volga's own rejections are errors — answer with `e.status()`
+
+Since 0.15.0 the router's `404` and `405` (with `Allow`), `authorize`'s
+`400` / `401` / `403` / `503` (with `WWW-Authenticate`), rate limiting's
+`429`, static files' `403` / `404` and compression's `406` reach `map_err`
+and `map_problem`; `map_ok` no longer sees them. An error handler with a
+fixed status turns all of them into it:
+
+```rust
+use volga::{HttpResult, error::Error, status};
+
+// not `status!(500, ..)`: that answers every 401, 404, 405 and 429 with 500
+app.map_err(|error: Error| -> HttpResult {
+    status!(error.status().as_u16(), { "error": error.to_string() })
+});
+```
+
+* A `map_err` / `map_problem` on a route or group covers the **whole
+  scope**, whatever order it was registered in; a second one replaces the
+  first. An error it answers with passes to the group around it, then to
+  `App::map_err`.
+* `Error::with_header(..)` adds a header that survives any error handler;
+  a header the response sets itself wins.
+* A missing `Header<T>` (and `HttpHeaders::try_get`, `by::header`) answers
+  `400`, not `404`. Take `Option<Header<T>>` when it may be absent.
+
+### 32. `tap_req` takes extractors; the body is replaced with `map_body`
+
+Since 0.15.0 `tap_req` takes extractors after `HttpRequestMut`, with or
+without `di`, read before the closure runs. A middleware replaces the body
+with `map_body` / `try_map_body`, or `try_map_body_async` when it reads it
+first; the new body stays under the request's body limit.
+`HttpRequestMut::into_parts` / `from_parts` are deprecated.
+
+```rust
+use volga::{HttpRequestMut, Query, headers};
+use serde::Deserialize;
+
+headers! {
+    (Locale, "x-locale")
+}
+
+#[derive(Deserialize)]
+struct Lang { lang: String }
+
+app.tap_req(|mut req: HttpRequestMut, q: Query<Lang>| {
+    req.try_insert_header::<Locale>(q.lang.as_str())?;
+    Ok(req)
+});
+```
+
 ## Checklist before handing code back
 
 - [ ] Every custom-header array is preceded by `;`, not `,`
@@ -672,7 +771,7 @@ app.map_get("/metrics", |metrics: Option<Dc<Metrics>>| async move {
 - [ ] An API mounted beside a root shell has its own `RouteGroup::map_fallback`
 - [ ] No handler or filter returns `Err` of a bare string for a client error — pair it with a `StatusCode`
 - [ ] Error types implement `IntoError`, never `From<T> for Error`; bodies for errors go through `with_response`
-- [ ] Path parameters of your own types implement `FromPathArg`; `Path<T>` of a single type only on a one-parameter route
+- [ ] Path parameters of your own types implement `FromPathArg` and are taken as `Path<T>`; `Path<T>` of a single type only on a one-parameter route
 - [ ] No handler percent-decodes a path parameter itself, and no literal segment or prefix is written with a `%XX` escape
 - [ ] A large body limit is set on the route or group that needs it, not on the whole app; nothing expects `400` for a body over the limit — that is `413`
 - [ ] `with_issuer` is the `iss` tokens carry, never an internal URL; an unreachable issuer gets `with_jwks_uri`, and an `http://` one `require_https(false)`
@@ -683,4 +782,9 @@ app.map_get("/metrics", |metrics: Option<Dc<Metrics>>| async move {
 - [ ] Every `Dc<T>` a handler or middleware takes is registered, or taken as `Option<Dc<T>>`
 - [ ] Nothing matches on the text of a `413` or of a filter's `400` — match on the status
 - [ ] The 0.14.1 names: `with_cache_control` on a route or group, `map_problem()`, `ValidNamedPath<T>` — the old ones are deprecated and fail `clippy -D warnings`
+- [ ] An extractor of your own implements `FromRequestHead`, never `FromRequestRef` / `FromRequest`; a `Dc<T>` it reads is declared in `dependencies`
+- [ ] `HttpRequest` is the last argument, no handler takes two body extractors, and `cargo build` (not only `cargo check`) passes
+- [ ] Every `map_err` answers with `error.status()`, not a fixed status; nothing in `map_ok` rewrites a `404` or a `401`
+- [ ] Nothing expects `404` for a missing header — that is `400`
+- [ ] A middleware replaces the body with `map_body` / `try_map_body` / `try_map_body_async`, not `into_parts` / `from_parts`
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean

@@ -159,9 +159,11 @@ dependency injection: `app::Db` is not registered, and is resolved by `GET /user
   `Result<Dc<T>, Error>` does not.
 * Not checked: `wrap`, `attach`, `HttpContext::resolve`, the `Container`
   — a missing service there still fails the request.
-* An extractor of your own declares what it resolves through
-  `dependencies(deps: &mut Dependencies)` on `FromContainer`,
-  `FromRequestRef` or `FromRequestParts` (default: nothing). Outside an
+* An extractor of your own (`FromRequestHead`, 0.15.0) declares what it
+  resolves through `fn dependencies(deps: &mut Dependencies)` (default:
+  nothing) — `deps.add::<T>()` for each `Dc<T>` it reads through
+  `head.extract()`. `FromContainer`, `FromRequestParts` and implementing
+  `FromRequestRef` are gone (see `references/routing.md`). Outside an
   `App`, `ContainerBuilder::require(consumer, |deps| ..)` declares a
   consumer, and `validate()` reports `Issue::Unregistered`.
 

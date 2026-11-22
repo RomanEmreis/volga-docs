@@ -83,6 +83,6 @@ async fn main() -> std::io::Result<()> {
 
 При получении запроса middleware сжатия проверяет HTTP-заголовок `Accept-Encoding`, чтобы определить подходящий алгоритм сжатия, учитывая, при этом, доступность требуемой функции и q-value (q-factor), если предоставлено несколько вариантов. Затем middleware сжимает тело ответа с помощью выбранного алгоритма и устанавливает HTTP-заголовок `Content-Encoding` соответствующим образом.
 
-Если заголовок `Accept-Encoding` указывает неподдерживаемый сервером алгоритм, то middleware отвечает кодом состояния [`406 Not Acceptable`](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/406).
+Если заголовок `Accept-Encoding` указывает неподдерживаемый сервером алгоритм, запрос отклоняется с [`406 Not Acceptable`](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/406). Отказ — это ошибка с `Vary` и `Accept-Encoding` в качестве [заголовков ошибки](/volga-docs/ru/reliability-observability/errors.html#заголовки-ошибки), поэтому его оформляют `map_err` и `map_problem`.
 
 Полный пример можно посмотреть [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/compression/src/main.rs)

@@ -63,4 +63,6 @@ If the `Content-Encoding` header specifies an unsupported algorithm, the middlew
 
 A body that goes over a decompression limit, set with [`with_decompression_limits()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_decompression_limits) (or, since **0.14.1**, installed whole with [`set_decompression_limits()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_decompression_limits)), is answered [`413 Content Too Large`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/413), as one over the [request body limit](/volga-docs/en/requests-responses/body.html#limiting-the-body-size) is. The body limit is counted on the decompressed body.
 
+An algorithm Volga does not have goes into a [`tap_req`](/volga-docs/en/middleware-infrastructure/middleware.html#replacing-the-body) of your own: `req.try_map_body(decode)` wraps the body into your decoder, under the same body limit.
+
 Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/decompression/src/main.rs)

@@ -105,6 +105,98 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
+Like `with` and `filter`, `tap_req` takes extractors after its first argument: path and query parameters, headers, `Dc<T>`, an [extractor of your own](/volga-docs/en/advanced-patterns/custom-extractors.html). They are read before the closure runs, so they describe the request as it arrives at this middleware:
+
+```rust compile
+use serde::Deserialize;
+use volga::{App, HttpRequestMut, Query, headers};
+
+headers! {
+    (Locale, "x-locale")
+}
+
+#[derive(Deserialize)]
+struct Lang {
+    lang: String,
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // GET /hello?lang=fr reaches the handler with `x-locale: fr`
+    app.tap_req(|mut req: HttpRequestMut, q: Query<Lang>| {
+        req.try_insert_header::<Locale>(q.lang.as_str())?;
+        Ok(req)
+    });
+
+    app.map_get("/hello", || "hello");
+
+    app.run().await
+}
+```
+
+If an extractor fails, the closure does not run, and the request is answered with the extractor's error. Before **0.15.0** `tap_req` took only `Dc<T>`, and only with the `di` feature.
+
+### Replacing the Body
+
+[`map_body()`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html#method.map_body) and [`try_map_body()`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html#method.try_map_body) put a new body in place of the request's own, for example one decompressed with an algorithm Volga does not have:
+
+```rust compile
+use volga::{App, HttpBody, HttpRequestMut, Json, error::Error, ok};
+
+fn decompress(body: HttpBody) -> Result<HttpBody, Error> {
+    // e.g. wrap the stream into a decoder
+    Ok(body)
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.tap_req(|req: HttpRequestMut| req.try_map_body(decompress));
+    app.map_post("/items", |item: Json<serde_json::Value>| ok!("{}", item.0));
+
+    app.run().await
+}
+```
+
+[`try_map_body_async()`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html#method.try_map_body_async) reads the body first, for example to check a signature over it, and puts the bytes back for the handler:
+
+```rust compile
+use http_body_util::BodyExt;
+use volga::{App, HttpBody, HttpRequestMut, Json, error::Error, http::StatusCode, ok};
+
+fn verify_signature(bytes: &[u8]) -> Result<(), Error> {
+    if bytes.is_empty() {
+        return Err((StatusCode::UNAUTHORIZED, "unsigned payload").into());
+    }
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.tap_req(|req: HttpRequestMut| async move {
+        req.try_map_body_async(|body| async move {
+            let bytes = body.collect().await?.to_bytes();
+            verify_signature(&bytes)?;
+            Ok(HttpBody::full(bytes))
+        })
+        .await
+    });
+
+    app.map_post("/webhook", |event: Json<serde_json::Value>| ok!("{}", event.0));
+
+    app.run().await
+}
+```
+
+* The new body is read under the request's [body limit](/volga-docs/en/requests-responses/body.html#limiting-the-body-size), as the old one was, so a body that grows on the way is answered `413` once it goes over the limit.
+* The headers stay as they are. Remove one that no longer describes the body, such as `Content-Length` or `Content-Encoding`, with `remove_header()`.
+* `HttpRequestMut::into_parts()` and `from_parts()` are deprecated since **0.15.0**: they handed out the request's extensions, which hold Volga's per-request state. Replace the body with these methods, and change the headers with `HttpRequestMut`'s own.
+
 ## Handling Successful Responses
 
 Use the [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok) method to transform or augment successful HTTP responses.
@@ -146,6 +238,8 @@ async fn sum(x: i32, y: i32) -> i32 {
 }
 ```
 
+`map_ok` sees the success path only. An error, including a `401`, `404` or `429` that [Volga produces itself](/volga-docs/en/reliability-observability/errors.html#errors-volga-produces-itself), goes to `map_err`.
+
 ## Handling Errors
 
 The [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) method lets you define custom error handlers - globally, per route, or for route groups.
@@ -175,6 +269,8 @@ async fn produce_err() -> IoError {
 ```
 
 Since **0.12.0** whatever `Err` the handler returns reaches this `map_err` as an `Error` — `Err(StatusCode::NOT_FOUND)` and an `Err` of your own error type included.
+
+A `map_err` on a route or a group covers the whole scope, its middleware included, whatever order it was registered in, and a second one replaces the first. See [Error Handlers of a Route or a Group](/volga-docs/en/reliability-observability/errors.html#error-handlers-of-a-route-or-a-group).
 
 ::: tip
 By attaching [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) to the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), you configure a global error handler. You can read more about advanced error handling [here](/volga-docs/en/reliability-observability/errors.html).

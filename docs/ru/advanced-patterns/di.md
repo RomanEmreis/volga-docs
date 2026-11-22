@@ -310,12 +310,12 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Собственный экстрактор, который резолвит из контейнера, участвует в проверке так же, как сервис: у [`FromContainer`](https://docs.rs/volga/latest/volga/di/trait.FromContainer.html), [`FromRequestRef`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestRef.html) и [`FromRequestParts`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestParts.html) есть метод `dependencies()`, который декларирует, что он резолвит, а по умолчанию не декларирует ничего.
+[Собственный экстрактор](/volga-docs/ru/advanced-patterns/custom-extractors.html#сервисы-из-контеинера), который резолвит из контейнера, участвует в проверке так же, как сервис: `FromRequestHead::dependencies()` декларирует, что он резолвит, а по умолчанию не декларирует ничего.
 
 ## Использование DI в middleware
-Чтобы внедрить зависимость в middleware, в случае использования [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) можно воспользоваться структурой [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) аналогично использованию в обработчиках запросов. Для [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) используйте метод [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve), либо [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) структуры [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
+Чтобы внедрить зависимость в middleware, в случае использования [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), `filter()`, `map_ok()`, `map_err()` или `tap_req()` можно воспользоваться структурой [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) аналогично использованию в обработчиках запросов. Для [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) используйте метод [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve), либо [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) структуры [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
 Основное различие между ними заключается в том, что первый метод требует реализации типажа [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) для `T`, тогда как последний просто возвращает [`Arc<T>`](https://doc.rust-lang.org/std/sync/struct.Arc.html).
-`Dc<T>`, принятый в `with()`, входит в [стартовую проверку](#что-принимают-обработчики-и-middleware); то, что `wrap()` резолвит во время выполнения, — нет.
+`Dc<T>`, принятый в этих методах, входит в [стартовую проверку](#что-принимают-обработчики-и-middleware); то, что `wrap()` резолвит во время выполнения, — нет.
 
 ```rust
 // Пример .wrap()

@@ -33,7 +33,7 @@ async fn main() -> std::io::Result<()> {
 Collecting the body needs the [`Body`](https://docs.rs/http-body/latest/http_body/trait.Body.html) trait methods, which come from the [`BodyExt`](https://docs.rs/http-body-util/latest/http_body_util/trait.BodyExt.html) extension trait of `http-body-util` — Volga does not re-export it.
 
 ::: warning
-The request body is a stream that can be consumed only once, so [`HttpBody`](https://docs.rs/volga/latest/volga/http/body/struct.HttpBody.html) cannot be combined with another body extractor in the same handler. Extractors that read only the request head — [`Path<T>`](/volga-docs/en/getting-started/route-params.html), [`Query<T>`](/volga-docs/en/getting-started/query-params.html), [`HttpHeaders`](/volga-docs/en/requests-responses/headers.html), [`Dc<T>`](/volga-docs/en/advanced-patterns/di.html) — combine with it freely.
+The request body is a stream that can be consumed only once, so [`HttpBody`](https://docs.rs/volga/latest/volga/http/body/struct.HttpBody.html) cannot be combined with another body extractor in the same handler, `HttpRequest` included: such a handler [fails to build](/volga-docs/en/getting-started/handlers.html#extractors-that-go-together). Extractors that read only the request head — [`Path<T>`](/volga-docs/en/getting-started/route-params.html), [`Query<T>`](/volga-docs/en/getting-started/query-params.html), [`HttpHeaders`](/volga-docs/en/requests-responses/headers.html), [`Dc<T>`](/volga-docs/en/advanced-patterns/di.html) — combine with it freely.
 :::
 
 ::: tip
