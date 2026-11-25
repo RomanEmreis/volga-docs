@@ -14,6 +14,39 @@ volga = { version = "...", features = ["full"] }
 ```
 With `full`, HTTP/2 is used when possible, and it falls back to HTTP/1 automatically.
 
+## Header Read Timeout
+
+A client that sends the head of a request a byte at a time holds its connection for as long as it likes, and so does one that connects and sends nothing, or never finishes a TLS handshake. A few of them are enough to take every permit of [`with_max_connections()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_max_connections). Since **0.15.1**, [`with_header_read_timeout()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_header_read_timeout) sets how long a client has to send the request line and the headers before its connection is closed:
+
+```rust compile
+use std::time::Duration;
+use volga::{App, Limit};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let app = App::new()
+        .with_header_read_timeout(Limit::Limited(Duration::from_secs(10)));
+
+    app.run().await
+}
+```
+
+or with the `header_read_timeout_secs` key of the `[server]` section in a [configuration file](/volga-docs/en/middleware-infrastructure/config-files.html#built-in-sections), where `0` means no timeout:
+
+```toml
+[server]
+header_read_timeout_secs = 10
+```
+
+* The same timeout bounds what comes before the head: the [TLS handshake](/volga-docs/en/protocols-realtime/https.html), and the first bytes by which a server with both HTTP/1 and HTTP/2, or with [WebSockets](/volga-docs/en/protocols-realtime/ws.html), tells the protocol. Each of these steps has the whole timeout.
+* The timer runs whenever the server waits for a request, so it also closes an HTTP/1 keep-alive connection left idle that long between requests. It does not run while a handler works or a body is read. A connection it closes is logged at `debug`, not `error`.
+* Past its preface an HTTP/2 connection is not timed: its requests are frames on a connection that is already set up. The method exists with the `http1` or the `tls` feature.
+* `Limit::Default` and `Limit::Unlimited` mean no timeout. `Limit::Limited(Duration::ZERO)` panics.
+
+::: warning
+The timeout is **off by default**, because it has a price on every request. hyper creates a new timer for each request head and registers it with the timer wheel of the runtime, which every worker locks. In a plain-text HTTP/1 benchmark at about a million requests a second that halved the throughput (hyper 1.12, tokio 1.54); a server that does more work per request loses a smaller share. Set it if clients reach the server directly; a server behind a proxy that bounds slow clients itself does not need it.
+:::
+
 ## HTTP Methods
 Volga has a named `map_*` method for every standard verb, registered on an [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) or on a [`RouteGroup`](https://docs.rs/volga/latest/volga/routing/struct.RouteGroup.html):
 

@@ -7,6 +7,7 @@ is rejected for no obvious reason, look here before rewriting anything.
 
 | Error | Cause | Fix |
 |---|---|---|
+| `no method named with_header_read_timeout`, `no function try_from_secret`, `no function attachment` on `ContentDisposition`, or `file!` refusing a `String` name | before 0.15.1 | upgrade to 0.15.1 — a security release, nothing else changes at compile time |
 | `` `HttpRequest` takes the whole request, so it stands last among the arguments of a handler `` (from `cargo build`, not `cargo check`) | 0.15.0: `HttpRequest` takes the head too, so nothing can follow it | move it last: `\|id: u64, req: HttpRequest\|` |
 | `a handler takes one extractor of the request body, HttpRequest included` | 0.15.0: two body extractors used to panic on every request | keep one; read the rest from it |
 | `a handler reads path parameters either by position or through Path<T> / NamedPath<T>, not both` | 0.15.0: the mix used to answer `400` on every request | pick one style |
@@ -61,6 +62,13 @@ is rejected for no obvious reason, look here before rewriting anything.
 
 | Symptom | Cause |
 |---|---|
+| panic at startup: `an HMAC secret cannot be empty`, `JWT_SECRET env var is empty` or `key file .. is empty` | 0.15.1: an empty HMAC key lets anyone sign a token. Usually a secret read with `unwrap_or_default()`. Set the secret, or handle it with `try_from_secret` / `try_from_env` / `try_from_file` |
+| a malformed compressed request body answers `400` `Decompression error: InvalidCompressedBody` instead of `500` | 0.15.1. Expected; a limit's `413` keeps its status |
+| a zstd request body that decoded before answers `400` `Decompression error: InvalidCompressedBody` | 0.15.1: its window is over 8 MiB (RFC 9659) — compressed at `--ultra` levels 20 to 22 or with `--long`. Compress at level 19 or below, without `--long` |
+| a Brotli request body answers `400` | 0.15.1: a large-window stream (RFC 7932 allows 16 MiB). Compress without large-window mode |
+| `save` puts the file straight in the folder, without the subfolders of the client's name, or answers `400` for a name such as `..` | 0.15.1: `File::save` / `Field::save` keep only the last component of the name. To keep folders, build and check the path yourself, then `save_as` |
+| a JWT accepted before is answered `401` | 0.15.1, `jsonwebtoken` 12: its header lists a critical extension (`crit`) it does not know |
+| a download carries `filename*=UTF-8''..` and `_` in `filename` | 0.15.1: `file!` sends `filename*` for a name with a non-ASCII character, `"` or `\`. Expected; clients prefer it |
 | every `401`, `404`, `405` and `429` comes back as `500` (or whatever status `map_err` hard-codes) | 0.15.0: volga's own rejections reach the error handler. Answer with `error.status()` |
 | `map_problem` answers a `401`, `404`, `413` or `429` as problem details; the default `404` / `405` / `401` have a text body; `map_ok` stops seeing them | 0.15.0: they are errors now. A `map_ok` that rewrote a `404` / `401` moves to `map_err`, or to `map_fallback` for the `404` |
 | a scoped `map_err` now also handles a filter's or `authorize`'s rejection; one of two `map_err` on a route stopped running | 0.15.0: a scoped `map_err` covers its whole scope, whatever the order, and a second one replaces the first |
@@ -147,6 +155,38 @@ is rejected for no obvious reason, look here before rewriting anything.
 | a debug build warns `OpenAPI: ... is described as ...` at startup, or the spec shows another route's parameter name | 0.11.2: routes naming one position differently share one templated path. Name the parameters alike |
 
 ## Version-by-version
+
+### 0.15.1 — uploads in their folder, escaped download names, bounded decompression windows
+A security release. Nothing stops compiling; a few answers change.
+
+* **`File::save` / `Field::save`** (and `save_all`) keep only what follows
+  the last `/` or `\` of the client's name and answer `400` when nothing
+  usable is left. They joined the folder with the name as sent, so
+  `../../x` wrote outside it and an absolute name replaced it. `save_as`,
+  `File::name` and `Field::try_get_file_name` are unchanged.
+* **`file!` escapes its file name** in `Content-Disposition` (RFC 6266,
+  RFC 8187): `"` and `\` escaped, `filename*` for a non-ASCII name, control
+  characters replaced. It wrote the name as is, so `a"; filename="evil.exe`
+  chose what the browser saved. It takes a `String` name too.
+  **`ContentDisposition::attachment(&name)`** builds the same header for
+  other responses.
+* **Request decompression** answers a malformed body `400`
+  (`Decompression error: InvalidCompressedBody`), where most got `500`.
+  Brotli streams are held to RFC 7932 and zstd windows to 8 MiB (RFC 9659);
+  a large-window Brotli stream made the server allocate up to 1 GiB from a
+  few bytes. Both answer `400`. volga requires `async-compression` 0.4.54.
+* **An empty HMAC secret panics** in `from_secret`, `from_env` and
+  `from_file`; **`try_from_secret`** returns the error, as `try_from_env` /
+  `try_from_file` do for an empty variable or file.
+* **`with_header_read_timeout(Limit<Duration>)`** and `[server]
+  header_read_timeout_secs` (features `http1` or `tls`) bound the request
+  head, the TLS handshake and protocol detection. Off by default, since
+  hyper's per-request timer halved a ~1M RPS HTTP/1 benchmark.
+* `jsonwebtoken` 12: a token with an unknown `crit` extension is `401`.
+  `cookie` 0.18.3 required (RUSTSEC-2026-0594, private cookies in processes
+  that fork).
+* Fixed: `File` reads `filename*` before `filename` and undoes the quoting
+  of a quoted name; `ContentType::multipart_custom` escapes its boundary.
 
 ### 0.15.0 — extractors of your own, rejections as errors, extraction in place
 **Breaking.** Most breaks are compile errors naming the fix; three changes
@@ -790,6 +830,21 @@ Nothing to rewrite. Check three things instead:
    `filter` or `authorize` now covers it.
 4. Clients and tests expecting `404` for a missing header get `400`; the
    default `401` / `404` / `405` have a text body.
+
+## Upgrading 0.15.0 → 0.15.1
+
+1. Bump the version. Nothing stops compiling; upgrade for the security
+   fixes even if nothing else applies.
+2. Check where the JWT secret comes from: an empty one now panics where
+   auth is configured. Fail on a missing secret, or use `try_from_secret` /
+   `try_from_env` / `try_from_file`.
+3. If code relied on `save` keeping the folders of the client's file name,
+   build the path yourself, check it, and call `save_as`.
+4. If clients send zstd request bodies, check they compress at level 19 or
+   below and without `--long`. Clients and tests expecting `500` for a
+   malformed compressed body get `400`.
+5. If clients reach the server directly, without a proxy that bounds slow
+   clients, consider `with_header_read_timeout`.
 
 ## Upgrading 0.8.x → 0.9.x, in order
 

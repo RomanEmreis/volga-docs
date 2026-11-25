@@ -14,6 +14,39 @@ volga = { version = "...", features = ["full"] }
 ```
 При использовании `full` HTTP/2 применяется, если это возможно, иначе автоматически используется HTTP/1.
 
+## Таймаут чтения заголовков
+
+Клиент, который присылает начало запроса по байту, держит соединение сколько захочет; так же и клиент, который подключился и ничего не прислал или так и не завершил TLS-рукопожатие. Нескольких таких хватает, чтобы занять все разрешения [`with_max_connections()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_max_connections). Начиная с **0.15.1** [`with_header_read_timeout()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_header_read_timeout) задаёт, сколько времени у клиента есть на строку запроса и заголовки, прежде чем соединение будет закрыто:
+
+```rust compile
+use std::time::Duration;
+use volga::{App, Limit};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let app = App::new()
+        .with_header_read_timeout(Limit::Limited(Duration::from_secs(10)));
+
+    app.run().await
+}
+```
+
+или ключом `header_read_timeout_secs` секции `[server]` в [файле конфигурации](/volga-docs/ru/middleware-infrastructure/config-files.html#встроенные-секции), где `0` означает отсутствие таймаута:
+
+```toml
+[server]
+header_read_timeout_secs = 10
+```
+
+* Тот же таймаут ограничивает и то, что идёт до заголовков: [TLS-рукопожатие](/volga-docs/ru/protocols-realtime/https.html) и первые байты, по которым сервер с HTTP/1 и HTTP/2 сразу или с [WebSocket](/volga-docs/ru/protocols-realtime/ws.html) определяет протокол. На каждый из этих шагов отводится весь таймаут.
+* Таймер идёт всякий раз, когда сервер ждёт запрос, поэтому он закрывает и соединение HTTP/1 keep-alive, простоявшее столько же между запросами. Пока работает обработчик или читается тело, он не идёт. Соединение, закрытое им, пишется в лог на уровне `debug`, а не `error`.
+* После preface соединение HTTP/2 таймером не ограничивается: его запросы — это кадры в уже установленном соединении. Метод доступен с функцией `http1` или `tls`.
+* `Limit::Default` и `Limit::Unlimited` означают отсутствие таймаута. `Limit::Limited(Duration::ZERO)` вызывает панику.
+
+::: warning
+Таймаут **по умолчанию выключен**, потому что он стоит чего-то на каждом запросе. hyper создаёт новый таймер для заголовков каждого запроса и регистрирует его в timer wheel рантайма, которое блокирует каждый воркер. В бенчмарке HTTP/1 с plain text примерно на миллионе запросов в секунду это вдвое снизило пропускную способность (hyper 1.12, tokio 1.54); сервер, который делает больше работы на запрос, теряет меньшую долю. Включайте его, если клиенты обращаются к серверу напрямую; серверу за прокси, который сам ограничивает медленных клиентов, он не нужен.
+:::
+
 ## HTTP-методы
 Для каждого стандартного глагола в Волге есть именованный метод `map_*` — он регистрируется на [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) или на [`RouteGroup`](https://docs.rs/volga/latest/volga/routing/struct.RouteGroup.html):
 

@@ -310,6 +310,15 @@ goes into a `tap_req` with `try_map_body`. `with_compression(...)` /
 accepting compressed uploads from untrusted clients. Since 0.14.1
 `set_decompression_limits(limits)` installs limits built elsewhere.
 
+Since 0.15.1 a body that is not a valid stream of its `Content-Encoding`
+(garbage, cut short) answers `400` with `Decompression error:
+InvalidCompressedBody` — most such bodies answered `500` before — and a
+limit's `413` keeps its status. The window a stream declares is bounded
+before any output: Brotli to RFC 7932 (16 MiB; a large-window stream is
+`400`), zstd to 8 MiB (RFC 9659; a larger window is `400`). zstd stays
+within 8 MiB up to level 19; `--ultra` levels 20 to 22 and `--long` do not, so
+clients must not compress request bodies with them.
+
 ## Static files (feature `static-files`)
 
 ```rust

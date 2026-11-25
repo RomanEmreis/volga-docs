@@ -70,6 +70,7 @@ App::new()
     .with_max_connections(Limit::Limited(1_000))
     .with_max_header_count(Limit::Limited(64))
     .with_max_header_list_size(Limit::Limited(16 * 1024))   // Unlimited panics
+    .with_header_read_timeout(Limit::Limited(Duration::from_secs(10)))   // off by default (0.15.1)
     .with_http2_limits(|l| l /* ... */)
     .with_no_delay()
     .without_greeter()          // no startup banner
@@ -78,6 +79,20 @@ App::new()
 `set_http2_limits(Http2Limits)` installs limits built elsewhere (0.14.1).
 It replaces them whole; `with_http2_limits` hands the closure the limits
 already set.
+
+`with_header_read_timeout(Limit::Limited(Duration::from_secs(10)))`
+(0.15.1, features `http1` or `tls`) closes a connection whose request line
+and headers do not arrive in time — a slow-loris client otherwise holds a
+permit of `with_max_connections` for as long as it likes. The same timeout
+bounds the TLS handshake and the bytes a server with HTTP/1 and HTTP/2 (or
+WebSockets) reads to tell the protocol, and closes an HTTP/1 keep-alive
+connection idle that long; it does not run while a handler works or a body
+is read, nor on HTTP/2 past its preface. `[server] header_read_timeout_secs`
+sets it from a config file (`0` = none). **Off by default**:
+hyper creates and registers a timer per request head on the runtime's
+locked timer wheel, which halved a plain-text HTTP/1 benchmark at ~1M RPS.
+Set it when clients reach the server directly; behind a proxy that bounds
+slow clients it is not needed. `Limit::Limited(Duration::ZERO)` panics.
 
 `without_implicit_head()` is **removed** in 0.10.0. A `GET` route answers
 `HEAD` itself rather than through a second bare route, so there is nothing

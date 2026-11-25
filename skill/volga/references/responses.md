@@ -109,12 +109,30 @@ permanent_redirect!("/v2/items");     // 308
 use tokio::fs::File as TokioFile;
 let name = "report.pdf";
 let f = TokioFile::open(name).await?;
-file!(name, f);                       // Content-Disposition attachment
+file!(name, f);                       // Content-Disposition attachment, name escaped (0.15.1)
 
 html!("<h1>hi</h1>");
 
 let index = "index.html";
 html_file!(index, TokioFile::open(index).await?);
+```
+
+`file!` takes a `&str` or (0.15.1) a `String` name and builds
+`Content-Disposition` per RFC 6266 / RFC 8187 since 0.15.1: `"` and `\`
+escaped, a non-ASCII name sent in `filename*`, control characters replaced
+— so the name may come from the request. Before 0.15.1 it went in as is,
+and `a"; filename="evil.exe` chose what the browser saved. For any other
+download, build the header with `ContentDisposition::attachment`, never by
+`format!`:
+
+```rust
+use volga::{HttpBody, headers::ContentDisposition, stream};
+use tokio::fs::File as TokioFile;
+
+app.map_get("/export/{name}", |name: String| async move {
+    let body = HttpBody::file(TokioFile::open("report.csv").await?).into_data_stream();
+    stream!(body; [ContentDisposition::attachment(&format!("{name}.csv"))])
+});
 ```
 
 ### Streaming

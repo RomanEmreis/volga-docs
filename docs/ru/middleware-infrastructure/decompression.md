@@ -54,8 +54,17 @@ curl -v -X POST --location 'http://127.0.0.1:7878/users' \
 
 Если заголовок `Content-Encoding` указывает на неподдерживаемый алгоритм, то middleware отвечает кодом состояния [`415 Unsupported Media Type`](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/415).
 
+На тело, которое не является корректным потоком своего `Content-Encoding`, — мусор или оборванный поток — начиная с **0.15.1** Волга отвечает [`400 Bad Request`](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/400) с текстом `Decompression error: InvalidCompressedBody`. Раньше на большинство таких тел приходил `500`.
+
 На тело, превысившее ограничение распаковки, заданное через [`with_decompression_limits()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_decompression_limits) (или, начиная с **0.14.1**, переданное целиком через [`set_decompression_limits()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_decompression_limits)), Волга отвечает [`413 Content Too Large`](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/413) — так же, как на тело больше [ограничения размера тела запроса](/volga-docs/ru/requests-responses/body.html#ограничение-размера-тела). Ограничение размера тела считается по распакованному телу.
 
 Алгоритм, которого в Volga нет, подключается в собственном [`tap_req`](/volga-docs/ru/middleware-infrastructure/middleware.html#замена-тела): `req.try_map_body(decode)` оборачивает тело в ваш декодер под тем же ограничением размера тела.
+
+### Размер окна
+
+Декодер выделяет окно, которое объявляет поток, ещё до того, как появится вывод, который могли бы посчитать ограничения, поэтому окно ограничивается отдельно. Начиная с **0.15.1**:
+
+* потоки **Brotli** должны соответствовать RFC 7932, где окно не больше 16 MiB. На поток с расширением large-window, окно которого доходит до 1 GiB, Волга отвечает `400`: раньше тело в несколько байт могло заставить сервер выделить гигабайт;
+* кадры **zstd** могут объявлять окно до 8 MiB — предел, который RFC 9659 задаёт для content coding `zstd`, тогда как сам zstd допускает 128 MiB. На кадр с окном больше Волга отвечает `400`. zstd укладывается в 8 MiB до уровня 19 включительно; уровни `--ultra` с 20 по 22 и `--long` на больших входных данных используют окна больше, поэтому клиенту не стоит сжимать ими тела запросов.
 
 Полный пример можно посмотреть [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/decompression/src/main.rs)
