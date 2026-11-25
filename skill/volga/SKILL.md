@@ -3,7 +3,7 @@ name: volga
 description: Build, review and debug HTTP services in Rust with the volga web framework — routing, extractors, response macros, middleware, dependency injection, JWT/OAuth 2.1 auth, input validation, rate limiting, TLS, WebSockets, SSE, configuration, graceful shutdown and testing. Use whenever Rust code depends on `volga`, whenever the task is to write or change a volga handler, middleware or `App` setup, and when upgrading such code across volga versions.
 license: MIT
 metadata:
-  volga-version: "0.15.0"
+  volga-version: "0.15.1"
   msrv: "1.90"
   edition: "2024"
   docs: "https://romanemreis.github.io/volga-docs/"
@@ -48,7 +48,10 @@ own a `Path<T>`, fails the build on extractors that cannot read one request,
 sent volga's own rejections (`401`, `404`, `405`, `429`, ...) to `map_err`,
 made a scoped `map_err` cover its whole route or group, gave `tap_req`
 extractors and `HttpRequestMut::map_body`, and answers a missing header
-`400`. The
+`400`; 0.15.1 keeps a file `save` names inside its folder, escapes the file
+name `file!` writes, bounds the Brotli and zstd windows of request
+decompression and answers a malformed compressed body `400`, panics on an
+empty HMAC secret, and added an opt-in header read timeout. The
 response macros use a **semicolon** before custom headers. Most volga
 code a model has seen predates all of it. The
 [Non-negotiables](#non-negotiables) below are the places where writing
@@ -67,8 +70,9 @@ In an existing project, read `Cargo.toml` before touching anything:
 
 | What you find | What it means |
 |---|---|
-| `volga = "0.15"` or `"0.15.0"` | This skill applies as written — a caret requirement resolves to the newest 0.15.x |
-| `volga = "0.14"` or `"0.14.1"` | As written, except 0.15.0: an extractor of your own implements `FromRequestRef` or `FromRequestParts` and is taken by middleware only; a `FromPathArg` type of your own is a bare handler argument; `HttpRequest` may stand anywhere; volga's own `401`, `404`, `405`, `413`, `429` are responses `map_err` and `map_problem` never see, and a scoped `map_err` covers only what was registered after it; `tap_req` takes only `Dc<T>`, and only with `di`; a missing `Header<T>` answers `404`; there is no `map_body` / `Error::with_header`. See 0.14.x → 0.15.0 in `references/migration.md` |
+| `volga = "0.15"` or `"0.15.1"` | This skill applies as written — a caret requirement resolves to the newest 0.15.x |
+| `volga = "=0.15.0"` pinned exactly | As written, except the 0.15.1 security fixes: `File::save` / `Field::save` keep the folders of the client's file name, so `../` writes outside the folder; `file!` writes its file name into `Content-Disposition` unescaped, so a name from the request adds parameters; request decompression accepts large-window Brotli and zstd windows up to 128 MiB, and answers a malformed compressed body `500`; an empty HMAC secret is accepted; there is no `with_header_read_timeout` / `ContentDisposition::attachment` / `try_from_secret`. Upgrade — see 0.15.0 → 0.15.1 in `references/migration.md` |
+| `volga = "0.14"` or `"0.14.1"` | As `=0.15.0`, and before 0.15.0: an extractor of your own implements `FromRequestRef` or `FromRequestParts` and is taken by middleware only; a `FromPathArg` type of your own is a bare handler argument; `HttpRequest` may stand anywhere; volga's own `401`, `404`, `405`, `413`, `429` are responses `map_err` and `map_problem` never see, and a scoped `map_err` covers only what was registered after it; `tap_req` takes only `Dc<T>`, and only with `di`; a missing `Header<T>` answers `404`; there is no `map_body` / `Error::with_header`. See 0.14.x → 0.15.0 in `references/migration.md` |
 | `volga = "=0.14.0"` pinned exactly | As 0.14.1, and the 0.14.1 names: a route or group sets `Cache-Control` with `cache_control`, `App` turns on Problem Details with `use_problem_details`, the validated named path is `ValidPath<T>`, and there is no `set_bearer_auth` / `set_oauth` / `set_cache_control` / `set_http2_limits` / `set_decompression_limits`. See 0.14.0 → 0.14.1 in `references/migration.md` |
 | `volga = "0.13"` or `"0.13.3"` | As `=0.14.0`, and: `Dc<T>` has `DerefMut`, and a write through it changes a private copy; a handler or middleware taking an unregistered `Dc<T>`, or a handler reading path parameters its route does not declare, starts and answers `500` on every request; a handler taking `HttpRequest` sees no path parameters; a filter's `false` and a body over the limit answer with the old messages. Read 0.13.x → 0.14.0 in `references/migration.md` before upgrading — two of these surface at startup, not at compile time |
 | `volga = "=0.13.2"` pinned exactly | As 0.13.x, and bearer auth: `with_alg` adds to the default `HS256` instead of replacing it, `encode` always signs `HS256`, `with_iss` does not require `iss`, and a key that does not fit its algorithms is not reported at startup. See 0.13.2 → 0.13.3 in `references/migration.md` |
@@ -753,6 +757,32 @@ app.tap_req(|mut req: HttpRequestMut, q: Query<Lang>| {
 });
 ```
 
+### 33. An HMAC secret is never empty
+
+Since 0.15.1 `EncodingKey::from_secret` / `DecodingKey::from_secret` panic
+on an empty secret, and `from_env` / `from_file` on an empty variable or
+file — anyone can sign a token with an empty key. A secret read with
+`unwrap_or_default()` stops the app where auth is configured. Fail loudly
+on a missing secret, or handle it with the `try_*` forms:
+
+```rust
+use volga::auth::{DecodingKey, EncodingKey};
+
+let secret = std::env::var("JWT_SECRET")?;            // not .unwrap_or_default()
+let encoding = EncodingKey::try_from_secret(secret.as_bytes())?;
+let decoding = DecodingKey::try_from_env("JWT_SECRET")?;
+```
+
+### 34. A client's file name goes to `save`, never into a path
+
+`File::save(dir)` and `Field::save(dir)` keep only what follows the last
+`/` or `\` of the name the client sent (0.15.1), and answer `400` when
+nothing usable is left. `file.name()` is the name **as sent** — `..`,
+separators, absolute paths — so `save_as(dir.join(name))` with that name
+undoes it. Pick the path yourself, or call `save`. Going the other way, `file!`
+escapes its name since 0.15.1; for a `stream!` download build the header
+with `ContentDisposition::attachment(&name)`, never by `format!`.
+
 ## Checklist before handing code back
 
 - [ ] Every custom-header array is preceded by `;`, not `,`
@@ -787,4 +817,7 @@ app.tap_req(|mut req: HttpRequestMut, q: Query<Lang>| {
 - [ ] Every `map_err` answers with `error.status()`, not a fixed status; nothing in `map_ok` rewrites a `404` or a `401`
 - [ ] Nothing expects `404` for a missing header — that is `400`
 - [ ] A middleware replaces the body with `map_body` / `try_map_body` / `try_map_body_async`, not `into_parts` / `from_parts`
+- [ ] No HMAC secret is read with a fallback to `""`; a missing one fails the start, or goes through `try_from_secret` / `try_from_env`
+- [ ] An upload is saved with `save(dir)` or `save_as` on a path you chose, never on one joined with `file.name()`; a `Content-Disposition` comes from `file!` or `ContentDisposition::attachment`
+- [ ] A server clients reach directly, with no proxy that bounds slow clients, sets `with_header_read_timeout`
 - [ ] `cargo clippy --all-targets` and `cargo fmt --check` are clean

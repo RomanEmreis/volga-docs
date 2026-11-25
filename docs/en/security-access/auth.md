@@ -176,7 +176,7 @@ Setting `with_iss` is how a resource server tells its own tokens from the rest s
 :::
 
 ::: info
-`EncodingKey`, `DecodingKey` and `Algorithm` are Volga's own types at `volga::auth::*` rather than re-exports of `jsonwebtoken`, so `jsonwebtoken::ErrorKind` and its key constructors are not reachable — build keys with the PEM / base64 / secret / env / file constructors Volga provides, or, since **0.13.2**, from a [JSON Web Key](#a-key-published-as-a-json-web-key). Token validation settings live on [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html).
+`EncodingKey`, `DecodingKey` and `Algorithm` are Volga's own types at `volga::auth::*` rather than re-exports of `jsonwebtoken`, so `jsonwebtoken::ErrorKind` and its key constructors are not reachable — build keys with the PEM / base64 / secret / env / file constructors Volga provides, or, since **0.13.2**, from a [JSON Web Key](#a-key-published-as-a-json-web-key). Token validation settings live on [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html). Since **0.15.1** Volga builds on `jsonwebtoken` 12, which rejects a token whose header lists a critical extension (`crit`) it does not know, so such a token is answered `401`.
 
 Since **v0.9.8**, `volga::auth::Algorithm` is a re-export of [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) from `volga-oauth-core` — the variants, the `HS256` default and the behaviour are unchanged, but the type is now shared with the client crates, so a `private_key_jwt` assertion and a bearer token the server issues are described in one vocabulary. It is also re-exported from `volga::auth::oauth`, where it can be named without the `jwt-auth` feature.
 :::
@@ -252,6 +252,10 @@ Each algorithm belongs to a family, and each family takes its own kind of key:
 | `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512` | RSA key | `from_rsa_pem`, `from_pem_file`, an `RSA` JWK |
 | `ES256`, `ES384` | EC key (P-256, P-384) | `from_ec_pem`, `from_pem_file`, an `EC` JWK |
 | `EdDSA` | Ed25519 key | `from_ed_pem`, `from_pem_file`, an `OKP` JWK |
+
+::: warning
+An HMAC secret cannot be empty: with an empty key anyone can sign a token the server accepts. Since **0.15.1**, `from_secret` panics on an empty secret, as `from_env` and `from_file` do on an empty variable or file. A secret read with a fallback to `""` therefore stops the application where the authentication is configured, before it serves anything. [`try_from_secret()`](https://docs.rs/volga/latest/volga/auth/decoding_key/struct.DecodingKey.html#method.try_from_secret), `try_from_env()` and `try_from_file()` return the error instead.
+:::
 
 The decoding key has to suit **every** algorithm `with_alg` names, and the encoding key the **first** one. Since **0.13.3** a key that does not stops the application at startup: `App::run` returns an error that names the key, the algorithms it cannot serve and the ones it can.
 

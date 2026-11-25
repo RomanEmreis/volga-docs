@@ -176,7 +176,7 @@ let app = App::new()
 :::
 
 ::: info
-`EncodingKey`, `DecodingKey` и `Algorithm` — собственные типы Волги в `volga::auth::*`, а не реэкспорты из `jsonwebtoken`, поэтому `jsonwebtoken::ErrorKind` и его конструкторы ключей недоступны: ключи создаются конструкторами PEM / base64 / secret / env / file, которые предоставляет Волга, а начиная с **0.13.2** — и из [JSON Web Key](#ключ-опубликованныи-как-json-web-key). Параметры валидации токена настраиваются через [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html).
+`EncodingKey`, `DecodingKey` и `Algorithm` — собственные типы Волги в `volga::auth::*`, а не реэкспорты из `jsonwebtoken`, поэтому `jsonwebtoken::ErrorKind` и его конструкторы ключей недоступны: ключи создаются конструкторами PEM / base64 / secret / env / file, которые предоставляет Волга, а начиная с **0.13.2** — и из [JSON Web Key](#ключ-опубликованныи-как-json-web-key). Параметры валидации токена настраиваются через [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html). Начиная с **0.15.1** Волга использует `jsonwebtoken` 12, который отклоняет токен, если в его заголовке указано неизвестное ему критическое расширение (`crit`), поэтому на такой токен приходит `401`.
 
 Начиная с **v0.9.8**, `volga::auth::Algorithm` — это реэкспорт [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) из `volga-oauth-core`: варианты, значение по-умолчанию `HS256` и поведение не изменились, но теперь тип общий с клиентскими крейтами — утверждение `private_key_jwt` и bearer-токен, который выпускает сервер, описываются одним словарём. Он также реэкспортируется из `volga::auth::oauth`, где его можно назвать без флага `jwt-auth`.
 :::
@@ -251,6 +251,10 @@ let app = App::new()
 | `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512` | RSA-ключ | `from_rsa_pem`, `from_pem_file`, JWK вида `RSA` |
 | `ES256`, `ES384` | EC-ключ (P-256, P-384) | `from_ec_pem`, `from_pem_file`, JWK вида `EC` |
 | `EdDSA` | ключ Ed25519 | `from_ed_pem`, `from_pem_file`, JWK вида `OKP` |
+
+::: warning
+HMAC-секрет не может быть пустым: с пустым ключом кто угодно может подписать токен, который сервер примет. Начиная с **0.15.1** `from_secret` паникует на пустом секрете, как `from_env` и `from_file` — на пустой переменной или пустом файле. Поэтому секрет, прочитанный с запасным значением `""`, останавливает приложение там, где настраивается аутентификация, до того как оно начнёт отвечать. [`try_from_secret()`](https://docs.rs/volga/latest/volga/auth/decoding_key/struct.DecodingKey.html#method.try_from_secret), `try_from_env()` и `try_from_file()` вместо этого возвращают ошибку.
+:::
 
 Ключ проверки (decoding) должен подходить **каждому** алгоритму, который называет `with_alg`, а ключ подписи (encoding) — **первому**. Начиная с **0.13.3** неподходящий ключ останавливает приложение при старте: `App::run` возвращает ошибку, в которой названы ключ, алгоритмы, которые он обслужить не может, и те, которые может.
 

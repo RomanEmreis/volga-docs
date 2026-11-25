@@ -98,10 +98,16 @@ Key constructors on both `EncodingKey` and `DecodingKey`:
 `from_ed_pem` (these return `Result`), and `from_pem_file`, `from_file`,
 `from_env`, `from_env_base64`, each with a `try_*` sibling that returns
 `Result` instead of panicking. The panicking forms are meant to run once at
-startup.
+startup. Since 0.15.1 an empty HMAC secret is refused: `from_secret`,
+`from_env` and `from_file` panic on an empty secret, variable or file, and
+`try_from_secret` / `try_from_env` / `try_from_file` return the error — with
+an empty key anyone can sign a token the server accepts. Never read the
+secret with `unwrap_or_default()`.
 
 `jsonwebtoken` types are **not** re-exported — `EncodingKey::from_rsa_der`
-and `ErrorKind` do not exist here.
+and `ErrorKind` do not exist here. Since 0.15.1 volga is on `jsonwebtoken`
+12, which rejects a token whose header lists an unknown critical extension
+(`crit`): `401`.
 
 Since 0.13.2 `DecodingKey::from_jwk` builds a verification key from a JSON
 Web Key — RSA, EC, Ed25519 (`OKP`) or `oct` — taken as JSON **text**, one

@@ -190,7 +190,7 @@ async fn main() -> std::io::Result<()> {
 
 | Секция       | Feature-флаг   | Поля                                                          |
 |--------------|----------------|---------------------------------------------------------------|
-| `[server]`   | *(всегда)*     | `host`, `port`, `body_limit_bytes`, `max_header_count`, `max_connections`, `shutdown_timeout_secs` |
+| `[server]`   | *(всегда)*     | `host`, `port`, `body_limit_bytes`, `max_header_count`, `max_connections`, `shutdown_timeout_secs`, `header_read_timeout_secs` |
 | `[tls]`      | `tls`          | Настройки TLS-сертификатов                                    |
 | `[tracing]`  | `tracing`      | Настройки трассировки/логирования                             |
 | `[openapi]`  | `openapi`      | Настройки спецификации [OpenAPI](/volga-docs/ru/middleware-infrastructure/openapi.html) |
@@ -205,9 +205,10 @@ port = 8080
 body_limit_bytes = 1048576
 max_connections = 1000
 shutdown_timeout_secs = 30
+header_read_timeout_secs = 10
 ```
 
-`shutdown_timeout_secs` — сколько [плавное завершение](/volga-docs/ru/reliability-observability/graceful-shutdown.html#таимаут-завершения) ждёт открытые соединения, прежде чем закрыть их; `0` закрывает их сразу. `body_limit_bytes` — [ограничение размера тела запроса](/volga-docs/ru/requests-responses/body.html#ограничение-размера-тела) для приложения; группа маршрутов или маршрут, задавшие собственное в коде, сохраняют его.
+`header_read_timeout_secs` (начиная с **0.15.1**) — сколько времени у клиента есть на [начало запроса](/volga-docs/ru/protocols-realtime/http.html#таимаут-чтения-заголовков); `0` или отсутствие ключа означает отсутствие таймаута. `shutdown_timeout_secs` — сколько [плавное завершение](/volga-docs/ru/reliability-observability/graceful-shutdown.html#таимаут-завершения) ждёт открытые соединения, прежде чем закрыть их; `0` закрывает их сразу. `body_limit_bytes` — [ограничение размера тела запроса](/volga-docs/ru/requests-responses/body.html#ограничение-размера-тела) для приложения; группа маршрутов или маршрут, задавшие собственное в коде, сохраняют его.
 
 ::: tip
 Встроенные секции применяются только при запуске. Горячая перезагрузка на них **не влияет**.

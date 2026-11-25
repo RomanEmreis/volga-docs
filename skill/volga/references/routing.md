@@ -459,6 +459,14 @@ app.map_post("/upload", |file: File| async move {
 });
 ```
 
+`save(dir)` names the file after the client's `Content-Disposition` name,
+but since 0.15.1 keeps only what follows its last `/` or `\`, so the file
+stays in `dir`; a name with nothing usable left (`..`, a trailing
+separator) answers `400`. `file.name()` returns the name **as sent** — never
+`save_as(dir.join(name))` with it. `Field::save` and `save_all` behave the
+same. Before 0.15.1 `save` kept the folders of the name: `../../x` wrote
+outside `dir`.
+
 ### Multipart (feature `multipart`)
 
 Incoming:

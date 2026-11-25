@@ -4,7 +4,7 @@ A packaged [Agent Skill](https://agentskills.io/specification) that teaches a
 coding assistant to write Volga correctly — the same material as this site,
 reorganised for a model rather than a reader.
 
-<SkillDownload href="/volga-skill.zip" label="Download volga-skill.zip" note="~85 KiB · MIT · tracks volga 0.15.0" />
+<SkillDownload href="/volga-skill.zip" label="Download volga-skill.zip" note="~85 KiB · MIT · tracks volga 0.15.1" />
 
 Source: [`skill/volga`](https://github.com/RomanEmreis/volga-docs/tree/main/skill/volga).
 
@@ -23,7 +23,8 @@ handler's `Err` into an error for `map_err` rather than a second response,
 0.13.3 made `with_alg` replace the default `HS256` and checks the keys against it at startup,
 0.14.0 made `Dc<T>` read-only and checks services and path parameters at startup,
 0.14.1 renamed `cache_control`, `use_problem_details` and `ValidPath` after one naming rule,
-and 0.15.0 made `FromRequestHead` the one extractor trait of your own and sent Volga's own rejections to `map_err`,
+0.15.0 made `FromRequestHead` the one extractor trait of your own and sent Volga's own rejections to `map_err`,
+and 0.15.1 kept uploads inside their folder, escaped the file name of a download and refused an empty HMAC secret,
 while most Volga code a model has seen predates all of it.
 So the failure mode is not a forgotten method name. It is an assistant
 writing `ok!("hi", [("x-key", "v")])` with a comma instead of a semicolon,
@@ -48,7 +49,7 @@ The skill front-loads exactly those traps, then routes to detail on demand.
 | `references/security.md` | Basic auth, JWT, authorizers, OAuth 2.1 / OIDC, the client crate, TLS, HSTS |
 | `references/realtime.md` | WebSockets, WebSocket-over-HTTP/2, Server-Sent Events |
 | `references/operations.md` | Feature flags, graceful shutdown, cancellation, tracing, OpenAPI and hand-written schemas, `TestServer` |
-| `references/migration.md` | Symptom → cause, and the 0.14.x → 0.15.0, 0.14.0 → 0.14.1, 0.13.x → 0.14.0, 0.13.2 → 0.13.3, 0.13.1 → 0.13.2, 0.13.0 → 0.13.1, 0.12.x → 0.13.0, 0.11.x → 0.12.0, 0.10.x → 0.11.0, 0.10.0 → 0.10.1, 0.9.x → 0.10.x and 0.8.x → 0.9.x upgrade paths |
+| `references/migration.md` | Symptom → cause, and the 0.15.0 → 0.15.1, 0.14.x → 0.15.0, 0.14.0 → 0.14.1, 0.13.x → 0.14.0, 0.13.2 → 0.13.3, 0.13.1 → 0.13.2, 0.13.0 → 0.13.1, 0.12.x → 0.13.0, 0.11.x → 0.12.0, 0.10.x → 0.11.0, 0.10.0 → 0.10.1, 0.9.x → 0.10.x and 0.8.x → 0.9.x upgrade paths |
 
 `SKILL.md` stays short on purpose: an entrypoint an agent always reads, and
 eight references it loads only when the task needs one.
@@ -150,6 +151,10 @@ before anything else:
 * **Volga's own `401`, `404`, `405` and `429` reach `map_err`** since
   0.15.0, so an error handler answers with `e.status()`, never a fixed
   status, and a scoped `map_err` covers its whole route or group.
+* **An HMAC secret is never empty** since 0.15.1: `from_secret` panics on
+  one, so a secret read with a fallback to `""` stops the start.
+* **A client's file name goes to `save`**, which keeps the file in its
+  folder since 0.15.1, never into a path joined by hand.
 
 ## The code in it compiles
 
@@ -167,12 +172,12 @@ python3 ci/check-snippets.py --docs-dir skill --default-mode compile-fragment --
 
 ## Version
 
-The skill tracks volga **0.15.0** on MSRV **1.90**. The frontmatter records
+The skill tracks volga **0.15.1** on MSRV **1.90**. The frontmatter records
 both, so an assistant can tell whether the skill matches the crate in front
 of it:
 
 ```yaml
 metadata:
-  volga-version: "0.15.0"
+  volga-version: "0.15.1"
   msrv: "1.90"
 ```
