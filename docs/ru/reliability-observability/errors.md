@@ -1,8 +1,8 @@
 # Центральный обработчик ошибок
 
-Волга предоставляет централизованный механизм обработки ошибок, который перехватывает все ошибки, реализующие трейт [`Error`](https://doc.rust-lang.org/std/error/trait.Error.html), возникающие в обработчиках запросов и middleware. Для этого можно воспользоваться методом [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) типа [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) для регистрации функции, обрабатывающей ошибки.
+Волга предоставляет централизованный механизм обработки ошибок, который перехватывает все ошибки, реализующие типаж [`Error`](https://doc.rust-lang.org/std/error/trait.Error.html), возникающие в обработчиках запросов и middleware. Для этого можно воспользоваться методом [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) типа [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) для регистрации функции, обрабатывающей ошибки.
 
-Функция принимает объект типа [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) и должна вернуть ответ, реализующий трейт [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html). Как и обработчик запроса, она может быть [асинхронной или синхронной](/volga-docs/ru/getting-started/handlers.html).
+Функция принимает объект типа [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) и должна вернуть ответ, реализующий типаж [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html). Как и обработчик запроса, она может быть [асинхронной или синхронной](/volga-docs/ru/getting-started/handlers.html).
 
 ### Пример:
 ```rust compile
@@ -45,7 +45,7 @@ app.map_err(|error: Error| {
 
 ## Возврат ошибок из обработчика
 
-Обработчик, который может завершиться неудачей, возвращает `Result<T, E>`. `Ok` отвечает значением `T`, как и любой другой ответ. Начиная с **0.12.0** `Err` — это ошибка, а не второй вид ответа: она превращается в [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) через трейт [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) и передаётся обработчику ошибок — зарегистрированному через `map_err` или обработчику по умолчанию — точно так же, как ошибка из любого другого места.
+Обработчик, который может завершиться неудачей, возвращает `Result<T, E>`. `Ok` отвечает значением `T`, как и любой другой ответ. Начиная с **0.12.0** `Err` — это ошибка, а не второй вид ответа: она превращается в [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) через типаж [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) и передаётся обработчику ошибок — зарегистрированному через `map_err` или обработчику по умолчанию — точно так же, как ошибка из любого другого места.
 
 ```rust compile
 use volga::{App, Json, http::StatusCode};

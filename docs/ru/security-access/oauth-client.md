@@ -213,7 +213,7 @@ fn publish(key: PrivateKeyJwt, public: PublicJwk) -> Result<(), ClientError> {
 
 ## Хранилище токенов
 
-Сохранение выполняется через трейт [`TokenStore`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/trait.TokenStore.html). [`InMemoryTokenStore`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.InMemoryTokenStore.html) — встроенная реализация в памяти процесса, подходящая для CLI, тестов и одноинстансовых сервисов; всё долговременное (БД, зашифрованный файл, связка ключей ОС) реализуется одной реализацией трейта.
+Сохранение выполняется через типаж [`TokenStore`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/trait.TokenStore.html). [`InMemoryTokenStore`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.InMemoryTokenStore.html) — встроенная реализация в памяти процесса, подходящая для CLI, тестов и одноинстансовых сервисов; всё долговременное (БД, зашифрованный файл, связка ключей ОС) реализуется одной реализацией типажа.
 
 ```rust compile
 use volga_oauth_client::{TokenSet, TokenStore};

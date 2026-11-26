@@ -31,7 +31,7 @@ Content-Type: text/plain
 На запрос без этого заголовка Волга отвечает `400 Bad Request` с именем заголовка ещё до обработчика. Для заголовка, которого может не быть, принимайте `Option<Header<T>>`. [`HttpHeaders::try_get()`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) завершается такой же ошибкой. До **0.15.0** отсутствующий заголовок давал `404`.
 
 ### Чтение кастомного HTTP-заголовка с `Header<T>`
-Если вам нужно прочитать свой HTTP-заголовок, создайте структуру и реализуйте для неё трейт [`FromHeaders`](https://docs.rs/volga/latest/volga/headers/trait.FromHeaders.html):
+Если вам нужно прочитать свой HTTP-заголовок, создайте структуру и реализуйте для неё типаж [`FromHeaders`](https://docs.rs/volga/latest/volga/headers/trait.FromHeaders.html):
 ```rust
 use volga::{App, ok};
 use volga::headers::{Header, FromHeaders, HeaderMap, HeaderName, HeaderValue};
@@ -66,7 +66,7 @@ Received x-api-key: 123-321
 ```
 
 ### Упрощение работы с кастомными заголовками с помощью макроса `headers!`
-Вместо реализации трейта вручную, вы можете использовать макрос [`headers!`](https://docs.rs/volga/latest/volga/macro.headers.html):
+Вместо реализации типажа вручную, вы можете использовать макрос [`headers!`](https://docs.rs/volga/latest/volga/macro.headers.html):
 ```rust compile
 use volga::{App, ok};
 use volga::headers::{
