@@ -103,7 +103,7 @@ Do this for every release, in one pull request per release.
 
 **Every release (0.x.y):**
 
-1. Read the release's entry in the [CHANGELOG](https://github.com/RomanEmreis/volga/blob/main/CHANGELOG.md) and the merged pull requests behind it. Each volga pull request has a **Docs impact** section that says what the docs need.
+1. Read the release's entry in the [CHANGELOG](https://github.com/RomanEmreis/volga/blob/main/CHANGELOG.md) and the merged pull requests behind it.
 2. For each user-visible change, find the pages it touches in `docs/` and `skill/` (search for the API names) and update them to describe the new behaviour, with no "since".
 3. Add a `## 0.x.y` section to the top of the Migration page in both locales, and to `skill/volga/references/migration.md`, if anything needs a user's action.
 4. A new feature goes to the page of its section, or to a new page if it is big enough; see [Where a change goes](#where-a-change-goes). A new Cargo feature also goes to [Feature Flags](docs/en/getting-started/features.md).
