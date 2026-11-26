@@ -1,6 +1,6 @@
 # Handlers
 
-A request handler is a function or a closure mapped to a route. Its arguments are [extractors](/volga-docs/en/getting-started/route-params.html) — route and query parameters, headers, a JSON body, services from [DI](/volga-docs/en/advanced-patterns/di.html), [types of your own](/volga-docs/en/advanced-patterns/custom-extractors.html) — and whatever it returns is turned into the response. Volga accepts a handler in two shapes, and reads which one it is off the signature.
+A request handler is a function or a closure mapped to a route. Its arguments are [extractors](/volga-docs/en/getting-started/extractors.html) — route and query parameters, headers, a JSON body, services from [DI](/volga-docs/en/advanced-patterns/di.html), [types of your own](/volga-docs/en/advanced-patterns/custom-extractors.html) — and whatever it returns is turned into the response. Volga accepts a handler in two shapes, and reads which one it is off the signature.
 
 ## Asynchronous Handlers
 

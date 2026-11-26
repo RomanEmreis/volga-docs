@@ -23,6 +23,10 @@ Add the following dependencies in your `Cargo.toml`:
 volga = { version = "0.15" }
 tokio = { version = "1", features = ["full"] }
 ```
+
+::: tip
+By default Volga compiles only the HTTP server, which is all this example needs. Middleware, DI, cookies and the rest each have a feature; while learning, `features = ["full"]` turns them all on. See [Feature Flags](/volga-docs/en/getting-started/features.html).
+:::
 ## Setup
 Create your main application in `main.rs`:
 
