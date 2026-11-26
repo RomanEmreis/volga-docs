@@ -143,7 +143,7 @@ let mut app = App::new()
     );
 ```
 
-Начиная с **0.14.1** `BearerAuthConfig`, собранный в другом месте — например, во вспомогательной функции, общей для приложения и его тестов, — передаётся целиком через [`set_bearer_auth(config)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_bearer_auth). Он заменяет конфигурацию, тогда как `with_bearer_auth` передаёт замыканию конфигурацию по умолчанию для уточнения.
+`BearerAuthConfig`, собранный в другом месте — например, во вспомогательной функции, общей для приложения и его тестов, — передаётся целиком через [`set_bearer_auth(config)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_bearer_auth). Он заменяет конфигурацию, тогда как `with_bearer_auth` передаёт замыканию конфигурацию по умолчанию для уточнения.
 
 При настройке валидации аудитории через [`with_aud(...)`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_aud) claim `aud` автоматически добавляется в список обязательных — токены без него отклоняются. Чтобы разрешить токены без `aud`, вызовите [`without_strict_aud()`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.without_strict_aud):
 
@@ -156,7 +156,7 @@ let mut app = App::new()
     );
 ```
 
-Валидация эмитента через [`with_iss(...)`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_iss) работает так же, но без возможности отказаться: начиная с **0.13.3** claim `iss` становится обязательным, поэтому токен без него отклоняется с `401` — так же, как токен с эмитентом не из списка. Пустой список оставляет конфигурацию как есть.
+Валидация эмитента через [`with_iss(...)`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_iss) работает так же, но без возможности отказаться: claim `iss` обязателен, поэтому токен без него отклоняется с `401` — так же, как токен с эмитентом не из списка. Пустой список оставляет конфигурацию как есть.
 
 ```rust compile-fragment
 use volga::auth::DecodingKey;
@@ -172,13 +172,13 @@ let app = App::new()
 ```
 
 ::: warning
-`with_iss` — это то, чем сервер ресурсов отличает свои токены от остальных, подписанных тем же ключом, например HMAC-секретом, общим для нескольких сервисов. Если часть токенов, которые он должен принимать, не несёт `iss`, начиная с **0.13.3** они отклоняются: попросите эмитента добавить claim или не задавайте `with_iss`.
+`with_iss` — это то, чем сервер ресурсов отличает свои токены от остальных, подписанных тем же ключом, например HMAC-секретом, общим для нескольких сервисов. Если часть токенов, которые он должен принимать, не несёт `iss`, они отклоняются: попросите эмитента добавить claim или не задавайте `with_iss`.
 :::
 
 ::: info
-`EncodingKey`, `DecodingKey` и `Algorithm` — собственные типы Волги в `volga::auth::*`, а не реэкспорты из `jsonwebtoken`, поэтому `jsonwebtoken::ErrorKind` и его конструкторы ключей недоступны: ключи создаются конструкторами PEM / base64 / secret / env / file, которые предоставляет Волга, а начиная с **0.13.2** — и из [JSON Web Key](#ключ-опубликованныи-как-json-web-key). Параметры валидации токена настраиваются через [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html). Начиная с **0.15.1** Волга использует `jsonwebtoken` 12, который отклоняет токен, если в его заголовке указано неизвестное ему критическое расширение (`crit`), поэтому на такой токен приходит `401`.
+`EncodingKey`, `DecodingKey` и `Algorithm` — собственные типы Волги в `volga::auth::*`, а не реэкспорты из `jsonwebtoken`, поэтому `jsonwebtoken::ErrorKind` и его конструкторы ключей недоступны: ключи создаются конструкторами PEM / base64 / secret / env / file, которые предоставляет Волга, или из [JSON Web Key](#ключ-опубликованныи-как-json-web-key). Параметры валидации токена настраиваются через [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html). Волга использует `jsonwebtoken` 12, который отклоняет токен, если в его заголовке указано неизвестное ему критическое расширение (`crit`), поэтому на такой токен приходит `401`.
 
-Начиная с **v0.9.8**, `volga::auth::Algorithm` — это реэкспорт [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) из `volga-oauth-core`: варианты, значение по-умолчанию `HS256` и поведение не изменились, но теперь тип общий с клиентскими крейтами — утверждение `private_key_jwt` и bearer-токен, который выпускает сервер, описываются одним словарём. Он также реэкспортируется из `volga::auth::oauth`, где его можно назвать без фичи `jwt-auth`.
+`volga::auth::Algorithm` — это реэкспорт [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) из `volga-oauth-core`, общий с клиентскими крейтами, поэтому утверждение `private_key_jwt` и bearer-токен, который выпускает сервер, описываются одним словарём. Он также реэкспортируется из `volga::auth::oauth`, где его можно назвать без фичи `jwt-auth`.
 :::
 
 ### Использование JWT
@@ -253,10 +253,10 @@ let app = App::new()
 | `EdDSA` | ключ Ed25519 | `from_ed_pem`, `from_pem_file`, JWK вида `OKP` |
 
 ::: warning
-HMAC-секрет не может быть пустым: с пустым ключом кто угодно может подписать токен, который сервер примет. Начиная с **0.15.1** `from_secret` паникует на пустом секрете, как `from_env` и `from_file` — на пустой переменной или пустом файле. Поэтому секрет, прочитанный с запасным значением `""`, останавливает приложение там, где настраивается аутентификация, до того как оно начнёт отвечать. [`try_from_secret()`](https://docs.rs/volga/latest/volga/auth/decoding_key/struct.DecodingKey.html#method.try_from_secret), `try_from_env()` и `try_from_file()` вместо этого возвращают ошибку.
+HMAC-секрет не может быть пустым: с пустым ключом кто угодно может подписать токен, который сервер примет. `from_secret` паникует на пустом секрете, как `from_env` и `from_file` — на пустой переменной или пустом файле. Поэтому секрет, прочитанный с запасным значением `""`, останавливает приложение там, где настраивается аутентификация, до того как оно начнёт отвечать. [`try_from_secret()`](https://docs.rs/volga/latest/volga/auth/decoding_key/struct.DecodingKey.html#method.try_from_secret), `try_from_env()` и `try_from_file()` вместо этого возвращают ошибку.
 :::
 
-Ключ проверки (decoding) должен подходить **каждому** алгоритму, который называет `with_alg`, а ключ подписи (encoding) — **первому**. Начиная с **0.13.3** неподходящий ключ останавливает приложение при старте: `App::run` возвращает ошибку, в которой названы ключ, алгоритмы, которые он обслужить не может, и те, которые может.
+Ключ проверки (decoding) должен подходить **каждому** алгоритму, который называет `with_alg`, а ключ подписи (encoding) — **первому**. Неподходящий ключ останавливает приложение при старте: `App::run` возвращает ошибку, в которой названы ключ, алгоритмы, которые он обслужить не может, и те, которые может.
 
 ```text
 Bearer auth: the decoding key is an RSA key, which cannot verify HS256 tokens (the default without `with_alg`); `with_alg` must name only RS256, RS384, RS512, PS256, PS384 or PS512
@@ -267,7 +267,7 @@ Bearer auth: the decoding key is an RSA key, which cannot verify HS256 tokens (t
 :::
 
 ::: warning
-`with_alg` задаёт список целиком. Начиная с **0.13.3**, один `.with_alg(Algorithm::HS512)` принимает только токены `HS512`; чтобы по-прежнему принимать и `HS256` — например, пока клиенты переходят с одного на другой, — назовите оба, первым тот, которым должен подписывать `encode`:
+`with_alg` задаёт список целиком. Один `.with_alg(Algorithm::HS512)` принимает только токены `HS512`; чтобы по-прежнему принимать и `HS256` — например, пока клиенты переходят с одного на другой, — назовите оба, первым тот, которым должен подписывать `encode`:
 
 ```rust compile-fragment
 use volga::auth::{Algorithm, DecodingKey, EncodingKey};
@@ -287,7 +287,7 @@ let app = App::new()
 
 ### Ключ, опубликованный как JSON Web Key
 
-Эмитенты публикуют ключи проверки подписи в виде JSON Web Key (RFC 7517), а не PEM-файлов. Начиная с **0.13.2**, [`DecodingKey::from_jwk()`](https://docs.rs/volga/latest/volga/auth/decoding_key/struct.DecodingKey.html#method.from_jwk) создаёт ключ из такого описания — RSA, EC, Ed25519 (`OKP`) или симметричный `oct`. Он принимает один ключ в виде JSON-текста, например один элемент массива `keys` из JWKS эмитента:
+Эмитенты публикуют ключи проверки подписи в виде JSON Web Key (RFC 7517), а не PEM-файлов. [`DecodingKey::from_jwk()`](https://docs.rs/volga/latest/volga/auth/decoding_key/struct.DecodingKey.html#method.from_jwk) создаёт ключ из такого описания — RSA, EC, Ed25519 (`OKP`) или симметричный `oct`. Он принимает один ключ в виде JSON-текста, например один элемент массива `keys` из JWKS эмитента:
 
 ```rust compile-fragment
 use volga::auth::{Algorithm, DecodingKey};
@@ -381,7 +381,7 @@ impl AuthClaims for Claims {
 * [`predicate(|claims| ...)`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.predicate.html) - кастомная логика.
 
 ::: info
-Все пять реэкспортируются из `volga::auth`; полный путь — [`volga::auth::authorizer::permission`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.permission.html) и остальные — тоже работает. В **0.9.8 и раньше** `permission` доступна только по полному пути, а подсказка компилятора, `permissions`, — это другая функция.
+Все пять реэкспортируются из `volga::auth`; полный путь — [`volga::auth::authorizer::permission`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.permission.html) и остальные — тоже работает.
 :::
 
 ### Пример
@@ -443,10 +443,6 @@ fn main() {
 | Проверку не удалось выполнить — нечитаемый ключ проверки, недоступный issuer | `503` | нет: чинить клиенту нечего |
 
 Каждый из этих отказов — ошибка, поэтому он доходит до [`map_err` и `map_problem`](/volga-docs/ru/reliability-observability/errors.html#ошибки-которые-создает-волга), а challenge и `Cache-Control: no-store` остаются на ответе, которым бы они ни ответили. Обработчик по умолчанию отвечает причиной в виде текста: описанием из challenge или `Bearer token is missing`.
-
-::: warning При переходе с 0.10.0
-Токен, не прошедший проверку, получал `403`, а некорректный — `400`. Теперь и то и другое — `401`, поэтому всё, что трактует `403` как «этот токен обновлять бесполезно» — тест, триггер обновления в клиенте, алерт, — нужно перевести на `401`.
-:::
 
 ## Примеры
 * [Basic Auth](https://github.com/RomanEmreis/volga/blob/main/examples/cookies/src/main.rs)

@@ -57,7 +57,7 @@ Or if you need to bind it to another socket, you can use the [`bind()`](https://
 // Binds the server to http://localhost:5000
 let mut app = App::new().bind("localhost:5000");
 ```
-Since **v0.9.7**, [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind) accepts the full address grammar of [`tokio::net::TcpListener::bind`](https://docs.rs/tokio/latest/tokio/net/struct.TcpListener.html#method.bind):
+[`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind) accepts the full address grammar of [`tokio::net::TcpListener::bind`](https://docs.rs/tokio/latest/tokio/net/struct.TcpListener.html#method.bind):
 ```rust compile-fragment
 let app = App::new().bind("127.0.0.1:7878");      // IPv4 literal
 let app = App::new().bind("[::1]:7878");          // IPv6 literal

@@ -38,13 +38,13 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-A message handler with nothing to await can also return its reply directly, since **v0.11.0**:
+A message handler with nothing to await can also return its reply directly:
 
 ```rust compile-fragment
 app.map_msg("/ws", |msg: String| format!("echo: {msg}"));
 ```
 
-The arguments after the message read the request that opened the connection, path parameters included — since **0.14.0**, when `map_ws` and `map_msg` started handing their handler the parameters of its route:
+The arguments after the message read the request that opened the connection, path parameters included:
 
 ```rust compile-fragment
 app.map_msg("/ws/{room}", |msg: String, room: String| format!("[{room}] {msg}"));
@@ -82,7 +82,7 @@ async fn main() -> std::io::Result<()> {
 
 ### Message Types of Your Own
 
-A message is anything implementing `TryFrom<`[`Message`](https://docs.rs/volga/latest/volga/ws/args/struct.Message.html)`>`, and a reply anything implementing `TryInto<Message>`. Since **0.12.0** their conversion error can be any type that converts into volga's `Error` — `serde_json::Error`, a `(StatusCode, E)` pair, a type of your own implementing [`IntoError`](/volga-docs/en/reliability-observability/errors.html#error-types-of-your-own) — rather than `Error` itself. The same holds for `WebSocket::on_msg`, `WebSocket::recv` and `send`, `WsStream::recv` and `WsSink::send`.
+A message is anything implementing `TryFrom<`[`Message`](https://docs.rs/volga/latest/volga/ws/args/struct.Message.html)`>`, and a reply anything implementing `TryInto<Message>`. Their conversion error can be any type that converts into volga's `Error` — `serde_json::Error`, a `(StatusCode, E)` pair, a type of your own implementing [`IntoError`](/volga-docs/en/reliability-observability/errors.html#error-types-of-your-own) — rather than `Error` itself. The same holds for `WebSocket::on_msg`, `WebSocket::recv` and `send`, `WsStream::recv` and `WsSink::send`.
 
 ```rust compile
 use serde::Deserialize;

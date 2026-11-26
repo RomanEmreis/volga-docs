@@ -30,7 +30,7 @@ async fn get_user(id: u32) -> String {
 
 ## Synchronous Handlers
 
-Since **v0.11.0** a handler with nothing to await — formatting, arithmetic, a lookup in memory, a check of a header — can be a plain `fn` or a closure that returns its response directly:
+A handler with nothing to await — formatting, arithmetic, a lookup in memory, a check of a header — can be a plain `fn` or a closure that returns its response directly:
 
 ```rust compile
 use volga::{App, HttpResult, ok};
@@ -138,7 +138,7 @@ The check runs when the handler is instantiated, so `cargo build` and `cargo tes
 
 ## Returning Errors
 
-A handler that can fail returns `Result<T, E>`: `Ok` is the response, and since **0.12.0** `Err` is an error handed to the [error handler](/volga-docs/en/reliability-observability/errors.html#returning-errors-from-a-handler), never a response of its own. `E` is volga's `Error`, a `StatusCode`, a `(StatusCode, message)` pair, a `std::io::Error`, or any type implementing [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) — and `?` converts all of them.
+A handler that can fail returns `Result<T, E>`: `Ok` is the response, and `Err` is an error handed to the [error handler](/volga-docs/en/reliability-observability/errors.html#returning-errors-from-a-handler), never a response of its own. `E` is volga's `Error`, a `StatusCode`, a `(StatusCode, message)` pair, a `std::io::Error`, or any type implementing [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) — and `?` converts all of them.
 
 ```rust compile
 use volga::{App, HttpResult, http::StatusCode, ok};
@@ -172,66 +172,6 @@ A bare message — `Err("not found")`, `Err(format!(..))` — has no status of i
 
 ## Blocking Work
 
-A synchronous handler that genuinely **blocks** — `std::fs`, a synchronous database driver, a long computation — should not run on a runtime worker: while it does, that worker polls nothing else. Wrap it in [`blocking`](https://docs.rs/volga/latest/volga/fn.blocking.html), and its body runs on Tokio's blocking pool instead:
+A synchronous handler that genuinely blocks, such as `std::fs` or a synchronous database driver, should not run on a runtime worker. Wrap it in `blocking` to move its body to Tokio's blocking pool, as described in [Blocking Work](/volga-docs/en/advanced-patterns/blocking.html).
 
-```rust compile
-use volga::{App, HttpResult, blocking, ok};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let mut app = App::new();
-
-    app.map_get("/reports/{id}", blocking(|id: u32| -> HttpResult {
-        let report = std::fs::read_to_string(format!("reports/{id}.txt"))?;
-        ok!(report)
-    }));
-
-    app.run().await
-}
-```
-
-* The extractors still run on the worker; only the body is moved to [`spawn_blocking`](https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html) and awaited.
-* `blocking` takes a synchronous handler. An asynchronous one already yields, has nothing to offload, and is rejected at compile time.
-* The handler is shared between requests rather than cloned for each one, so what it captures does not have to be `Clone`.
-* A panic in the body is resumed on the task awaiting it, just as if the handler had run inline.
-* A hand-off to another thread costs far more than a short body does, so use `blocking` only when the body actually blocks.
-
-### Cancellation
-
-The offloaded call is **not** cancelled together with the request: once started, it runs to completion, and its result is discarded if the client has gone. A long body that should stop early takes a [`CancellationToken`](/volga-docs/en/reliability-observability/cancellation.html) and checks it as it goes:
-
-```rust compile
-use std::time::Duration;
-use volga::{App, CancellationToken, blocking};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let mut app = App::new();
-
-    app.map_get("/blocking-task", blocking(|token: CancellationToken| {
-        for _ in 0..5 {
-            if token.is_cancelled() {
-                break;
-            }
-            std::thread::sleep(Duration::from_secs(1));
-        }
-        "done"
-    }));
-
-    app.run().await
-}
-```
-
-## Naming the Generics
-
-Handler code never names the shape: it is carried by a marker type, [`marker::Async`](https://docs.rs/volga/latest/volga/marker/struct.Async.html) or [`marker::Immediate`](https://docs.rs/volga/latest/volga/marker/struct.Immediate.html), which the compiler infers. It is the last generic parameter of every method registering a handler, so a call site that spells the generics out leaves a `_` for it:
-
-```rust compile-fragment
-app.map_get::<_, _, (i32, i32), _>("/sum/{x}/{y}", |x: i32, y: i32| x + y);
-```
-
-In a bound of your own, `F: GenericHandler<Args>` means the asynchronous shape, as the marker defaults to `marker::Async`; `F: GenericHandler<Args, M>` with a generic `M` accepts both.
-
-A type that is both a `Future` and `IntoResponse` fits both shapes and does not compile as a handler's return type. Nothing in volga is such a type.
-
-Check out the full examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/hello_world/src/main.rs) and [here](https://github.com/RomanEmreis/volga/blob/main/examples/long_running_task/src/main.rs).
+Check out the full example [here](https://github.com/RomanEmreis/volga/blob/main/examples/hello_world/src/main.rs).

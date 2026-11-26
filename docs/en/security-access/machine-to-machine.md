@@ -1,6 +1,6 @@
 # Machine-to-Machine Grants
 
-The [Authorization Code flow](/volga-docs/en/security-access/oauth-client.html#authorization-code-pkce) exists to get a token *on behalf of a user*. Plenty of traffic has no user in it: a background worker calling an internal API, a job runner, a service that needs a token for itself. Since **v0.9.8**, `volga-oauth-client` drives the three grants for those cases, where the client is the subject.
+The [Authorization Code flow](/volga-docs/en/security-access/oauth-client.html#authorization-code-pkce) exists to get a token *on behalf of a user*. Plenty of traffic has no user in it: a background worker calling an internal API, a job runner, a service that needs a token for itself. `volga-oauth-client` drives the three grants for those cases, where the client is the subject.
 
 All three are builders on [`OAuthClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html), share the same [`with_scopes`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientCredentialsRequest.html#method.with_scopes) / [`with_resource`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientCredentialsRequest.html#method.with_resource) (RFC 8707) / [`with_param`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientCredentialsRequest.html#method.with_param) options, and are sent with `send()`:
 

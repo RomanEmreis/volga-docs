@@ -143,7 +143,7 @@ let mut app = App::new()
     );
 ```
 
-Since **0.14.1** a `BearerAuthConfig` built elsewhere, such as in a helper the app and its tests share, goes in whole with [`set_bearer_auth(config)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_bearer_auth). It replaces the configuration, where `with_bearer_auth` hands the closure the default to refine.
+A `BearerAuthConfig` built elsewhere, such as in a helper the app and its tests share, goes in whole with [`set_bearer_auth(config)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_bearer_auth). It replaces the configuration, where `with_bearer_auth` hands the closure the default to refine.
 
 When configuring audience validation via [`with_aud(...)`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_aud), the `aud` claim is automatically added to required claims — tokens missing it are rejected. Call [`without_strict_aud()`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.without_strict_aud) to allow tokens that do not include `aud`:
 
@@ -156,7 +156,7 @@ let mut app = App::new()
     );
 ```
 
-Issuer validation via [`with_iss(...)`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_iss) works the same way, with no opt-out: since **0.13.3** the `iss` claim becomes required, so a token without one is refused with `401`, just as one naming an issuer outside the set is. An empty set leaves the configuration as it was.
+Issuer validation via [`with_iss(...)`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html#method.with_iss) works the same way, with no opt-out: the `iss` claim is required, so a token without one is refused with `401`, just as one naming an issuer outside the set is. An empty set leaves the configuration as it was.
 
 ```rust compile-fragment
 use volga::auth::DecodingKey;
@@ -172,13 +172,13 @@ let app = App::new()
 ```
 
 ::: warning
-Setting `with_iss` is how a resource server tells its own tokens from the rest signed with the same key — an HMAC secret several services share, say. If some of the tokens it has to accept carry no `iss`, those are refused since **0.13.3**: have the issuer add the claim, or leave `with_iss` out.
+Setting `with_iss` is how a resource server tells its own tokens from the rest signed with the same key — an HMAC secret several services share, say. If some of the tokens it has to accept carry no `iss`, those are refused: have the issuer add the claim, or leave `with_iss` out.
 :::
 
 ::: info
-`EncodingKey`, `DecodingKey` and `Algorithm` are Volga's own types at `volga::auth::*` rather than re-exports of `jsonwebtoken`, so `jsonwebtoken::ErrorKind` and its key constructors are not reachable — build keys with the PEM / base64 / secret / env / file constructors Volga provides, or, since **0.13.2**, from a [JSON Web Key](#a-key-published-as-a-json-web-key). Token validation settings live on [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html). Since **0.15.1** Volga builds on `jsonwebtoken` 12, which rejects a token whose header lists a critical extension (`crit`) it does not know, so such a token is answered `401`.
+`EncodingKey`, `DecodingKey` and `Algorithm` are Volga's own types at `volga::auth::*` rather than re-exports of `jsonwebtoken`, so `jsonwebtoken::ErrorKind` and its key constructors are not reachable — build keys with the PEM / base64 / secret / env / file constructors Volga provides, or from a [JSON Web Key](#a-key-published-as-a-json-web-key). Token validation settings live on [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html). Volga builds on `jsonwebtoken` 12, which rejects a token whose header lists a critical extension (`crit`) it does not know, so such a token is answered `401`.
 
-Since **v0.9.8**, `volga::auth::Algorithm` is a re-export of [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) from `volga-oauth-core` — the variants, the `HS256` default and the behaviour are unchanged, but the type is now shared with the client crates, so a `private_key_jwt` assertion and a bearer token the server issues are described in one vocabulary. It is also re-exported from `volga::auth::oauth`, where it can be named without the `jwt-auth` feature.
+`volga::auth::Algorithm` is a re-export of [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) from `volga-oauth-core`, shared with the client crates, so a `private_key_jwt` assertion and a bearer token the server issues are described in one vocabulary. It is also re-exported from `volga::auth::oauth`, where it can be named without the `jwt-auth` feature.
 :::
 
 ### JWT Usage
@@ -254,10 +254,10 @@ Each algorithm belongs to a family, and each family takes its own kind of key:
 | `EdDSA` | Ed25519 key | `from_ed_pem`, `from_pem_file`, an `OKP` JWK |
 
 ::: warning
-An HMAC secret cannot be empty: with an empty key anyone can sign a token the server accepts. Since **0.15.1**, `from_secret` panics on an empty secret, as `from_env` and `from_file` do on an empty variable or file. A secret read with a fallback to `""` therefore stops the application where the authentication is configured, before it serves anything. [`try_from_secret()`](https://docs.rs/volga/latest/volga/auth/decoding_key/struct.DecodingKey.html#method.try_from_secret), `try_from_env()` and `try_from_file()` return the error instead.
+An HMAC secret cannot be empty: with an empty key anyone can sign a token the server accepts. `from_secret` panics on an empty secret, as `from_env` and `from_file` do on an empty variable or file. A secret read with a fallback to `""` therefore stops the application where the authentication is configured, before it serves anything. [`try_from_secret()`](https://docs.rs/volga/latest/volga/auth/decoding_key/struct.DecodingKey.html#method.try_from_secret), `try_from_env()` and `try_from_file()` return the error instead.
 :::
 
-The decoding key has to suit **every** algorithm `with_alg` names, and the encoding key the **first** one. Since **0.13.3** a key that does not stops the application at startup: `App::run` returns an error that names the key, the algorithms it cannot serve and the ones it can.
+The decoding key has to suit **every** algorithm `with_alg` names, and the encoding key the **first** one. A key that does not stops the application at startup: `App::run` returns an error that names the key, the algorithms it cannot serve and the ones it can.
 
 ```text
 Bearer auth: the decoding key is an RSA key, which cannot verify HS256 tokens (the default without `with_alg`); `with_alg` must name only RS256, RS384, RS512, PS256, PS384 or PS512
@@ -268,7 +268,7 @@ An RSA, EC or Ed25519 key always comes with `with_alg`: without it the list is t
 :::
 
 ::: warning
-`with_alg` names the full list. Since **0.13.3**, `.with_alg(Algorithm::HS512)` alone accepts only `HS512` tokens; to keep accepting `HS256` ones — while moving clients from one to the other, say — name both, the one `encode` should sign with first:
+`with_alg` names the full list. `.with_alg(Algorithm::HS512)` alone accepts only `HS512` tokens; to keep accepting `HS256` ones — while moving clients from one to the other, say — name both, the one `encode` should sign with first:
 
 ```rust compile-fragment
 use volga::auth::{Algorithm, DecodingKey, EncodingKey};
@@ -288,7 +288,7 @@ let app = App::new()
 
 ### A Key Published as a JSON Web Key
 
-Issuers publish their verification keys as JSON Web Keys (RFC 7517) rather than PEM files. Since **0.13.2**, [`DecodingKey::from_jwk()`](https://docs.rs/volga/latest/volga/auth/decoding_key/struct.DecodingKey.html#method.from_jwk) builds a key from one of them — RSA, EC, Ed25519 (`OKP`) or a symmetric `oct` key. It takes a single key as JSON text, such as one entry of the `keys` array of the issuer's JWKS:
+Issuers publish their verification keys as JSON Web Keys (RFC 7517) rather than PEM files. [`DecodingKey::from_jwk()`](https://docs.rs/volga/latest/volga/auth/decoding_key/struct.DecodingKey.html#method.from_jwk) builds a key from one of them — RSA, EC, Ed25519 (`OKP`) or a symmetric `oct` key. It takes a single key as JSON text, such as one entry of the `keys` array of the issuer's JWKS:
 
 ```rust compile-fragment
 use volga::auth::{Algorithm, DecodingKey};
@@ -383,7 +383,7 @@ Volga provides a powerful [`Authorizer`](https://docs.rs/volga/latest/volga/auth
 * [`predicate(|claims| ...)`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.predicate.html): custom logic.
 
 ::: info
-All five are re-exported from `volga::auth`; the full path, [`volga::auth::authorizer::permission`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.permission.html) and its siblings, works too. On **0.9.8 and earlier** `permission` is only reachable by the full path — the compiler's suggestion there, `permissions`, is a different function.
+All five are re-exported from `volga::auth`; the full path, [`volga::auth::authorizer::permission`](https://docs.rs/volga/latest/volga/auth/authorizer/fn.permission.html) and its siblings, works too.
 :::
 
 ### Example
@@ -445,10 +445,6 @@ Every rejection the bearer middleware makes carries the status and the `WWW-Auth
 | A validation that could not be completed — an unreadable verification key, an issuer that cannot be reached | `503` | none: the caller has nothing to fix |
 
 Each of these is an error, so it reaches [`map_err` and `map_problem`](/volga-docs/en/reliability-observability/errors.html#errors-volga-produces-itself), and the challenge and `Cache-Control: no-store` stay on whatever response they answer with. The default handler answers with the reason as a text body: the challenge's description, or `Bearer token is missing`.
-
-::: warning Upgrading from 0.10.0
-A token that failed validation was answered `403`, and a malformed one `400`. Both are `401` now, so anything that reads `403` as "this token cannot be refreshed" — a test, a client's refresh trigger, an alert — has to read `401` instead.
-:::
 
 ## Examples
 * [Basic Auth Example](https://github.com/RomanEmreis/volga/blob/main/examples/cookies/src/main.rs)

@@ -35,7 +35,7 @@ async fn main() -> std::io::Result<()> {
 Here, the `HEAD` method returns headers without a body, often mirroring the headers that a `GET` request would have returned.
 
 ::: tip
-A `GET` and a `HEAD` mapped for the same path describe one resource, so they must name their route parameters identically — `map_get("/file/{id}", ..)` beside `map_head("/file/{name}", ..)` panics at registration. See [Route Parameters](/volga-docs/en/getting-started/route-params.html#two-cases-that-panic-at-registration).
+A `GET` and a `HEAD` mapped for the same path describe one resource, so they must name their route parameters identically — `map_get("/file/{id}", ..)` beside `map_head("/file/{name}", ..)` panics at registration. See [Route Parameters](/volga-docs/en/reference/routing.html#two-cases-that-panic-at-registration).
 :::
 
 ## OPTIONS Method

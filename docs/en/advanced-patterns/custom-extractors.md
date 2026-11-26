@@ -243,7 +243,7 @@ async fn main() -> std::io::Result<()> {
 |---|---|
 | an argument of your own: a current user, a tenant, a locale | `FromRequestHead` |
 | a value read from one path parameter, taken as `Path<T>` | [`FromPathArg`](/volga-docs/en/getting-started/route-params.html#parameters-of-your-own-types) |
-| a value read from several path parameters | [`FromPathArgs`](/volga-docs/en/getting-started/route-params.html#reading-every-parameter-at-once) |
+| a value read from several path parameters | [`FromPathArgs`](/volga-docs/en/reference/routing.html#reading-every-parameter-at-once) |
 | a typed header, taken as `Header<T>` | [`FromHeaders` or `#[http_header]`](/volga-docs/en/requests-responses/headers.html) |
 | rules a value has to meet | [`Validate`](/volga-docs/en/requests-responses/validation.html) |
 

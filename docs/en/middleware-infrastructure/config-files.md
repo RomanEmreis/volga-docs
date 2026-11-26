@@ -208,7 +208,7 @@ shutdown_timeout_secs = 30
 header_read_timeout_secs = 10
 ```
 
-`header_read_timeout_secs` (since **0.15.1**) is how long a client has to send the [head of a request](/volga-docs/en/protocols-realtime/http.html#header-read-timeout); `0`, or no key, means no timeout. `shutdown_timeout_secs` is how long a [graceful shutdown](/volga-docs/en/reliability-observability/graceful-shutdown.html#shutdown-timeout) waits for open connections before it closes them; `0` closes them right away. `body_limit_bytes` is the application's [request body limit](/volga-docs/en/requests-responses/body.html#limiting-the-body-size); a route group or a route that sets its own in code keeps it.
+`header_read_timeout_secs` is how long a client has to send the [head of a request](/volga-docs/en/protocols-realtime/http.html#header-read-timeout); `0`, or no key, means no timeout. `shutdown_timeout_secs` is how long a [graceful shutdown](/volga-docs/en/reliability-observability/graceful-shutdown.html#shutdown-timeout) waits for open connections before it closes them; `0` closes them right away. `body_limit_bytes` is the application's [request body limit](/volga-docs/en/requests-responses/body.html#limiting-the-body-size); a route group or a route that sets its own in code keeps it.
 
 ::: tip
 Built-in sections are applied at startup only. They are **not** affected by hot-reload.

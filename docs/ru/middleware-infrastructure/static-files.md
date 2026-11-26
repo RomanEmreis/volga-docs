@@ -61,7 +61,7 @@ async fn main() -> std::io::Result<()> {
 - `/{любой путь}` → файл с таким именем внутри корневой папки, на любой глубине
 
 ::: tip
-В **0.9.x** этот вызов пишется как `map_static_assets()`. Он не регистрирует маршрутов — см. [Middleware вместо маршрутизации](#middleware-вместо-маршрутизации) ниже, — поэтому потерял префикс `map_`, который в этом крейте означает, что был зарегистрирован маршрут. Всё остальное не отличается.
+У вызова нет префикса `map_`, который в этом крейте означает, что был зарегистрирован маршрут: он не регистрирует маршрутов, см. [Middleware вместо маршрутизации](#middleware-вместо-маршрутизации) ниже.
 :::
 
 ## Middleware вместо маршрутизации
@@ -113,7 +113,7 @@ async fn main() -> std::io::Result<()> {
 Целевой путь, который не декодируется, — некорректная escape-последовательность `%XX` или не декодируемая в UTF-8 — остаётся роутеру, который отвечает на него `400` через [обработчик ошибок](/volga-docs/ru/reliability-observability/errors.html), так что `map_err` и problem details применяются к нему, как к любому другому некорректному пути.
 
 ::: warning Записывайте префикс как текст
-Префикс сравнивается с декодированными сегментами, поэтому записывайте его тем текстом, который он означает: `app.group("/docs v1", ..)`, а не `"/docs%20v1"`. Литеральный сегмент с percent-escape-последовательностью вызывает панику при регистрации раздачи — так же, как в [маршруте](/volga-docs/ru/getting-started/route-params.html#литеральные-сегменты-записываются-как-текст).
+Префикс сравнивается с декодированными сегментами, поэтому записывайте его тем текстом, который он означает: `app.group("/docs v1", ..)`, а не `"/docs%20v1"`. Литеральный сегмент с percent-escape-последовательностью вызывает панику при регистрации раздачи — так же, как в [маршруте](/volga-docs/ru/reference/routing.html#литеральные-сегменты-записываются-как-текст).
 :::
 
 ## Файл по умолчанию
@@ -168,7 +168,7 @@ async fn main() -> std::io::Result<()> {
 
 ### Как раздаётся этот файл
 
-Резервный файл раздаётся `GET`-маршрутом, покрывающим префикс mount'а и `{*path}` под ним: начиная с **0.11.1** это обычный маршрут в роутере, и из этого следуют три вещи, которые полезно знать:
+Резервный файл раздаётся `GET`-маршрутом, покрывающим префикс mount'а и `{*path}` под ним: это обычный маршрут в роутере, и из этого следуют три вещи, которые полезно знать:
 
 * **Он отвечает только на `GET` и `HEAD`.** Оболочка — это то, как клиентский URL отрисовывает приложение, а браузер переходит по ссылкам методом `GET`. Всё остальное — `POST` на опечатанный путь API, `OPTIONS`, `PUT` на путь файла — получает `405` с `Allow: GET,HEAD`, ровно как любой маршрут отвечает на метод, которого у него нет. Именно это не даёт ошибочной записи получить HTML-страницу с кодом `200` и упасть в клиенте на `res.json()` вместо того места, где она была сделана.
 * **Ваш маршрут отвечает раньше оболочки.** Литеральный сегмент и параметр читаются раньше catch-all в любой позиции, поэтому `map_get("/health", ..)` продолжает отвечать и при mount'е в корне, в любом порядке регистрации. `GET`-маршрут, вручную замапленный на одну из позиций самой оболочки — `map_get("/{*rest}", ..)` рядом с корневым mount'ом, — просто занимает эту позицию.
@@ -231,7 +231,7 @@ async fn main() -> std::io::Result<()> {
 
 Middleware группы — `wrap`, `with`, `filter`, `map_ok`, `authorize`, ограничитель частоты — оборачивает файлы, которые раздаёт этот mount, ровно так же, как оборачивает зарегистрированные группой маршруты, включая вложенные группы.
 
-[`RouteGroup::use_static_files()`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.use_static_files) монтирует под этим префиксом и файлы, **и** резервный файл: начиная с **0.11.1** оболочка отвечает именно там и больше нигде — один сервер может держать фронтенд под `/app` и оставить остальное адресное пространство себе:
+[`RouteGroup::use_static_files()`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.use_static_files) монтирует под этим префиксом и файлы, **и** резервный файл: оболочка отвечает именно там и больше нигде — один сервер может держать фронтенд под `/app` и оставить остальное адресное пространство себе:
 
 ```rust compile
 use volga::{App, ok};
@@ -324,7 +324,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-[`with_asset_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_cache_control) и [`with_shell_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_cache_control) требуют **0.9.11** или новее и читаются обратно через `asset_cache_control()` / `shell_cache_control()`. Обе политики по умолчанию названы константами [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) и `CacheControl::SHELL` — на случай, если политику собирают с нуля; `CacheControl::EMPTY` — это `const`-эквивалент `CacheControl::default()`.
+[`with_asset_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_cache_control) и [`with_shell_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_cache_control) читаются обратно через `asset_cache_control()` / `shell_cache_control()`. Обе политики по умолчанию названы константами [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) и `CacheControl::SHELL` — на случай, если политику собирают с нуля; `CacheControl::EMPTY` — это `const`-эквивалент `CacheControl::default()`.
 
 Чтобы всё же раздавать shell по политике ассетов — для деплоя, который никогда не переиспользует URL оболочки:
 
@@ -382,7 +382,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-[`with_asset_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_etag) и [`with_shell_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_etag) требуют **0.10.1** или новее и читаются обратно через `asset_etag()` / `shell_etag()`. Держать в голове стоит их связку с `Cache-Control`: стоит сузить [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET), и ассеты начнут перепроверяться — а надёжными их ответы делает как раз `ETagSource::Content`.
+[`with_asset_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_etag) и [`with_shell_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_etag) читаются обратно через `asset_etag()` / `shell_etag()`. Держать в голове стоит их связку с `Cache-Control`: стоит сузить [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET), и ассеты начнут перепроверяться — а надёжными их ответы делает как раз `ETagSource::Content`.
 
 Тег по содержимому стоит **одного чтения на версию файла**, а не на запрос: он запоминается по длине файла и его `mtime` в полной точности плюс всему, что платформа может сказать о самом файле, а не о его содержимом — inode и времени изменения на Unix, времени создания на Windows. После перезапуска кеш пуст, а сам он ограничен по размеру, так что корень контента с файлом на пользователя не обрастает записью на каждый файл навсегда.
 

@@ -1,6 +1,6 @@
 # Multipart-ответы
 
-Начиная с версии `0.9.2`, [`Multipart`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html) в Волге работает в обе стороны: помимо использования в качестве экстрактора входящего запроса (см. [Работа с файлами](./files.md)), он реализует [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) и может возвращаться из обработчиков, формируя ответ с типом `multipart/*`.
+[`Multipart`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html) работает в обе стороны: помимо использования в качестве экстрактора входящего запроса (см. [Работа с файлами](./files.md)), он реализует [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) и может возвращаться из обработчиков, формируя ответ с типом `multipart/*`.
 
 Это удобно, когда нужно:
 * Вернуть в одном ответе несколько связанных блобов (в стиле `form-data`).

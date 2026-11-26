@@ -61,17 +61,17 @@ When a request is received, the decompression middleware checks the `Content-Enc
 
 If the `Content-Encoding` header specifies an unsupported algorithm, the middleware responds with a [`415 Unsupported Media Type`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/415) status code.
 
-A body that is not a valid stream of its `Content-Encoding`, garbage or a stream cut short, is answered [`400 Bad Request`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400) with the text `Decompression error: InvalidCompressedBody` since **0.15.1**. Before, most such bodies got `500`.
+A body that is not a valid stream of its `Content-Encoding`, garbage or a stream cut short, is answered [`400 Bad Request`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400) with the text `Decompression error: InvalidCompressedBody`.
 
-A body that goes over a decompression limit, set with [`with_decompression_limits()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_decompression_limits) (or, since **0.14.1**, installed whole with [`set_decompression_limits()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_decompression_limits)), is answered [`413 Content Too Large`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/413), as one over the [request body limit](/volga-docs/en/requests-responses/body.html#limiting-the-body-size) is. The body limit is counted on the decompressed body.
+A body that goes over a decompression limit, set with [`with_decompression_limits()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_decompression_limits) (or installed whole with [`set_decompression_limits()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_decompression_limits)), is answered [`413 Content Too Large`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/413), as one over the [request body limit](/volga-docs/en/requests-responses/body.html#limiting-the-body-size) is. The body limit is counted on the decompressed body.
 
 An algorithm Volga does not have goes into a [`tap_req`](/volga-docs/en/middleware-infrastructure/middleware.html#replacing-the-body) of your own: `req.try_map_body(decode)` wraps the body into your decoder, under the same body limit.
 
 ### Window Sizes
 
-A decoder allocates the window a stream declares before any output exists for the limits to count, so the window is bounded on its own. Since **0.15.1**:
+A decoder allocates the window a stream declares before any output exists for the limits to count, so the window is bounded on its own:
 
-* **Brotli** streams are held to RFC 7932, whose window is at most 16 MiB. A stream with the large-window extension, whose window goes up to 1 GiB, is answered `400`: before, a body of a few bytes could make the server allocate a gigabyte.
+* **Brotli** streams are held to RFC 7932, whose window is at most 16 MiB. A stream with the large-window extension, whose window goes up to 1 GiB, is answered `400`, so a body of a few bytes cannot make the server allocate a gigabyte.
 * **zstd** frames may declare a window of up to 8 MiB, the limit RFC 9659 sets for the `zstd` content coding, where zstd itself allows 128 MiB. A frame with a larger window is answered `400`. zstd keeps within 8 MiB up to level 19; the `--ultra` levels 20 to 22 and `--long` use larger windows on large inputs, so a client should not compress request bodies with them.
 
 Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/examples/decompression/src/main.rs)

@@ -94,7 +94,7 @@ let app = App::new()
         .with_client_config(|client| client.require_https(true)));
 ```
 
-Since **0.14.1** an `OAuthConfig` built elsewhere goes in whole with [`set_oauth(config)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_oauth), the value form of `with_oauth`. `use_oauth()` is still required.
+An `OAuthConfig` built elsewhere goes in whole with [`set_oauth(config)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_oauth), the value form of `with_oauth`. `use_oauth()` is still required.
 
 For a local development issuer served over plain HTTP, relax the transport policy:
 
@@ -110,7 +110,7 @@ With the `config` feature the same knobs can be described in the `[oauth.client]
 ```toml
 [oauth.client]
 issuer = "https://auth.example.com"
-jwks_uri = "https://auth.internal/jwks"  # optional, skips discovery (0.13.2+)
+jwks_uri = "https://auth.internal/jwks"  # optional, skips discovery
 refresh_cooldown_secs = 60   # optional
 max_key_age_secs = 900       # optional
 require_https = true         # optional
@@ -122,7 +122,7 @@ max_redirects = 5            # optional
 
 Discovery fetches the issuer's metadata from the URL tokens carry in `iss`, so it assumes the server can reach that URL. Some deployments can't: the issuer runs on the host as `http://localhost:8787` while the API runs in a container and reaches it as `http://host.docker.internal:8787`, or a Kubernetes service talks to the identity provider by its in-cluster name while tokens name the public ingress host.
 
-Since **0.13.2**, [`with_jwks_uri(...)`](https://docs.rs/volga/latest/volga/auth/oauth_client/struct.OAuthConfig.html#method.with_jwks_uri) names the URL the JSON Web Key Set is fetched from, and discovery is skipped:
+[`with_jwks_uri(...)`](https://docs.rs/volga/latest/volga/auth/oauth_client/struct.OAuthConfig.html#method.with_jwks_uri) names the URL the JSON Web Key Set is fetched from, and discovery is skipped:
 
 ```rust compile-fragment
 let mut app = App::new()
@@ -195,7 +195,7 @@ app.use_oauth_server_metadata()  // GET /.well-known/oauth-authorization-server
 The server-metadata closure is seeded with the OAuth 2.1 prefills `response_types_supported = ["code"]` and `grant_types_supported = ["authorization_code"]`. OIDC-specific fields required by a compliant provider document (`subject_types_supported`, `id_token_signing_alg_values_supported`, `userinfo_endpoint`, …) can be supplied through [`with_additional_field(...)`](https://docs.rs/volga/latest/volga/auth/oauth/struct.AuthorizationServerMetadata.html#method.with_additional_field).
 :::
 
-Two fields worth naming explicitly became typed builders in **v0.9.6** and **v0.9.8**:
+Two fields worth naming explicitly have typed builders:
 
 ```rust compile-fragment
 let mut app = App::new()

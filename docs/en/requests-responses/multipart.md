@@ -1,6 +1,6 @@
 # Multipart Responses
 
-Starting from `0.9.2`, [`Multipart`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html) in Volga is bidirectional: in addition to acting as a request extractor (see [Working with Files](./files.md)), it implements [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) and can be returned from handlers to produce a `multipart/*` response.
+[`Multipart`](https://docs.rs/volga/latest/volga/http/endpoints/args/multipart/struct.Multipart.html) is bidirectional: in addition to acting as a request extractor (see [Working with Files](./files.md)), it implements [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) and can be returned from handlers to produce a `multipart/*` response.
 
 This is useful for:
 * Returning multiple related blobs in a single response (form-data style).

@@ -243,7 +243,7 @@ async fn main() -> std::io::Result<()> {
 |---|---|
 | свой аргумент: текущего пользователя, тенант, локаль | `FromRequestHead` |
 | значение из одного параметра пути, принимаемое как `Path<T>` | [`FromPathArg`](/volga-docs/ru/getting-started/route-params.html#параметры-собственных-типов) |
-| значение из нескольких параметров пути | [`FromPathArgs`](/volga-docs/ru/getting-started/route-params.html#чтение-всех-параметров-сразу) |
+| значение из нескольких параметров пути | [`FromPathArgs`](/volga-docs/ru/reference/routing.html#чтение-всех-параметров-сразу) |
 | типизированный заголовок, принимаемый как `Header<T>` | [`FromHeaders` или `#[http_header]`](/volga-docs/ru/requests-responses/headers.html) |
 | правила, которым должно отвечать значение | [`Validate`](/volga-docs/ru/requests-responses/validation.html) |
 

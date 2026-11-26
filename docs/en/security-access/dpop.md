@@ -2,7 +2,7 @@
 
 A bearer token is a password: whoever holds it may use it. DPoP (RFC 9449) binds a token to a key the client holds, and every request carries a freshly signed proof of possession — so a token stolen from a log, a proxy or a compromised store is worth nothing without the key.
 
-Available since **v0.9.8** behind the `dpop` feature of `volga-oauth-client`:
+Available behind the `dpop` feature of `volga-oauth-client`:
 
 ```toml
 [dependencies]
@@ -137,7 +137,7 @@ Nonces are remembered per origin **and** per namespace: a token endpoint (§8) a
 
 ## Reading a DPoP Challenge
 
-A DPoP-protected resource answers `401` with a `WWW-Authenticate: DPoP ...` challenge whose `error` and `error_description` are the RFC 6750 ones. Since **v0.9.8**, [`BearerChallenge::parse_scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.parse_scheme) reads a challenge under any scheme:
+A DPoP-protected resource answers `401` with a `WWW-Authenticate: DPoP ...` challenge whose `error` and `error_description` are the RFC 6750 ones. [`BearerChallenge::parse_scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.parse_scheme) reads a challenge under any scheme:
 
 ```rust compile
 use volga_oauth_client::{BearerChallenge, OAuthError, auth_scheme};
@@ -151,11 +151,3 @@ fn read(header: &str) -> Result<(), OAuthError> {
 [`with_scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.with_scheme) and [`scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.scheme) render and report it, so a parsed challenge re-renders under the scheme it arrived with. `parse` is this method with `auth_scheme::BEARER`.
 
 The two registered DPoP error codes are modelled as well: `OAuthErrorCode::UseDpopNonce` and `OAuthErrorCode::InvalidDpopProof` (RFC 9449 §7.1).
-
-::: warning
-Three **v0.9.8** changes are worth checking when upgrading:
-
-* `OAuthErrorCode` is `#[non_exhaustive]`, so nothing stops compiling — but code that matched the two DPoP codes as `Other(..)` no longer matches them. The wire form, `as_str` and the serde representation are unchanged.
-* [`TokenSet`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.TokenSet.html) gained the `dpop_jkt` field, so code constructing one with a struct literal has to name it (`None` for a bearer token). The wire form is unchanged for anything that carries no binding, so a persisted entry written by an earlier version still reads back.
-* [`ClientAuthMethod`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientAuthMethod.html) is no longer `Copy` — the new `PrivateKeyJwt` variant carries a signing key. It stays `Clone`, `Debug`, `PartialEq` and `Eq`.
-:::

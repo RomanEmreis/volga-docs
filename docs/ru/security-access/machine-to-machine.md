@@ -1,6 +1,6 @@
 # Гранты «сервис-сервис»
 
-[Флоу Authorization Code](/volga-docs/ru/security-access/oauth-client.html#authorization-code-pkce) существует, чтобы получить токен *от имени пользователя*. Но в изрядной части трафика пользователя нет вовсе: фоновый воркер, вызывающий внутренний API, планировщик задач, сервис, которому нужен токен для самого себя. Начиная с **v0.9.8**, `volga-oauth-client` реализует три гранта для таких случаев — где субъектом является сам клиент.
+[Флоу Authorization Code](/volga-docs/ru/security-access/oauth-client.html#authorization-code-pkce) существует, чтобы получить токен *от имени пользователя*. Но в изрядной части трафика пользователя нет вовсе: фоновый воркер, вызывающий внутренний API, планировщик задач, сервис, которому нужен токен для самого себя. `volga-oauth-client` реализует три гранта для таких случаев — где субъектом является сам клиент.
 
 Все три оформлены как построители на [`OAuthClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html), принимают одни и те же опции [`with_scopes`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientCredentialsRequest.html#method.with_scopes) / [`with_resource`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientCredentialsRequest.html#method.with_resource) (RFC 8707) / [`with_param`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientCredentialsRequest.html#method.with_param) и отправляются через `send()`:
 

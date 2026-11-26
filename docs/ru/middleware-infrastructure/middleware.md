@@ -50,9 +50,9 @@ async fn sum(x: i32, y: i32) -> i32 {
 | `Err` чего угодно со статусом — `Error`, `StatusCode`, `(StatusCode, E)`, `std::io::Error`, `ValidationError`, `OAuthError`, `Problem`, ваш тип, реализующий [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) | этот статус — тот же, что получил бы такой `Err` из [обработчика](/volga-docs/ru/reliability-observability/errors.html#возврат-ошибок-из-обработчика) |
 | `Err` строки или `Box<dyn std::error::Error + Send + Sync>` | `400 Bad Request` с этим сообщением |
 
-Фильтр отклоняет запрос по любой причине — из-за отсутствующего API-ключа так же часто, как из-за неверного параметра, — поэтому сообщение для `false` никакой причины не называет. До **0.14.0** оно звучало как `Validation: One or more request parameters are incorrect`, а поскольку глобальный фильтр решает судьбу и запросов, для которых не нашлось маршрута, то же самое получал и запрос к несуществующему пути. Фильтр, которому нужен собственный статус или сообщение, возвращает `Err`.
+Фильтр отклоняет запрос по любой причине — из-за отсутствующего API-ключа так же часто, как из-за неверного параметра, — поэтому сообщение для `false` никакой причины не называет. Фильтр, которому нужен собственный статус или сообщение, возвращает `Err`.
 
-Последняя строка — единственное отличие от обработчика, где строка даёт `500`: ошибка без собственного статуса, возвращённая фильтром, считается причиной отказа в запросе. Начиная с **0.12.0** ошибка со статусом его сохраняет — `OAuthError` отвечает `401` для `invalid_token` и `403` для `insufficient_scope`, а `Error` сохраняет свой instance и [прикреплённый ответ](/volga-docs/ru/reliability-observability/errors.html#ответ-с-собственным-телом).
+Последняя строка — единственное отличие от обработчика, где строка даёт `500`: ошибка без собственного статуса, возвращённая фильтром, считается причиной отказа в запросе. Ошибка со статусом его сохраняет — `OAuthError` отвечает `401` для `invalid_token` и `403` для `insufficient_scope`, а `Error` сохраняет свой instance и [прикреплённый ответ](/volga-docs/ru/reliability-observability/errors.html#ответ-с-собственным-телом).
 
 ```rust compile
 use volga::{App, headers::HttpHeaders, http::StatusCode};
@@ -136,7 +136,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Если экстрактор не сработал, замыкание не запускается, и на запрос отвечают ошибкой экстрактора. До **0.15.0** `tap_req` принимал только `Dc<T>`, и только с фичей `di`.
+Если экстрактор не сработал, замыкание не запускается, и на запрос отвечают ошибкой экстрактора.
 
 ### Замена тела
 
@@ -195,7 +195,7 @@ async fn main() -> std::io::Result<()> {
 
 * Новое тело читается под [ограничением размера тела](/volga-docs/ru/requests-responses/body.html#ограничение-размера-тела) запроса, как и старое, поэтому тело, которое растёт по пути, получает `413`, как только превысит ограничение.
 * Заголовки остаются как есть. Заголовок, который больше не описывает тело, например `Content-Length` или `Content-Encoding`, удаляется через `remove_header()`.
-* `HttpRequestMut::into_parts()` и `from_parts()` устарели в **0.15.0**: они отдавали расширения запроса, в которых лежит собственное состояние Волги для запроса. Тело заменяйте этими методами, а заголовки — собственными методами `HttpRequestMut`.
+* `HttpRequestMut::into_parts()` и `from_parts()` устарели: они отдавали расширения запроса, в которых лежит собственное состояние Волги для запроса. Тело заменяйте этими методами, а заголовки — собственными методами `HttpRequestMut`.
 
 ## Обработка успешного ответа
 
@@ -267,7 +267,7 @@ async fn produce_err() -> IoError {
 }
 ```
 
-Начиная с **0.12.0** любой `Err`, который возвращает обработчик, доходит до этого `map_err` как `Error` — включая `Err(StatusCode::NOT_FOUND)` и `Err` вашего собственного типа ошибки.
+Любой `Err`, который возвращает обработчик, доходит до этого `map_err` как `Error` — включая `Err(StatusCode::NOT_FOUND)` и `Err` вашего собственного типа ошибки.
 
 `map_err` маршрута или группы охватывает всю область вместе с её middleware, в каком бы порядке его ни зарегистрировали, а второй такой вызов заменяет первый. См. [Обработчик ошибок маршрута или группы](/volga-docs/ru/reliability-observability/errors.html#обработчик-ошибок-маршрута-или-группы).
 
@@ -277,7 +277,7 @@ async fn produce_err() -> IoError {
 
 ## Синхронные middleware
 
-Начиная с **v0.11.0** [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter), [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok), [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) и [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) принимают также обычную `fn` или замыкание, которое возвращает вердикт, ответ или запрос напрямую, когда ждать нечего, — у [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), маршрута и группы маршрутов, так же как и [обработчики](/volga-docs/ru/getting-started/handlers.html#синхронные-обработчики):
+[`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter), [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok), [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) и [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) принимают также обычную `fn` или замыкание, которое возвращает вердикт, ответ или запрос напрямую, когда ждать нечего, — у [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), маршрута и группы маршрутов, так же как и [обработчики](/volga-docs/ru/getting-started/handlers.html#синхронные-обработчики):
 
 ```rust compile
 use volga::{App, HttpResponse, HttpResult, Path, headers, headers::HttpHeaders};

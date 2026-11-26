@@ -5,10 +5,10 @@
 It provides three clients, all sharing the transport policy of [`ClientConfig`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientConfig.html) and the error model of [`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html):
 
 * [`DiscoveryClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.DiscoveryClient.html) — fetches Authorization Server Metadata (RFC 8414), Protected Resource Metadata (RFC 9728) and the OpenID Connect provider configuration.
-* [`OAuthClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html) — the Authorization Code flow with mandatory PKCE, refresh tokens and resource indicators, plus token persistence. Since **v0.9.8** it also drives the grants that authenticate the *client itself* — see [Machine-to-Machine Grants](/volga-docs/en/security-access/machine-to-machine.html).
+* [`OAuthClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html) — the Authorization Code flow with mandatory PKCE, refresh tokens and resource indicators, plus token persistence. It also drives the grants that authenticate the *client itself* — see [Machine-to-Machine Grants](/volga-docs/en/security-access/machine-to-machine.html).
 * [`RegistrationClient`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.RegistrationClient.html) — Dynamic Client Registration (RFC 7591).
 
-Since **v0.9.8** the tokens they obtain can also be sender-constrained with [`Dpop`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.Dpop.html) (RFC 9449) — see [DPoP](/volga-docs/en/security-access/dpop.html).
+The tokens they obtain can also be sender-constrained with [`Dpop`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.Dpop.html) (RFC 9449) — see [DPoP](/volga-docs/en/security-access/dpop.html).
 
 ## Dependencies
 
@@ -118,7 +118,7 @@ Always verify the callback `state` with [`matches_state`](https://docs.rs/volga-
 
 ### Validating the callback
 
-Since **v0.9.6**, [`validate_callback`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.AuthorizationRequest.html#method.validate_callback) checks the whole callback at once — the `state` *and* the RFC 9207 `iss` parameter — and is the recommended replacement for a bare `matches_state`:
+[`validate_callback`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.AuthorizationRequest.html#method.validate_callback) checks the whole callback at once — the `state` *and* the RFC 9207 `iss` parameter — and is the recommended replacement for a bare `matches_state`:
 
 ```rust compile
 use volga_oauth_client::{AuthorizationRequest, AuthorizationServerMetadata, ClientError};
@@ -161,7 +161,7 @@ let client = OAuthClient::new("my-client")
 
 ### `private_key_jwt`
 
-Since **v0.9.8** (feature `private-key-jwt`), the client can authenticate with an assertion signed by its own key (RFC 7523 §2.2), so no shared secret ever leaves it:
+With the `private-key-jwt` feature, the client can authenticate with an assertion signed by its own key (RFC 7523 §2.2), so no shared secret ever leaves it:
 
 ```rust compile
 use volga_oauth_client::{ClientError, JwsAlgorithm, OAuthClient, PrivateKeyJwt};
@@ -205,10 +205,10 @@ Supply the *public* key explicitly — the crate signs, it does not derive publi
 
 ### What is checked before the request leaves
 
-Since **v0.9.8** the configured method is validated against `token_endpoint_auth_methods_supported` before a token request is sent: a method the server never announced would only earn an `invalid_client` over the network. Metadata listing no methods is not second-guessed — that is what a hand-built [`AuthorizationServerMetadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.AuthorizationServerMetadata.html) carries — but a *discovered* document always lists something, since RFC 8414 makes an omitted field mean `client_secret_basic`. A public client presents no credential and is never checked.
+The configured method is validated against `token_endpoint_auth_methods_supported` before a token request is sent: a method the server never announced would only earn an `invalid_client` over the network. Metadata listing no methods is not second-guessed — that is what a hand-built [`AuthorizationServerMetadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.AuthorizationServerMetadata.html) carries — but a *discovered* document always lists something, since RFC 8414 makes an omitted field mean `client_secret_basic`. A public client presents no credential and is never checked.
 
 ::: info
-The registered wire identifiers both sides of the protocol agree on live in one place since **v0.9.8** — `volga_oauth_core::protocol`, as the `grant`, `client_auth`, `token_type` and `auth_scheme` constants, re-exported from both `volga::auth::oauth` and `volga_oauth_client`. A server advertises them in its metadata document and a client matches on them, so the two cannot drift.
+The registered wire identifiers both sides of the protocol agree on live in one place — `volga_oauth_core::protocol`, as the `grant`, `client_auth`, `token_type` and `auth_scheme` constants, re-exported from both `volga::auth::oauth` and `volga_oauth_client`. A server advertises them in its metadata document and a client matches on them, so the two cannot drift.
 :::
 
 ## Token Store
@@ -260,7 +260,7 @@ async fn register() -> Result<(), ClientError> {
 
 For servers that do not allow open registration, attach an initial access token with [`with_initial_access_token`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.RegistrationClient.html#method.with_initial_access_token).
 
-Two [`ClientMetadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientMetadata.html) fields became first-class in **v0.9.6** and **v0.9.8** respectively:
+Two [`ClientMetadata`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.ClientMetadata.html) fields have typed builders:
 
 * [`with_application_type`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.ClientMetadata.html#method.with_application_type) — `"web"` or `"native"`. Desktop and CLI clients register as `"native"`, which is what makes loopback redirect URIs (`http://127.0.0.1:{port}/...`) acceptable to authorization servers.
 * [`with_token_endpoint_auth_signing_alg`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.ClientMetadata.html#method.with_token_endpoint_auth_signing_alg) — the algorithm this one client signs its assertions with, for a `private_key_jwt` registration.
@@ -279,7 +279,7 @@ fn adopt(
 ```
 
 ::: warning
-Since **v0.9.8**, a client built by [`from_registration`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.from_registration) refuses a grant its registration did not approve — before reaching the network, rather than as an `unauthorized_client` from the token endpoint. An omitted `grant_types` means `authorization_code` alone (RFC 7591 §2), not carte blanche; only a client that never went through a registration is unconstrained. `refresh_token` is never refused, since RFC 6749 §6 makes it the continuation of a grant already held.
+A client built by [`from_registration`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthClient.html#method.from_registration) refuses a grant its registration did not approve — before reaching the network, rather than as an `unauthorized_client` from the token endpoint. An omitted `grant_types` means `authorization_code` alone (RFC 7591 §2), not carte blanche; only a client that never went through a registration is unconstrained. `refresh_token` is never refused, since RFC 6749 §6 makes it the continuation of a grant already held.
 :::
 
 ::: info
@@ -302,11 +302,11 @@ let config = ClientConfig::new()
 let client = OAuthClient::new("my-client").with_config(config);
 ```
 
-[`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html) separates a parsed OAuth error response (`Protocol`, carrying the RFC 6749 §5.2 [`OAuthError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthError.html)) from transport, decode, insecure-URL and validation failures — so you can distinguish "the server said `invalid_grant`" from "the connection dropped". Since **v0.9.8** it also carries `Signing`, for a signing configuration that cannot produce the JWS a request needs — a `private_key_jwt` assertion or a DPoP proof.
+[`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html) separates a parsed OAuth error response (`Protocol`, carrying the RFC 6749 §5.2 [`OAuthError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.OAuthError.html)) from transport, decode, insecure-URL and validation failures — so you can distinguish "the server said `invalid_grant`" from "the connection dropped". It also carries `Signing`, for a signing configuration that cannot produce the JWS a request needs — a `private_key_jwt` assertion or a DPoP proof.
 
 ### Propagating errors from a handler
 
-Since **v0.9.8**, with the `oauth-client` feature enabled on `volga`, a [`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html) converts into a [`volga::Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html), so a handler that talks to an authorization server can propagate the failure with `?`:
+With the `oauth-client` feature enabled on `volga`, a [`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html) converts into a [`volga::Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html), so a handler that talks to an authorization server can propagate the failure with `?`:
 
 ```rust compile
 use volga::{HttpResult, ok};
@@ -321,7 +321,7 @@ async fn metadata() -> HttpResult {
 }
 ```
 
-Since **0.12.0** the conversion is an [`IntoError`](/volga-docs/en/reliability-observability/errors.html#error-types-of-your-own) impl, so a `ClientError` can also be a handler's `Err` as it is, and goes to `map_err` like any other error:
+The conversion is an [`IntoError`](/volga-docs/en/reliability-observability/errors.html#error-types-of-your-own) impl, so a `ClientError` can also be a handler's `Err` as it is, and goes to `map_err` like any other error:
 
 ```rust compile
 use volga_oauth_client::{ClientError, DiscoveryClient};

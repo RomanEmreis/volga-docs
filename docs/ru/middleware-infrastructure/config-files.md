@@ -208,7 +208,7 @@ shutdown_timeout_secs = 30
 header_read_timeout_secs = 10
 ```
 
-`header_read_timeout_secs` (начиная с **0.15.1**) — сколько времени у клиента есть на [начало запроса](/volga-docs/ru/protocols-realtime/http.html#таимаут-чтения-заголовков); `0` или отсутствие ключа означает отсутствие таймаута. `shutdown_timeout_secs` — сколько [плавное завершение](/volga-docs/ru/reliability-observability/graceful-shutdown.html#таимаут-завершения) ждёт открытые соединения, прежде чем закрыть их; `0` закрывает их сразу. `body_limit_bytes` — [ограничение размера тела запроса](/volga-docs/ru/requests-responses/body.html#ограничение-размера-тела) для приложения; группа маршрутов или маршрут, задавшие собственное в коде, сохраняют его.
+`header_read_timeout_secs` — сколько времени у клиента есть на [начало запроса](/volga-docs/ru/protocols-realtime/http.html#таимаут-чтения-заголовков); `0` или отсутствие ключа означает отсутствие таймаута. `shutdown_timeout_secs` — сколько [плавное завершение](/volga-docs/ru/reliability-observability/graceful-shutdown.html#таимаут-завершения) ждёт открытые соединения, прежде чем закрыть их; `0` закрывает их сразу. `body_limit_bytes` — [ограничение размера тела запроса](/volga-docs/ru/requests-responses/body.html#ограничение-размера-тела) для приложения; группа маршрутов или маршрут, задавшие собственное в коде, сохраняют его.
 
 ::: tip
 Встроенные секции применяются только при запуске. Горячая перезагрузка на них **не влияет**.

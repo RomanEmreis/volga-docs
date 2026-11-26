@@ -87,7 +87,12 @@ export default defineUserConfig({
           {
             text: 'Advanced Patterns',
             prefix: '/en/advanced-patterns/',
-            children: ['di', 'custom-extractors', 'custom-trace-opt-head'],
+            children: ['di', 'custom-extractors', 'blocking', 'custom-trace-opt-head'],
+          },
+          {
+            text: 'Reference',
+            prefix: '/en/reference/',
+            children: ['routing', 'handler-generics', 'migration'],
           },
           {
             text: 'Agent Skill',
@@ -153,7 +158,12 @@ export default defineUserConfig({
           {
             text: 'Продвинутые паттерны',
             prefix: '/ru/advanced-patterns/',
-            children: ['di', 'custom-extractors', 'custom-trace-opt-head'],
+            children: ['di', 'custom-extractors', 'blocking', 'custom-trace-opt-head'],
+          },
+          {
+            text: 'Справочник',
+            prefix: '/ru/reference/',
+            children: ['routing', 'handler-generics', 'migration'],
           },
           {
             text: 'Agent Skill',
