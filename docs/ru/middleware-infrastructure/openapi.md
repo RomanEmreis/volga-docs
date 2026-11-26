@@ -140,7 +140,7 @@ async fn main() -> std::io::Result<()> {
 
 serde читает структуру с полем `#[serde(flatten)]` как map, чтобы собрать ключи, которые структура не называет, — а map не говорит, какие ключи принимает. Ни одно поле такой структуры не выводится, включая объявленные рядом с flatten-полем: тело `Json<T>` или `Form<T>` описывается как объект без свойств (или как произвольное значение, если структура лежит внутри него, например в `Vec`), а `Query<T>` не описывает ни одного параметра.
 
-Начиная с **0.11.2** debug-сборка называет каждый такой вход при запуске. Опишите его вручную через [`OpenApiSchema`](https://docs.rs/volga/latest/volga/openapi/struct.OpenApiSchema.html) — [`with_request_schema()`](https://docs.rs/volga/latest/volga/openapi/struct.OpenApiRouteConfig.html#method.with_request_schema) для тела, [`with_query_schema()`](https://docs.rs/volga/latest/volga/openapi/struct.OpenApiRouteConfig.html#method.with_query_schema) для query; последний описывает по параметру на каждое свойство, обязательному, если его называет список `required` схемы:
+Debug-сборка называет каждый такой вход при запуске. Опишите его вручную через [`OpenApiSchema`](https://docs.rs/volga/latest/volga/openapi/struct.OpenApiSchema.html) — [`with_request_schema()`](https://docs.rs/volga/latest/volga/openapi/struct.OpenApiRouteConfig.html#method.with_request_schema) для тела, [`with_query_schema()`](https://docs.rs/volga/latest/volga/openapi/struct.OpenApiRouteConfig.html#method.with_query_schema) для query; последний описывает по параметру на каждое свойство, обязательному, если его называет список `required` схемы:
 
 ```rust compile
 use std::collections::HashMap;
@@ -182,7 +182,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Маршруты, по-разному называющие одну позицию
 
-OpenAPI 3.0 допускает один шаблонный путь на позицию. `GET /users/{id}` рядом с `POST /users/{name}` описываются под одним путём, названным так, как записано большинство маршрутов в нём, а debug-сборка сообщает о каждом маршруте, чьи параметры были переименованы, — см. [Именование параметров принадлежит маршруту](/volga-docs/ru/getting-started/route-params.html#в-документе-openapi).
+OpenAPI 3.0 допускает один шаблонный путь на позицию. `GET /users/{id}` рядом с `POST /users/{name}` описываются под одним путём, названным так, как записано большинство маршрутов в нём, а debug-сборка сообщает о каждом маршруте, чьи параметры были переименованы, — см. [Именование параметров принадлежит маршруту](/volga-docs/ru/reference/routing.html#в-документе-openapi).
 
 ::: tip Куда попадают сообщения при запуске
 Сообщения выше выдаёт только debug-сборка. С включённой фичей `tracing` — а `full` её включает — они отправляются как события уровня `WARN` и видны только после установки [подписчика tracing](/volga-docs/ru/reliability-observability/tracing.html); без этой фичи они печатаются в stderr.

@@ -1,9 +1,9 @@
 # Validating Requests
 
 Volga parses a payload, but it does not inspect it. Anything past `serde` — a non-empty key, a bounded page
-size, a range that has to make sense — used to be rewritten at the top of every handler.
+size, a range that has to make sense — would otherwise be rewritten at the top of every handler.
 
-Since **v0.9.9** those rules live in one place: the [`Validate`](https://docs.rs/volga/latest/volga/validation/trait.Validate.html)
+Volga keeps those rules in one place: the [`Validate`](https://docs.rs/volga/latest/volga/validation/trait.Validate.html)
 trait says what a type considers valid, and the [`Valid<E>`](https://docs.rs/volga/latest/volga/validation/valid/struct.Valid.html)
 extractor runs it. `Valid<E>` wraps another extractor, calls `validate()` on what that extractor produced, and
 either hands the payload to the handler or turns the failure into a response **before the handler is entered**.
@@ -72,9 +72,6 @@ There is no alias over the positional `Path<T>`: a `Path<T>` of several paramete
 not a type your crate can implement `Validate` for. Use a struct with `Deserialize`, as described in
 [Route Params](/volga-docs/en/getting-started/route-params.html#using-namedpath-t), or validate a
 [single parameter](#validating-a-path-parameter) of your own type.
-
-Before **0.14.1** `ValidNamedPath<T>` was called `ValidPath<T>`, which read as a validated `Path<T>`. The old name still
-compiles, with a deprecation warning.
 :::
 
 The wrapper forwards the inner extractor's payload source, so a validated body still reads the body and a validated
@@ -90,7 +87,7 @@ app.map_post("/items", async |filter: ValidQuery<Filter>, val: ValidJson<KeyValu
 
 ### Validating a path parameter
 
-Since **0.13.0** a single path parameter of your own type can be validated without a struct around it. Implement
+A single path parameter of your own type can be validated without a struct around it. Implement
 [`FromPathArg`](/volga-docs/en/getting-started/route-params.html#parameters-of-your-own-types) to read it and
 `Validate` to check it, and take it as `Valid<Path<T>>`:
 ```rust compile
@@ -265,7 +262,7 @@ impl Validate for KeyValue {
 }
 ```
 
-`Validate::Error` does not have to be `ValidationError`: any type that converts into volga's `Error` will do, and it answers with the status that conversion gives it. For an error type of your own that is one [`IntoError`](/volga-docs/en/reliability-observability/errors.html#error-types-of-your-own) impl — since **0.12.0** it replaces a hand-written `From<T> for Error`, which it provides.
+`Validate::Error` does not have to be `ValidationError`: any type that converts into volga's `Error` will do, and it answers with the status that conversion gives it. For an error type of your own that is one [`IntoError`](/volga-docs/en/reliability-observability/errors.html#error-types-of-your-own) impl — it replaces a hand-written `From<T> for Error`, which it provides.
 
 ## `ValidationError`
 

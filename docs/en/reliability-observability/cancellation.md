@@ -69,6 +69,6 @@ This feature could help save a lot of computing resources, preventing long-runni
 
 A request's token belongs to its connection: it is cancelled when the connection fails — the client went away — and when a [graceful shutdown](/volga-docs/en/reliability-observability/graceful-shutdown.html#shutdown-timeout) runs out of time and closes the connection. A shutdown that has just started does not cancel it, since requests in flight are still answered; a handler that should wind down with the server takes a [`ShutdownHandle`](/volga-docs/en/reliability-observability/graceful-shutdown.html#ending-long-lived-responses) instead.
 
-The handler is dropped along with its connection, so the token matters most for work that outlives the handler: a task it spawned, or a [`blocking`](/volga-docs/en/getting-started/handlers.html#cancellation) body checking `is_cancelled()` as it goes. Cancelling the token from a handler notifies its clones and closes nothing.
+The handler is dropped along with its connection, so the token matters most for work that outlives the handler: a task it spawned, or a [`blocking`](/volga-docs/en/advanced-patterns/blocking.html#cancellation) body checking `is_cancelled()` as it goes. Cancelling the token from a handler notifies its clones and closes nothing.
 
 [Here](https://docs.rs/tokio-util/latest/tokio_util/sync/struct.CancellationToken.html) you can find some additional information about `CancellationToken`.

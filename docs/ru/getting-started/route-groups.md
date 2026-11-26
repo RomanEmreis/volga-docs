@@ -68,10 +68,6 @@ async fn report() -> HttpResult {
 }
 ```
 
-::: warning При переходе с 0.9.x
-Конфигурация группы считывалась в момент каждого вызова `map_*`, поэтому то, что зарегистрировано *ниже* маршрута, до него не доходило. Теперь она доходит до каждого маршрута: маршрут, замапленный выше `authorize` или `token_bucket` своей группы, отвечает `401` / `403` / `429` там, где отвечал `200`.
-:::
-
 ### Правила порядка
 
 * Middleware по-прежнему **выполняется** в порядке регистрации.
@@ -107,7 +103,7 @@ async fn ping() -> HttpResult {
 
 ## Fallback группы
 
-Начиная с **0.11.1** группа может отвечать за свою часть адресного пространства. Метод [`map_fallback()`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_fallback) у [`RouteGroup`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html) обрабатывает запрос под префиксом группы, на который не замаплен ни один маршрут, — с любым методом. Это [`App::map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) для одной ветки дерева:
+Группа может отвечать за свою часть адресного пространства. Метод [`map_fallback()`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_fallback) у [`RouteGroup`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html) обрабатывает запрос под префиксом группы, на который не замаплен ни один маршрут, — с любым методом. Это [`App::map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) для одной ветки дерева:
 
 ```rust compile
 use volga::{App, http::Uri, not_found, ok};
@@ -179,7 +175,7 @@ Fallback группы — не маршрут: он не печатается в
 Повторный маппинг уже замапленного маршрута **заменяет** его вместе со всем, что было привязано к заменяемой регистрации. Обработчик и его middleware пишутся вместе — вместе они и живут. Операция OpenAPI строится из той конфигурации, которую маршрут держит сейчас.
 
 :::warning
-Префикс группы — такой же шаблон маршрута, как любой другой, поэтому он участвует в [правилах именования параметров](/volga-docs/ru/getting-started/route-params.html#именование-параметров-принадлежит-маршруту): `group("/{tenant}", ..)` рядом с `map_get("/{id}/items", ..)` — это один маршрут под двумя именами, и это приводит к панике при регистрации.
+Префикс группы — такой же шаблон маршрута, как любой другой, поэтому он участвует в [правилах именования параметров](/volga-docs/ru/reference/routing.html#именование-параметров-принадлежит-маршруту): `group("/{tenant}", ..)` рядом с `map_get("/{id}/items", ..)` — это один маршрут под двумя именами, и это приводит к панике при регистрации.
 :::
 
 Больше примеров можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/route_groups/src/main.rs).

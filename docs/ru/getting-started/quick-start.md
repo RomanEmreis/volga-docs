@@ -65,7 +65,7 @@ let mut app = App::new();
 // Привязка сервера к http://localhost:5000
 let mut app = App::new().bind("localhost:5000");
 ```
-Начиная с **v0.9.7**, метод [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind) принимает полную грамматику адресов [`tokio::net::TcpListener::bind`](https://docs.rs/tokio/latest/tokio/net/struct.TcpListener.html#method.bind):
+Метод [`bind()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.bind) принимает полную грамматику адресов [`tokio::net::TcpListener::bind`](https://docs.rs/tokio/latest/tokio/net/struct.TcpListener.html#method.bind):
 ```rust compile-fragment
 let app = App::new().bind("127.0.0.1:7878");      // литерал IPv4
 let app = App::new().bind("[::1]:7878");          // литерал IPv6

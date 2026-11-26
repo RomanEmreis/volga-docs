@@ -50,9 +50,9 @@ A filter's verdict is a `bool`, `()`, a [`FilterResult`](https://docs.rs/volga/l
 | `Err` of anything with a status — `Error`, `StatusCode`, `(StatusCode, E)`, `std::io::Error`, `ValidationError`, `OAuthError`, `Problem`, a type of your own implementing [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) | that status, as the same `Err` would get from a [handler](/volga-docs/en/reliability-observability/errors.html#returning-errors-from-a-handler) |
 | `Err` of a string or a `Box<dyn std::error::Error + Send + Sync>` | `400 Bad Request` with that message |
 
-A filter refuses a request for any reason — a missing API key as often as a bad parameter — so the message for `false` names none. Before **0.14.0** it said `Validation: One or more request parameters are incorrect`, and since a global filter also decides requests no route matches, a request for a path that does not exist was told the same. A filter that wants a status or a message of its own returns `Err`.
+A filter refuses a request for any reason — a missing API key as often as a bad parameter — so the message for `false` names none. A filter that wants a status or a message of its own returns `Err`.
 
-The last row is the one difference from a handler, where a string is a `500`: an error without a status of its own, returned from a filter, is taken as the reason the request is refused. Since **0.12.0**, an error with a status keeps it — an `OAuthError` answers `401` for `invalid_token` and `403` for `insufficient_scope`, an `Error` keeps its instance and [attached response](/volga-docs/en/reliability-observability/errors.html#answering-with-a-body-of-its-own).
+The last row is the one difference from a handler, where a string is a `500`: an error without a status of its own, returned from a filter, is taken as the reason the request is refused. An error with a status keeps it — an `OAuthError` answers `401` for `invalid_token` and `403` for `insufficient_scope`, an `Error` keeps its instance and [attached response](/volga-docs/en/reliability-observability/errors.html#answering-with-a-body-of-its-own).
 
 ```rust compile
 use volga::{App, headers::HttpHeaders, http::StatusCode};
@@ -136,7 +136,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-If an extractor fails, the closure does not run, and the request is answered with the extractor's error. Before **0.15.0** `tap_req` took only `Dc<T>`, and only with the `di` feature.
+If an extractor fails, the closure does not run, and the request is answered with the extractor's error.
 
 ### Replacing the Body
 
@@ -195,7 +195,7 @@ async fn main() -> std::io::Result<()> {
 
 * The new body is read under the request's [body limit](/volga-docs/en/requests-responses/body.html#limiting-the-body-size), as the old one was, so a body that grows on the way is answered `413` once it goes over the limit.
 * The headers stay as they are. Remove one that no longer describes the body, such as `Content-Length` or `Content-Encoding`, with `remove_header()`.
-* `HttpRequestMut::into_parts()` and `from_parts()` are deprecated since **0.15.0**: they handed out the request's extensions, which hold Volga's per-request state. Replace the body with these methods, and change the headers with `HttpRequestMut`'s own.
+* `HttpRequestMut::into_parts()` and `from_parts()` are deprecated: they handed out the request's extensions, which hold Volga's per-request state. Replace the body with these methods, and change the headers with `HttpRequestMut`'s own.
 
 ## Handling Successful Responses
 
@@ -268,7 +268,7 @@ async fn produce_err() -> IoError {
 }
 ```
 
-Since **0.12.0** whatever `Err` the handler returns reaches this `map_err` as an `Error` — `Err(StatusCode::NOT_FOUND)` and an `Err` of your own error type included.
+Whatever `Err` the handler returns reaches this `map_err` as an `Error` — `Err(StatusCode::NOT_FOUND)` and an `Err` of your own error type included.
 
 A `map_err` on a route or a group covers the whole scope, its middleware included, whatever order it was registered in, and a second one replaces the first. See [Error Handlers of a Route or a Group](/volga-docs/en/reliability-observability/errors.html#error-handlers-of-a-route-or-a-group).
 
@@ -278,7 +278,7 @@ By attaching [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.htm
 
 ## Synchronous Middleware
 
-Since **v0.11.0** [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter), [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok), [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) and [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) also accept a plain `fn` or a closure that returns its verdict, response or request directly, when there is nothing to await — on [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), a route and a route group alike, just as [handlers](/volga-docs/en/getting-started/handlers.html#synchronous-handlers) do:
+[`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter), [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok), [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) and [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) also accept a plain `fn` or a closure that returns its verdict, response or request directly, when there is nothing to await — on [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), a route and a route group alike, just as [handlers](/volga-docs/en/getting-started/handlers.html#synchronous-handlers) do:
 
 ```rust compile
 use volga::{App, HttpResponse, HttpResult, Path, headers, headers::HttpHeaders};

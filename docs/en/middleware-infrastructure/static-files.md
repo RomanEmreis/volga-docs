@@ -61,7 +61,7 @@ Then [`use_static_assets()`](https://docs.rs/volga/latest/volga/app/struct.App.h
 - `/{any path}` → the file of that name under the content root, at any depth
 
 ::: tip
-On **0.9.x** this call is spelled `map_static_assets()`. It registers no route — see [Middleware, not routing](#middleware-not-routing) below — so it lost the `map_` prefix, which in this crate means *a route was registered*. Nothing else about it differs.
+The call has no `map_` prefix, which in this crate means *a route was registered*: it registers no route, see [Middleware, not routing](#middleware-not-routing) below.
 :::
 
 ## Middleware, not routing
@@ -113,7 +113,7 @@ What is left is resolved from its ordinary path components alone. A `.`, a `..`,
 A target that does not decode — a malformed `%XX` escape, or one that is not UTF-8 — is left to the router, which answers it `400` through the [error handler](/volga-docs/en/reliability-observability/errors.html), so `map_err` and problem details apply to it as to any other malformed path.
 
 ::: warning Write the prefix as its text
-A prefix is compared with decoded segments, so it is written as the text it spells: `app.group("/docs v1", ..)`, not `"/docs%20v1"`. A literal segment carrying a percent-escape panics where the mount is registered, as it does in a [route](/volga-docs/en/getting-started/route-params.html#literal-segments-are-written-as-their-text).
+A prefix is compared with decoded segments, so it is written as the text it spells: `app.group("/docs v1", ..)`, not `"/docs%20v1"`. A literal segment carrying a percent-escape panics where the mount is registered, as it does in a [route](/volga-docs/en/reference/routing.html#literal-segments-are-written-as-their-text).
 :::
 
 ## Fallback
@@ -170,7 +170,7 @@ Point [`with_fallback_file()`](https://docs.rs/volga/latest/volga/app/struct.Hos
 
 ### How the file is served
 
-The fallback file is served by a `GET` route covering the mount's prefix and `{*path}` below it — since **0.11.1** it is an ordinary route in the router, which settles three questions worth knowing about:
+The fallback file is served by a `GET` route covering the mount's prefix and `{*path}` below it — an ordinary route in the router, which settles three questions worth knowing about:
 
 * **It answers `GET` and `HEAD` only.** The shell is how a client-side URL renders the application, and a browser navigates with `GET`. Anything else — a `POST` to a mistyped API path, an `OPTIONS`, a `PUT` to the path of a file — is answered `405` with `Allow: GET,HEAD`, the same answer any route gives a method it lacks. That is what keeps a mistyped write from getting an HTML page and a `200`, and failing in the client at `res.json()` instead of where it was made.
 * **A route of yours answers before the shell.** A literal or a parameter route is read before a catch-all at every position, so `map_get("/health", ..)` keeps answering with a root mount in place, in either registration order. A `GET` route mapped by hand at one of the shell's own positions — `map_get("/{*rest}", ..)` beside a root mount — simply takes that position over.
@@ -233,7 +233,7 @@ async fn main() -> std::io::Result<()> {
 
 The group's middleware — `wrap`, `with`, `filter`, `map_ok`, `authorize`, a rate limiter — wraps the files this mount serves, exactly as it wraps the routes the group registered, nested groups included.
 
-[`RouteGroup::use_static_files()`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.use_static_files) mounts the files **and** the fallback file under that prefix, which since **0.11.1** is where the shell answers and nowhere else — one server can host a front end under `/app` and keep the rest of its URL space to itself:
+[`RouteGroup::use_static_files()`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.use_static_files) mounts the files **and** the fallback file under that prefix, which is where the shell answers and nowhere else — one server can host a front end under `/app` and keep the rest of its URL space to itself:
 
 ```rust compile
 use volga::{App, ok};
@@ -326,7 +326,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-[`with_asset_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_cache_control) and [`with_shell_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_cache_control) need **0.9.11** or newer, and are read back with `asset_cache_control()` / `shell_cache_control()`. The two defaults are named by the [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) and `CacheControl::SHELL` constants for anyone building a policy from scratch; `CacheControl::EMPTY` is the `const` equivalent of `CacheControl::default()`.
+[`with_asset_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_cache_control) and [`with_shell_cache_control()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_cache_control) are read back with `asset_cache_control()` / `shell_cache_control()`. The two defaults are named by the [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) and `CacheControl::SHELL` constants for anyone building a policy from scratch; `CacheControl::EMPTY` is the `const` equivalent of `CacheControl::default()`.
 
 To put the shell on the asset policy anyway — a deployment that never reuses a shell URL:
 
@@ -384,7 +384,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-[`with_asset_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_etag) and [`with_shell_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_etag) need **0.10.1** or newer, and are read back with `asset_etag()` / `shell_etag()`. The pairing to keep in mind is with `Cache-Control`: narrow [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) so assets start revalidating, and `ETagSource::Content` is what makes their answers trustworthy.
+[`with_asset_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_asset_etag) and [`with_shell_etag()`](https://docs.rs/volga/latest/volga/app/struct.HostEnv.html#method.with_shell_etag) are read back with `asset_etag()` / `shell_etag()`. The pairing to keep in mind is with `Cache-Control`: narrow [`CacheControl::ASSET`](https://docs.rs/volga/latest/volga/headers/cache_control/struct.CacheControl.html#associatedconstant.ASSET) so assets start revalidating, and `ETagSource::Content` is what makes their answers trustworthy.
 
 A content tag costs **one read per file version**, not per request: it is remembered against the file's length and its `mtime` at full precision, plus whatever the platform can say about the file rather than its contents — the inode and change time on Unix, the creation time on Windows. A restart starts from an empty cache, and the cache is bounded, so a content root with a file per user does not grow an entry per file and keep it.
 

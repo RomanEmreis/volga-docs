@@ -28,15 +28,11 @@ async fn main() -> std::io::Result<()> {
 ```
 You can check out the full example of file downloading [here](https://github.com/RomanEmreis/volga/blob/main/examples/file_download/src/main.rs).
 
-`file!` takes the name as a `&str` or, since **0.15.1**, an owned `String`. The name sets `Content-Type`, guessed from its extension, and `Content-Disposition: attachment`, which tells the browser what to save the file as. The name may come from the request: since **0.15.1** the header is built per RFC 6266 and RFC 8187, so a `"` or `\` in the name is escaped and cannot add parameters of its own, a non-ASCII name reaches the client intact in `filename*`, and control characters are replaced by `_`.
-
-::: warning
-Before **0.15.1**, `file!` wrote the name into the header as it was. A name such as `a"; filename="evil.exe` made the browser save `evil.exe`, so a client choosing the name chose what the file was saved as. Upgrade if a file name comes from user input.
-:::
+`file!` takes the name as a `&str` or an owned `String`. The name sets `Content-Type`, guessed from its extension, and `Content-Disposition: attachment`, which tells the browser what to save the file as. The name may come from the request: the header is built per RFC 6266 and RFC 8187, so a `"` or `\` in the name is escaped and cannot add parameters of its own, a non-ASCII name reaches the client intact in `filename*`, and control characters are replaced by `_`.
 
 ### `Content-Disposition` for Other Responses
 
-For a download that `file!` does not cover, such as a `stream!` of a file, [`ContentDisposition::attachment()`](https://docs.rs/volga/latest/volga/headers/struct.ContentDisposition.html#method.attachment) (since **0.15.1**) builds the same header from any name:
+For a download that `file!` does not cover, such as a `stream!` of a file, [`ContentDisposition::attachment()`](https://docs.rs/volga/latest/volga/headers/struct.ContentDisposition.html#method.attachment) builds the same header from any name:
 
 ```rust compile
 use volga::{App, HttpBody, headers::ContentDisposition, stream};
@@ -86,13 +82,9 @@ Here is the [full example](https://github.com/RomanEmreis/volga/blob/main/exampl
 
 ### Where `save()` Puts the File
 
-`save()` names the file after the name the client sent in `Content-Disposition`. Since **0.15.1** it keeps only what follows the last `/` or `\` of that name, so the file always lands in the folder you pass: `../../etc/passwd` is saved as `passwd`, and an absolute `/tmp/x` as `x`. A name with nothing usable left, such as `..` or one ending in a separator, is answered with `400 Bad Request`.
+`save()` names the file after the name the client sent in `Content-Disposition`. It keeps only what follows the last `/` or `\` of that name, so the file always lands in the folder you pass: `../../etc/passwd` is saved as `passwd`, and an absolute `/tmp/x` as `x`. A name with nothing usable left, such as `..` or one ending in a separator, is answered with `400 Bad Request`.
 
 `save_as()` writes to the path you give it and is unchanged. Don't build that path from the client's name yourself: `save_as(dir.join(name))` brings the folders of the name back. [`File::name()`](https://docs.rs/volga/latest/volga/http/endpoints/args/file/struct.FileStream.html#method.name) still returns the name as sent.
-
-::: warning
-Before **0.15.1**, `save()` joined the folder with the name as sent, so a client could write outside of it: `filename="../../x"` climbed up, and an absolute name replaced the folder altogether. Upgrade if you accept uploads from untrusted clients.
-:::
 
 ## Multipart uploading
 In case, if you need to upload multiple files, you can leverage a multipart file uploading. It's a separate feature  and if you're not using the `full` feature set it can be explicitly enabled in your `Cargo.toml`:
@@ -143,6 +135,6 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-`field.save()` and `save_all()` name files the way [`save()`](#where-save-puts-the-file) does, after the last part of the name the client sent, since **0.15.1**.
+`field.save()` and `save_all()` name files the way [`save()`](#where-save-puts-the-file) does, after the last part of the name the client sent.
 
 More robust examples you can find [here](https://github.com/RomanEmreis/volga/blob/main/examples/multipart/src/main.rs)

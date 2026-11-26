@@ -9,7 +9,7 @@ If you're not using the `full` feature set, ensure you enable the `tls` feature 
 volga = { version = "0.15", features = ["tls"] }
 ```
 
-A client that never finishes the TLS handshake holds its connection open. Since **0.15.1** the [header read timeout](/volga-docs/en/protocols-realtime/http.html#header-read-timeout) bounds the handshake as well; it is off by default.
+A client that never finishes the TLS handshake holds its connection open. The [header read timeout](/volga-docs/en/protocols-realtime/http.html#header-read-timeout) bounds the handshake as well; it is off by default.
 
 ## Simple HTTPS server
 

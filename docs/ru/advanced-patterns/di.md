@@ -200,17 +200,6 @@ async fn main() -> std::io::Result<()> {
 
 Обработчик, которому нужна собственная копия для изменений, берёт `Dc::cloned()`; зарегистрированный экземпляр остаётся прежним. Клон самого `Dc<T>` — это ещё одна ссылка на тот же экземпляр, и он доступен для любого `T`.
 
-::: warning При переходе с 0.13
-До 0.14.0 `Dc<T>` реализовывал `DerefMut`, и запись через него — `counter.hits += 1` — меняла приватную копию: контейнер держит ссылку на каждый singleton, а на scoped-сервис — до конца его запроса, поэтому первая запись клонировала значение. Другие запросы этого изменения не видели. Теперь такая запись не компилируется:
-
-```text
-error[E0594]: cannot assign to data in dereference of `Dc<Counter>`
-  = help: trait `DerefMut` is required to modify through a dereference, but it is not implemented for `Dc<Counter>`
-```
-
-Перенесите состояние внутрь сервиса за `Mutex`, `RwLock` или атомик либо возьмите `Dc::cloned()` там, где обработчику и нужна была приватная копия.
-:::
-
 ## Граф проверяется при старте
 
 [`App::run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) проверяет граф зависимостей до того, как что-либо запустить, и возвращает `Err`, перечисляя сразу все найденные проблемы, а не первую из них:
@@ -274,7 +263,7 @@ fn main() {
 
 ### Что принимают обработчики и middleware
 
-Начиная с **0.14.0** проверка охватывает и то, что принимают обработчики и middleware. Маршрут, обработчик которого принимает `Dc<T>` для `T`, который никто не зарегистрировал, раньше стартовал и отвечал `500` на каждый запрос. Теперь `App::run()` не запускается и называет тип и всё, что его принимает:
+Проверка охватывает и то, что принимают обработчики и middleware. Если обработчик принимает `Dc<T>` для `T`, который никто не зарегистрировал, `App::run()` не запускается и называет тип и всё, что его принимает:
 
 ```text
 dependency injection: `myapp::Db` is not registered, and is resolved by `GET /users/{id}`, `with` on group `/api`. Register a service with `add_singleton`, `add_scoped` or `add_transient` (or their `_factory` and `_default` forms), or take `Option<Dc<T>>` where it is optional

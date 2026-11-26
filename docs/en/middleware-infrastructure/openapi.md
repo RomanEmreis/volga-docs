@@ -140,7 +140,7 @@ async fn main() -> std::io::Result<()> {
 
 serde reads a struct with a `#[serde(flatten)]` field as a map, so that it can collect the keys the struct does not name — and a map does not say which keys it takes. None of such a struct's fields can be inferred, including the ones declared beside the flattened member: a `Json<T>` or `Form<T>` body is described as an object without properties (or as any value, when the struct sits inside it, as in a `Vec`), and a `Query<T>` describes no parameters at all.
 
-Since **0.11.2** debug builds name each such input at startup. Describe it by hand with an [`OpenApiSchema`](https://docs.rs/volga/latest/volga/openapi/struct.OpenApiSchema.html) — [`with_request_schema()`](https://docs.rs/volga/latest/volga/openapi/struct.OpenApiRouteConfig.html#method.with_request_schema) for a body, [`with_query_schema()`](https://docs.rs/volga/latest/volga/openapi/struct.OpenApiRouteConfig.html#method.with_query_schema) for the query, which describes one parameter per property, required as the schema's `required` list says:
+Debug builds name each such input at startup. Describe it by hand with an [`OpenApiSchema`](https://docs.rs/volga/latest/volga/openapi/struct.OpenApiSchema.html) — [`with_request_schema()`](https://docs.rs/volga/latest/volga/openapi/struct.OpenApiRouteConfig.html#method.with_request_schema) for a body, [`with_query_schema()`](https://docs.rs/volga/latest/volga/openapi/struct.OpenApiRouteConfig.html#method.with_query_schema) for the query, which describes one parameter per property, required as the schema's `required` list says:
 
 ```rust compile
 use std::collections::HashMap;
@@ -182,7 +182,7 @@ Path parameters are always named by the route template, whatever the extractor d
 
 ## Routes Naming One Position Differently
 
-OpenAPI 3.0 allows one templated path per position. `GET /users/{id}` beside `POST /users/{name}` is described under a single path, named the way most of the routes there are written, and debug builds report each route whose parameters were renamed — see [Parameter Names Are Per-Route](/volga-docs/en/getting-started/route-params.html#in-the-openapi-document).
+OpenAPI 3.0 allows one templated path per position. `GET /users/{id}` beside `POST /users/{name}` is described under a single path, named the way most of the routes there are written, and debug builds report each route whose parameters were renamed — see [Parameter Names Are Per-Route](/volga-docs/en/reference/routing.html#in-the-openapi-document).
 
 ::: tip Where the startup report goes
 The reports above are made by debug builds only. With the `tracing` feature on — and `full` turns it on — they are emitted as `WARN` events, so they show up only once a [tracing subscriber](/volga-docs/en/reliability-observability/tracing.html) is installed; without that feature they are printed to stderr.

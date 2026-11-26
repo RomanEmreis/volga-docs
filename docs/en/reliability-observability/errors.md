@@ -45,7 +45,7 @@ app.map_err(|error: Error| {
 
 ## Returning Errors from a Handler
 
-A handler that can fail returns `Result<T, E>`. `Ok` answers with `T`, as any other response does. Since **0.12.0** an `Err` is an error, not a second kind of response: it is turned into an [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) through the [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) trait and handed to the error handler — the one registered with `map_err`, or the default one — exactly like an error from anywhere else.
+A handler that can fail returns `Result<T, E>`. `Ok` answers with `T`, as any other response does. An `Err` is an error, not a second kind of response: it is turned into an [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) through the [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) trait and handed to the error handler — the one registered with `map_err`, or the default one — exactly like an error from anywhere else.
 
 ```rust compile
 use volga::{App, Json, http::StatusCode};
@@ -206,19 +206,6 @@ impl IntoError for NotFound {
 
 `describe_openapi` exists only while Volga's `openapi` feature is on. If your crate enables that feature through a feature of its own, put the same `#[cfg(feature = "..")]` on the method. See [OpenAPI](/volga-docs/en/middleware-infrastructure/openapi.html) for the rest.
 
-### Upgrading from 0.11
-
-::: warning What changes for a handler's Err in 0.12.0
-Before 0.12.0 the `Err` of a handler had to implement `IntoResponse` and was sent as a response of its own, bypassing `map_err`. Now:
-
-* **`Err(String)` and other strings answer `500` instead of `200`.** This still compiles, so nothing flags it — search for such handlers and give each error a status.
-* `Err(StatusCode)` and `Err(Problem)` keep their status, but now reach `map_err`. `Err(StatusCode)` answers with its canonical reason instead of an empty body, or with Problem Details under `map_problem()`.
-* `Err(HttpResponse)`, `Err(Json<T>)` and other response types no longer compile. Return the response as `Ok`, or return an error and attach the body with `with_response()`.
-* A type with a `From<T> for Error` of its own still converts with `?`, but cannot be a handler's `Err` until that `From` becomes an `IntoError` impl.
-
-All of it applies to `map_err`, `map_fallback`, `with` and `map_ok` as well, and to a [filter's `Err`](/volga-docs/en/middleware-infrastructure/middleware.html#what-a-filter-returns).
-:::
-
 ## Errors Volga Produces Itself
 
 A request Volga refuses on its own reaches the error handler too, as an error with its status. Some of these errors carry headers, which stay on whatever response the handler answers with:
@@ -257,8 +244,6 @@ async fn main() -> std::io::Result<()> {
 ```
 
 What is not a refusal stays a response: a CORS preflight's `204`, a static file's `304`, the HTTPS redirect and the answer to an implicit `HEAD`. [`map_ok()`](/volga-docs/en/middleware-infrastructure/middleware.html#handling-successful-responses) sees successful responses only, so a change to how a `404` looks goes into `map_err`, or into [`map_fallback`](#the-fallback-handler) for a path nothing answers.
-
-Before **0.15.0** several of these were plain responses that `map_err` and `map_problem` never saw.
 
 ## Headers on an Error
 
@@ -321,8 +306,6 @@ async fn main() -> std::io::Result<()> {
 * **An error passes outwards.** A scoped handler that answers with the error itself hands it to the group around it, and then to `App::map_err`.
 * **What runs outside every scope** — the global middleware and the application's fallback — reaches `App::map_err` alone.
 
-Before **0.15.0** a scoped `map_err` covered only what was registered after it, so `.filter(..).map_problem()` left the filter's rejection to the application's handler.
-
 ## The Fallback Handler
 
 [`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) registers the handler that answers a request no route matched. It takes the same arguments [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) does — extractors of the head: headers, the URI, cookies, [`ClientIp`](https://docs.rs/volga/latest/volga/struct.ClientIp.html), [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html), an [extractor of your own](/volga-docs/en/advanced-patterns/custom-extractors.html). Not the body: nothing matched, so there is no route to say how a body should be read, and path parameters are out for the same reason.
@@ -351,7 +334,7 @@ A fallback runs inside a full per-request scope, so it takes the same extractors
 
 ### One Fallback per Part of the API
 
-One handler for every unknown path in the application is often one too few: an API wants JSON and a browser-facing SPA wants its shell. Since **0.11.1** a [route group](/volga-docs/en/getting-started/route-groups.html#a-fallback-for-the-group) carries a fallback of its own, and the router picks the deepest prefix that has one:
+One handler for every unknown path in the application is often one too few: an API wants JSON and a browser-facing SPA wants its shell. A [route group](/volga-docs/en/getting-started/route-groups.html#a-fallback-for-the-group) carries a fallback of its own, and the router picks the deepest prefix that has one:
 
 ```rust compile
 use volga::{App, http::Uri, error::Problem, not_found};
@@ -497,8 +480,6 @@ async fn main() -> std::io::Result<()> {
 ```
 
 `map_problem()` is `map_err` with a handler of volga's own, so whichever of the two is called last handles the errors: `app.map_err(h); app.map_problem();` replaces `h`. A `Route` and a `RouteGroup` have a `map_problem()` of their own, for the [errors of their scope](#error-handlers-of-a-route-or-a-group).
-
-Before **0.14.1** the method on `App` was called `use_problem_details()`. The old name still compiles, with a deprecation warning.
 
 ### Example Response:
 ```json

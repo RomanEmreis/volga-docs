@@ -1,7 +1,7 @@
 # HTTP Versions and Methods
 
 ## HTTP/1 and HTTP/2
-Starting with **v0.3.1**, you can configure the HTTP version.
+You can configure the HTTP version.
 If you add Volga like this, HTTP/1 is used by default:
 ```toml
 [dependencies]
@@ -16,7 +16,7 @@ With `full`, HTTP/2 is used when possible, and it falls back to HTTP/1 automatic
 
 ## Header Read Timeout
 
-A client that sends the head of a request a byte at a time holds its connection for as long as it likes, and so does one that connects and sends nothing, or never finishes a TLS handshake. A few of them are enough to take every permit of [`with_max_connections()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_max_connections). Since **0.15.1**, [`with_header_read_timeout()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_header_read_timeout) sets how long a client has to send the request line and the headers before its connection is closed:
+A client that sends the head of a request a byte at a time holds its connection for as long as it likes, and so does one that connects and sends nothing, or never finishes a TLS handshake. A few of them are enough to take every permit of [`with_max_connections()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_max_connections). [`with_header_read_timeout()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_header_read_timeout) sets how long a client has to send the request line and the headers before its connection is closed:
 
 ```rust compile
 use std::time::Duration;
@@ -66,7 +66,7 @@ A `HEAD` request with no route of its own is answered by the `GET` route for the
 :::
 
 ### The `QUERY` method
-Starting with **v0.9.4**, Volga supports the HTTP `QUERY` method — a safe, idempotent verb that carries a request body, for searches too large or too structured to express in a URI query string.
+Volga supports the HTTP `QUERY` method — a safe, idempotent verb that carries a request body, for searches too large or too structured to express in a URI query string.
 
 Register a handler with [`map_query()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_query):
 
@@ -106,7 +106,7 @@ Prefer putting complex selection criteria in the request body of a `QUERY` reque
 :::
 
 ### Any method
-Also since **v0.9.4**, [`map()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map) registers a route for any HTTP method. It is useful when the verb is only known at runtime, when the same handler serves several methods, or for non-standard verbs:
+[`map()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map) registers a route for any HTTP method. It is useful when the verb is only known at runtime, when the same handler serves several methods, or for non-standard verbs:
 
 ```rust compile
 use volga::{App, ok};

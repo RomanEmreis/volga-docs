@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
 Content-Type: text/plain
 ```
 
-На запрос без этого заголовка Волга отвечает `400 Bad Request` с именем заголовка ещё до обработчика. Для заголовка, которого может не быть, принимайте `Option<Header<T>>`. [`HttpHeaders::try_get()`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) завершается такой же ошибкой. До **0.15.0** отсутствующий заголовок давал `404`.
+На запрос без этого заголовка Волга отвечает `400 Bad Request` с именем заголовка ещё до обработчика. Для заголовка, которого может не быть, принимайте `Option<Header<T>>`. [`HttpHeaders::try_get()`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) завершается такой же ошибкой.
 
 ### Чтение кастомного HTTP-заголовка с `Header<T>`
 Если вам нужно прочитать свой HTTP-заголовок, создайте структуру и реализуйте для неё типаж [`FromHeaders`](https://docs.rs/volga/latest/volga/headers/trait.FromHeaders.html):

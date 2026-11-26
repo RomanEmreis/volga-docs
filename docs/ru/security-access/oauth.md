@@ -94,7 +94,7 @@ let app = App::new()
         .with_client_config(|client| client.require_https(true)));
 ```
 
-Начиная с **0.14.1** `OAuthConfig`, собранный в другом месте, передаётся целиком через [`set_oauth(config)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_oauth) — форму `with_oauth`, принимающую значение. Вызов `use_oauth()` по-прежнему нужен.
+`OAuthConfig`, собранный в другом месте, передаётся целиком через [`set_oauth(config)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_oauth) — форму `with_oauth`, принимающую значение. Вызов `use_oauth()` по-прежнему нужен.
 
 Для локального эмитента, работающего по обычному HTTP, ослабьте транспортную политику:
 
@@ -110,7 +110,7 @@ let app = App::new()
 ```toml
 [oauth.client]
 issuer = "https://auth.example.com"
-jwks_uri = "https://auth.internal/jwks"  # опционально, без discovery (0.13.2+)
+jwks_uri = "https://auth.internal/jwks"  # опционально, без discovery
 refresh_cooldown_secs = 60   # опционально
 max_key_age_secs = 900       # опционально
 require_https = true         # опционально
@@ -122,7 +122,7 @@ max_redirects = 5            # опционально
 
 Discovery загружает метаданные эмитента по URL, который токены несут в `iss`, а значит, рассчитывает, что сервер может до этого URL достучаться. В некоторых развёртываниях это не так: эмитент запущен на хосте как `http://localhost:8787`, а API — в контейнере и видит его как `http://host.docker.internal:8787`; или сервис в Kubernetes обращается к провайдеру идентификации по внутрикластерному имени, а в токенах указан публичный хост ingress.
 
-Начиная с **0.13.2**, [`with_jwks_uri(...)`](https://docs.rs/volga/latest/volga/auth/oauth_client/struct.OAuthConfig.html#method.with_jwks_uri) задаёт URL, с которого загружается JSON Web Key Set, и discovery пропускается:
+[`with_jwks_uri(...)`](https://docs.rs/volga/latest/volga/auth/oauth_client/struct.OAuthConfig.html#method.with_jwks_uri) задаёт URL, с которого загружается JSON Web Key Set, и discovery пропускается:
 
 ```rust compile-fragment
 let mut app = App::new()
@@ -195,7 +195,7 @@ app.use_oauth_server_metadata()  // GET /.well-known/oauth-authorization-server
 Замыкание для метаданных сервера предзаполняется значениями OAuth 2.1: `response_types_supported = ["code"]` и `grant_types_supported = ["authorization_code"]`. OIDC-специфичные поля, обязательные для совместимого документа провайдера (`subject_types_supported`, `id_token_signing_alg_values_supported`, `userinfo_endpoint`, …), можно задать через [`with_additional_field(...)`](https://docs.rs/volga/latest/volga/auth/oauth/struct.AuthorizationServerMetadata.html#method.with_additional_field).
 :::
 
-Два поля, которые стоит назвать отдельно, стали типизированными построителями в **v0.9.6** и **v0.9.8**:
+Два поля, которые стоит назвать отдельно, задаются типизированными построителями:
 
 ```rust compile-fragment
 let mut app = App::new()

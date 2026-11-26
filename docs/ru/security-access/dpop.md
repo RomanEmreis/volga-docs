@@ -2,7 +2,7 @@
 
 Bearer-токен — это пароль: им может воспользоваться любой, кто его держит. DPoP (RFC 9449) привязывает токен к ключу, которым владеет клиент, и каждый запрос несёт свежеподписанное доказательство владения — поэтому токен, утёкший из лога, прокси или скомпрометированного хранилища, без ключа ничего не стоит.
 
-Доступно с **v0.9.8** под фичей `dpop` крейта `volga-oauth-client`:
+Доступно под фичей `dpop` крейта `volga-oauth-client`:
 
 ```toml
 [dependencies]
@@ -137,7 +137,7 @@ Nonce запоминаются по origin **и** по пространству 
 
 ## Чтение DPoP-челленджа
 
-Защищённый по DPoP ресурс отвечает `401` с челленджем `WWW-Authenticate: DPoP ...`, у которого `error` и `error_description` — те же, что в RFC 6750. Начиная с **v0.9.8**, [`BearerChallenge::parse_scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.parse_scheme) читает челлендж для любой схемы:
+Защищённый по DPoP ресурс отвечает `401` с челленджем `WWW-Authenticate: DPoP ...`, у которого `error` и `error_description` — те же, что в RFC 6750. [`BearerChallenge::parse_scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.parse_scheme) читает челлендж для любой схемы:
 
 ```rust compile
 use volga_oauth_client::{BearerChallenge, OAuthError, auth_scheme};
@@ -151,11 +151,3 @@ fn read(header: &str) -> Result<(), OAuthError> {
 [`with_scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.with_scheme) и [`scheme`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/struct.BearerChallenge.html#method.scheme) отображают и сообщают схему, поэтому разобранный челлендж рендерится обратно в той схеме, в которой пришёл. `parse` — это тот же метод с `auth_scheme::BEARER`.
 
 Оба зарегистрированных кода ошибок DPoP тоже смоделированы: `OAuthErrorCode::UseDpopNonce` и `OAuthErrorCode::InvalidDpopProof` (RFC 9449 §7.1).
-
-::: warning
-При обновлении стоит проверить три изменения из **v0.9.8**:
-
-* `OAuthErrorCode` помечен `#[non_exhaustive]`, поэтому ничего не перестанет компилироваться — но код, сопоставлявший два кода DPoP как `Other(..)`, больше их не поймает. Представление на проводе, `as_str` и serde-представление не изменились.
-* У [`TokenSet`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.TokenSet.html) появилось поле `dpop_jkt`, поэтому код, собирающий его структурным литералом, обязан его указать (`None` для bearer-токена). Для всего, что не несёт привязки, представление на проводе не изменилось, так что сохранённая ранней версией запись по-прежнему читается.
-* [`ClientAuthMethod`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientAuthMethod.html) больше не `Copy` — новый вариант `PrivateKeyJwt` несёт ключ подписи. `Clone`, `Debug`, `PartialEq` и `Eq` сохранены.
-:::

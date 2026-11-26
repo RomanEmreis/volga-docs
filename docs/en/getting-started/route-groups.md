@@ -66,10 +66,6 @@ async fn report() -> HttpResult {
 }
 ```
 
-::: warning Upgrading from 0.9.x
-A group's configuration was read at each `map_*` call, so anything registered *below* a route did not reach it. It reaches every route now: a route mapped above its group's `authorize` or `token_bucket` answers `401` / `403` / `429` where it answered `200`.
-:::
-
 ### Ordering rules
 
 * Middleware still **runs** in registration order.
@@ -105,7 +101,7 @@ async fn ping() -> HttpResult {
 
 ## A Fallback for the Group
 
-Since **0.11.1** a group can answer for its own part of the URL space. [`map_fallback()`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_fallback) on a [`RouteGroup`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html) answers a request aimed under the group's prefix that no route is mapped at, whatever its method — it is [`App::map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) for one branch of the tree:
+A group can answer for its own part of the URL space. [`map_fallback()`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html#method.map_fallback) on a [`RouteGroup`](https://docs.rs/volga/latest/volga/app/router/struct.RouteGroup.html) answers a request aimed under the group's prefix that no route is mapped at, whatever its method — it is [`App::map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) for one branch of the tree:
 
 ```rust compile
 use volga::{App, http::Uri, not_found, ok};
@@ -177,7 +173,7 @@ A route is registered under the name the router reads, so `/x`, `/x/` and `//x` 
 Mapping a route that is already mapped **replaces** it, along with everything bound to the registration being replaced. A handler and its middleware are written together and stand or fall together, and the OpenAPI operation is built from the configuration the route currently holds.
 
 :::warning
-A group prefix is a route pattern like any other, so it counts towards the [route parameter naming rules](/volga-docs/en/getting-started/route-params.html#parameter-names-are-per-route): `group("/{tenant}", ..)` beside `map_get("/{id}/items", ..)` is one route under two names, and panics at registration.
+A group prefix is a route pattern like any other, so it counts towards the [route parameter naming rules](/volga-docs/en/reference/routing.html#parameter-names-are-per-route): `group("/{tenant}", ..)` beside `map_get("/{id}/items", ..)` is one route under two names, and panics at registration.
 :::
 
 You can find more examples [here](https://github.com/RomanEmreis/volga/blob/main/examples/route_groups/src/main.rs).

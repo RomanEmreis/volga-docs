@@ -2,7 +2,7 @@
 
 Volga always shuts down gracefully on an OS signal — `Ctrl+C` and `SIGTERM` on Unix, and their equivalents on Windows. When the signal arrives the listener stops accepting new connections, in-flight requests are allowed to finish within the [shutdown timeout](#shutdown-timeout), and only then does [`run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) return.
 
-Starting with **v0.9.3**, the same shutdown can be triggered from your own code with a [`ShutdownHandle`](https://docs.rs/volga/latest/volga/app/shutdown/struct.ShutdownHandle.html) — for an admin endpoint, a watchdog, a lease that expired, or a worker that finished the job the process was started for.
+The same shutdown can be triggered from your own code with a [`ShutdownHandle`](https://docs.rs/volga/latest/volga/app/shutdown/struct.ShutdownHandle.html) — for an admin endpoint, a watchdog, a lease that expired, or a worker that finished the job the process was started for.
 
 ## Creating an App with a Handle
 

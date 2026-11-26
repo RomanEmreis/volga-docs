@@ -38,13 +38,13 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Обработчик сообщений, которому нечего ждать, начиная с **v0.11.0** может возвращать ответ напрямую:
+Обработчик сообщений, которому нечего ждать, может возвращать ответ напрямую:
 
 ```rust compile-fragment
 app.map_msg("/ws", |msg: String| format!("echo: {msg}"));
 ```
 
-Аргументы после сообщения читают запрос, открывший соединение, включая параметры пути, — начиная с **0.14.0**, когда `map_ws` и `map_msg` стали передавать своему обработчику параметры его маршрута:
+Аргументы после сообщения читают запрос, открывший соединение, включая параметры пути:
 
 ```rust compile-fragment
 app.map_msg("/ws/{room}", |msg: String, room: String| format!("[{room}] {msg}"));
@@ -82,7 +82,7 @@ async fn main() -> std::io::Result<()> {
 
 ### Собственные типы сообщений
 
-Сообщение — это всё, что реализует `TryFrom<`[`Message`](https://docs.rs/volga/latest/volga/ws/args/struct.Message.html)`>`, а ответ — всё, что реализует `TryInto<Message>`. Начиная с **0.12.0** ошибкой их преобразования может быть любой тип, который превращается в `Error` из Волги, — `serde_json::Error`, пара `(StatusCode, E)`, ваш собственный тип, реализующий [`IntoError`](/volga-docs/ru/reliability-observability/errors.html#собственные-типы-ошибок), — а не только сам `Error`. То же верно для `WebSocket::on_msg`, `WebSocket::recv` и `send`, `WsStream::recv` и `WsSink::send`.
+Сообщение — это всё, что реализует `TryFrom<`[`Message`](https://docs.rs/volga/latest/volga/ws/args/struct.Message.html)`>`, а ответ — всё, что реализует `TryInto<Message>`. Ошибкой их преобразования может быть любой тип, который превращается в `Error` из Волги, — `serde_json::Error`, пара `(StatusCode, E)`, ваш собственный тип, реализующий [`IntoError`](/volga-docs/ru/reliability-observability/errors.html#собственные-типы-ошибок), — а не только сам `Error`. То же верно для `WebSocket::on_msg`, `WebSocket::recv` и `send`, `WsStream::recv` и `WsSink::send`.
 
 ```rust compile
 use serde::Deserialize;

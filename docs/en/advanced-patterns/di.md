@@ -200,17 +200,6 @@ async fn main() -> std::io::Result<()> {
 
 A handler that wants a copy of its own to change takes `Dc::cloned()`; the registered instance stays as it was. A clone of the `Dc<T>` itself is another handle on the same instance, and is available for every `T`.
 
-::: warning Upgrading from 0.13
-Before 0.14.0, `Dc<T>` implemented `DerefMut`, and a write through it — `counter.hits += 1` — changed a private copy: the container holds a handle on every singleton, and on a scoped service until its request ends, so the first write cloned the value. No other request saw it. Such a write no longer compiles:
-
-```text
-error[E0594]: cannot assign to data in dereference of `Dc<Counter>`
-  = help: trait `DerefMut` is required to modify through a dereference, but it is not implemented for `Dc<Counter>`
-```
-
-Move the state behind a `Mutex`, an `RwLock` or an atomic inside the service, or take `Dc::cloned()` where a private copy is what the handler meant.
-:::
-
 ## The Graph Is Checked at Startup
 
 [`App::run()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.run) checks the dependency graph before it starts anything, and returns an `Err` naming every problem at once rather than the first one:
@@ -274,7 +263,7 @@ fn main() {
 
 ### What Handlers and Middleware Take
 
-Since **0.14.0** the check covers what handlers and middleware take as well. A route whose handler takes `Dc<T>` of a `T` nobody registered used to start and answer `500` on every request to it. Now `App::run()` does not start, and names the type and everything that takes it:
+The check covers what handlers and middleware take as well. If a handler takes `Dc<T>` of a `T` nobody registered, `App::run()` does not start, and names the type and everything that takes it:
 
 ```text
 dependency injection: `myapp::Db` is not registered, and is resolved by `GET /users/{id}`, `with` on group `/api`. Register a service with `add_singleton`, `add_scoped` or `add_transient` (or their `_factory` and `_default` forms), or take `Option<Dc<T>>` where it is optional
