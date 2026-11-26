@@ -193,7 +193,7 @@ Volga ships with performance-friendly primitives and modern developer ergonomics
 ## Explore the docs
 
 - [Quick Start](/volga-docs/en/getting-started/quick-start.html)
-- [Tutorial: a Bookmarks Service](/volga-docs/en/tutorial/overview.html)
+- [Tutorial](/volga-docs/en/tutorial/overview.html)
 - [Dependency Injection](/volga-docs/en/advanced-patterns/di.html)
 - [Rate Limiting](/volga-docs/en/middleware-infrastructure/rate-limiting.html)
 - [Handling JSON](/volga-docs/en/requests-responses/json-payload.html)

@@ -49,43 +49,52 @@ function escapeHtml(str) {
 
 // Rust highlighter producing PrismJS-compatible token classes
 // so the globally loaded one-dark / one-light theme CSS applies.
+// Each line is tokenized in one left-to-right pass, so text inside a
+// comment or a string is never highlighted again as code.
+const KEYWORDS = new Set(['use','fn','let','mut','async','move','await','struct','match','pub','mod','impl','self','Self','return','if','else','for','in','while','loop','break','continue','where','type','trait','enum','const','static','ref','as','crate','super','extern','unsafe','dyn','true','false'])
+
+const TOKEN = new RegExp([
+  '(\\/\\/.*)',                          // 1 comment
+  '("(?:[^"\\\\]|\\\\.)*")',               // 2 string
+  '(#!?\\[[^\\]]*\\])',                     // 3 attribute
+  '([a-z_][a-z0-9_]*!)',                  // 4 macro
+  '([A-Za-z_][A-Za-z0-9_]*)',            // 5 identifier
+  '(\\d+(?:\\.\\d+)?)',                    // 6 number
+  '(::)',                                // 7 path separator
+].join('|'), 'g')
+
+function span(cls, text) {
+  return '<span class="token ' + cls + '">' + escapeHtml(text) + '</span>'
+}
+
+function highlightLine(line) {
+  let html = ''
+  let last = 0
+  for (const m of line.matchAll(TOKEN)) {
+    html += escapeHtml(line.slice(last, m.index))
+    last = m.index + m[0].length
+    const [text, comment, string, attr, macro, ident, number, sep] = m
+    if (comment) html += span('comment', comment)
+    else if (string) html += span('string', string)
+    else if (attr) html += span('attribute attr-name', attr)
+    else if (macro) html += span('macro property', macro)
+    else if (ident) {
+      const rest = line.slice(last)
+      if (KEYWORDS.has(ident)) html += span('keyword', ident)
+      else if (/^[A-Z]/.test(ident)) html += span('class-name', ident)
+      else if (/^\s*\(/.test(rest)) html += span('function', ident)
+      else html += escapeHtml(ident)
+    }
+    else if (number) html += span('number', number)
+    else if (sep) html += span('punctuation', sep)
+    else html += escapeHtml(text)
+  }
+  return html + escapeHtml(line.slice(last))
+}
+
 function highlightRust(code) {
   const lines = code.split('\n')
-  const highlighted = lines.map(line => {
-    let html = escapeHtml(line)
-
-    // Comments
-    html = html.replace(/(\/\/.*)/, '<span class="token comment">$1</span>')
-
-    // Strings
-    html = html.replace(/(&quot;(?:[^&]|&(?!quot;))*?&quot;)/g, '<span class="token string">$1</span>')
-
-    // Attributes (#[...])
-    html = html.replace(/(#\[[^\]]*\])/g, '<span class="token attribute attr-name">$1</span>')
-
-    // Macros (word!)
-    html = html.replace(/\b([a-z_]+!)(?=\()/g, '<span class="token macro property">$1</span>')
-    html = html.replace(/\b([a-z_]+!)(?=[^<])/g, '<span class="token macro property">$1</span>')
-
-    // Keywords
-    const keywords = ['use','fn','let','mut','async','move','await','struct','match','pub','mod','impl','self','Self','return','if','else','for','in','while','loop','break','continue','where','type','trait','enum','const','static','ref','as','crate','super','extern','unsafe']
-    const kwPattern = new RegExp('\\b(' + keywords.join('|') + ')\\b', 'g')
-    html = html.replace(kwPattern, '<span class="token keyword">$1</span>')
-
-    // Types (PascalCase)
-    html = html.replace(/\b([A-Z][A-Za-z0-9]*)\b/g, '<span class="token class-name">$1</span>')
-
-    // Function calls
-    html = html.replace(/\b([a-z_][a-z_0-9]*)\s*(?=\()/g, '<span class="token function">$1</span>')
-
-    // Numbers
-    html = html.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="token number">$1</span>')
-
-    // Namespace separators
-    html = html.replace(/::/g, '<span class="token punctuation">::</span>')
-
-    return '<span class="line">' + html + '</span>'
-  })
+  const highlighted = lines.map(line => '<span class="line">' + highlightLine(line) + '</span>')
 
   const lineNumberDivs = lines.map(() => '<div class="line-number"></div>').join('')
 
