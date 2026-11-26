@@ -10,7 +10,7 @@ If you're not using the `full` feature set, you need to enable the `static-files
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["static-files"] }
+volga = { version = "0.15", features = ["static-files"] }
 ```
 
 The `static-files` feature implies `middleware`, since middleware is what serves the files.

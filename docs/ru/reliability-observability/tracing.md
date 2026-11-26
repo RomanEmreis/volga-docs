@@ -3,11 +3,11 @@
 Функции трассировки и логгирования в Волге основаны на [фреймворке tracing](https://docs.rs/tracing/latest/tracing/index.html) и поддерживают его для сбора структурированной диагностической информации на основе событий из коробки.
 В дополнение к этому, вы можете настроить включение span/request/correction id в заголовки ответов, чтобы улучшить метрику observability вашего приложения.
 
-Если вы не используете набор функций `full`, убедитесь, что вы включили функцию `tracing` в `Cargo.toml`, кроме того, вам необходимо установить библиотеки [`tracing`](https://crates.io/crates/tracing) и [`tracing-subscriber`](https://crates.io/crates/tracing-subscriber):
+Если вы не используете набор фич `full`, убедитесь, что вы включили фичу `tracing` в `Cargo.toml`, кроме того, вам необходимо установить библиотеки [`tracing`](https://crates.io/crates/tracing) и [`tracing-subscriber`](https://crates.io/crates/tracing-subscriber):
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["tracing"] }
+volga = { version = "0.15", features = ["tracing"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 ```

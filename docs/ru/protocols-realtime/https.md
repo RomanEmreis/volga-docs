@@ -2,11 +2,11 @@
 
 Волга поддерживает протоколы HTTPS/TLS, реализованные поверх библиотеки `rustls`.
 
-Если вы не используете набор функций `full`, убедитесь, что вы включили функцию `tls` в `Cargo.toml`:
+Если вы не используете набор фич `full`, убедитесь, что вы включили фичу `tls` в `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["tls"] }
+volga = { version = "0.15", features = ["tls"] }
 ```
 
 Клиент, который так и не завершает TLS-рукопожатие, держит соединение открытым. Начиная с **0.15.1** рукопожатие ограничивает и [таймаут чтения заголовков](/volga-docs/ru/protocols-realtime/http.html#таимаут-чтения-заголовков); по умолчанию он выключен.
@@ -16,11 +16,11 @@ volga = { version = "...", features = ["tls"] }
 ### Использование сертификатов разработки
 
 Для локальной разработки и тестирования вы можете использовать автоматическую генерацию самоподписанных сертификатов.
-Для этого, сначала необходимо подключить функцию `dev-cert` в `Cargo.toml`:
+Для этого, сначала необходимо подключить фичу `dev-cert` в `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["tls", "dev-cert"] }
+volga = { version = "0.15", features = ["tls", "dev-cert"] }
 ```
 
 Затем, в файле `main.rs` вы можете включить сертификаты разработки с помощью метода [`with_dev_cert()`](https://docs.rs/volga/latest/volga/tls/struct.TlsConfig.html#method.with_dev_cert).
@@ -139,7 +139,7 @@ let config = TlsConfig::new()
     .with_key_path("tests/tls/server.key")
     .with_required_client_auth("path/to/certs/ca.pem");
 ```
-Затем вам, так же, необходимо сгенерировать клиентский сертификат и закрытый ключ:
+Затем вам также необходимо сгенерировать клиентский сертификат и закрытый ключ:
 ```bash
 openssl req -x509 -newkey rsa:4096 -nodes -keyout client.key -out client.pem -days 365 -subj '/CN=localhost'`
 ```

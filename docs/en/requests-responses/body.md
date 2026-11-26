@@ -8,8 +8,8 @@ Starting with **v0.9.4**, [`HttpBody`](https://docs.rs/volga/latest/volga/http/b
 
 ```toml
 [dependencies]
-volga = { version = "..." }
-tokio = { version = "...", features = ["full"] }
+volga = { version = "0.15" }
+tokio = { version = "1", features = ["full"] }
 http-body-util = "0.1"
 ```
 
@@ -68,8 +68,8 @@ To process the body as it arrives instead of collecting it, take [`HttpBodyStrea
 
 ```toml
 [dependencies]
-volga = { version = "..." }
-tokio = { version = "...", features = ["full"] }
+volga = { version = "0.15" }
+tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
 ```
 

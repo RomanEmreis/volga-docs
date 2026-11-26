@@ -163,7 +163,7 @@ The struct has to be **unit-like**. A typed header is its name — the value it 
 The [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html) macro is part of the optional `macros` feature.
 Make sure to enable it in your `Cargo.toml`:
 ```toml
-volga = { version = "...", features = ["macros"] }
+volga = { version = "0.15", features = ["macros"] }
 ```
 :::
 

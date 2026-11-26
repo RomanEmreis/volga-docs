@@ -1,6 +1,6 @@
 # Отмена запросов
 
-Если необходимо отменить длительную задачу при закрытии соединения удаленным клиентом (например, при закрытии страницы браузера), Волга поддерживает отслеживание таких сценариев, вводя [`CancellationToken`](https://docs.rs/volga/latest/volga/app/endpoints/args/cancellation_token/type.CancellationToken.html) для каждого HTTP-запроса. Который работает поверх [`CancellationToken`](https://docs.rs/tokio-util/0.7.13/tokio_util/sync/struct.CancellationToken.html) среды [Tokio](https://tokio.rs/).
+Если необходимо отменить длительную задачу при закрытии соединения удаленным клиентом (например, при закрытии страницы браузера), Волга поддерживает отслеживание таких сценариев, вводя [`CancellationToken`](https://docs.rs/volga/latest/volga/http/endpoints/args/cancellation_token/type.CancellationToken.html) для каждого HTTP-запроса. Который работает поверх [`CancellationToken`](https://docs.rs/tokio-util/0.7.13/tokio_util/sync/struct.CancellationToken.html) среды [Tokio](https://tokio.rs/).
 
 Вот как это можно использовать:
 

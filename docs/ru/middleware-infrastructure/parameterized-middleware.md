@@ -1,18 +1,18 @@
 # Параметризованные Middleware
 
-Помимо встроенных middleware-замыканий, регистрируемых через [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) и [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), Volga также поддерживает регистрацию middleware в виде повторно используемых настраиваемых типов через метод [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach).
+Помимо встроенных middleware-замыканий, регистрируемых через [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) и [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), Волга также поддерживает регистрацию middleware в виде повторно используемых настраиваемых типов через метод [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach).
 
 Такой подход удобен, когда middleware требует собственного состояния, конфигурации или должен использоваться повторно в нескольких приложениях.
 
 ## Обзор
 
-Параметризованный middleware — это обычный Rust-тип (как правило, `struct`), реализующий трейт [`Middleware`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html). Такой тип хранит всю необходимую конфигурацию и разделяемое состояние, а его метод [`call()`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html#tymethod.call) содержит основную логику middleware.
+Параметризованный middleware — это обычный Rust-тип (как правило, `struct`), реализующий типаж [`Middleware`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html). Такой тип хранит всю необходимую конфигурацию и разделяемое состояние, а его метод [`call()`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html#tymethod.call) содержит основную логику middleware.
 
 Это похоже на паттерны middleware в других экосистемах (например, слои Tower, middleware ASP.NET Core или классы Express.js).
 
-## Трейт `Middleware`
+## Типаж `Middleware`
 
-Трейт определён следующим образом:
+Типаж определён следующим образом:
 ```rust
 pub trait Middleware: Send + Sync + 'static {
     fn call(
@@ -23,7 +23,7 @@ pub trait Middleware: Send + Sync + 'static {
 }
 ```
 
-Любой тип, реализующий этот трейт, можно передать в [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach).
+Любой тип, реализующий этот типаж, можно передать в [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach).
 
 ## Пример: Middleware `Timeout`
 
@@ -68,7 +68,7 @@ impl Middleware for Timeout {
 Оба метода регистрируют middleware, работающие с полным [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html), но рассчитаны на разные сценарии:
 
 - [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) оптимизирован для коротких встроенных замыканий. Аннотации типов для `ctx` и `next` не требуются.
-- [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach) предназначен для повторно используемых параметризованных типов middleware — как правило, структур, реализующих трейт [`Middleware`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html).
+- [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach) предназначен для повторно используемых параметризованных типов middleware — как правило, структур, реализующих типаж [`Middleware`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html).
 
 ::: tip
 Используйте [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) для быстрых встроенных middleware и [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach), когда нужно оформить middleware как именованный настраиваемый тип, пригодный для повторного использования.
@@ -145,7 +145,7 @@ impl Middleware for Timeout {
 
 ## Другие варианты Middleware
 
-Тот же параметризованный подход работает и для остальных middleware-трейтов. Помимо [`Middleware`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html), вы можете реализовать [`Filter`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Filter.html), [`TapReq`](https://docs.rs/volga/latest/volga/middleware/handler/trait.TapReq.html), [`MapOk`](https://docs.rs/volga/latest/volga/middleware/handler/trait.MapOk.html), [`MapErr`](https://docs.rs/volga/latest/volga/http/endpoints/handlers/trait.MapErr.html) и [`With`](https://docs.rs/volga/latest/volga/middleware/handler/trait.With.html) на собственных типах. Они регистрируются теми же методами, что и их аналоги-замыкания — [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter), [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req), [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok), [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) и [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) соответственно. Например, переиспользуемый параметризованный фильтр:
+Тот же параметризованный подход работает и для остальных middleware-типажей. Помимо [`Middleware`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Middleware.html), вы можете реализовать [`Filter`](https://docs.rs/volga/latest/volga/middleware/handler/trait.Filter.html), [`TapReq`](https://docs.rs/volga/latest/volga/middleware/handler/trait.TapReq.html), [`MapOk`](https://docs.rs/volga/latest/volga/middleware/handler/trait.MapOk.html), [`MapErr`](https://docs.rs/volga/latest/volga/http/endpoints/handlers/trait.MapErr.html) и [`With`](https://docs.rs/volga/latest/volga/middleware/handler/trait.With.html) на собственных типах. Они регистрируются теми же методами, что и их аналоги-замыкания — [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter), [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req), [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok), [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) и [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) соответственно. Например, переиспользуемый параметризованный фильтр:
 
 ```rust compile
 use volga::{App, headers::HttpHeaders, middleware::Filter};

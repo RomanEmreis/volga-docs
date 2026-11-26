@@ -21,8 +21,8 @@ cd hello-world
 
 ```toml
 [dependencies]
-volga = { version = "..." }
-tokio = { version = "...", features = ["full"] }
+volga = { version = "0.15" }
+tokio = { version = "1", features = ["full"] }
 ```
 
 ## Настройка
@@ -131,7 +131,7 @@ Hello World!
 
 ```toml
 [dependencies]
-volga = { version = "..." }
+volga = { version = "0.15" }
 ```
 
 Тогда `main.rs` может выглядеть так:

@@ -20,8 +20,8 @@ Add the following dependencies in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = { version = "..." }
-tokio = { version = "...", features = ["full"] }
+volga = { version = "0.15" }
+tokio = { version = "1", features = ["full"] }
 ```
 ## Setup
 Create your main application in `main.rs`:
@@ -115,7 +115,7 @@ This allows you to simplify your `Cargo.toml` dependencies:
 
 ```toml
 [dependencies]
-volga = { version = "..." }
+volga = { version = "0.15" }
 ```
 
 Your `main.rs` might then look like this:

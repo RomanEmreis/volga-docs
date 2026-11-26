@@ -17,7 +17,7 @@
 которая входит в `full`:
 ```toml
 [dependencies]
-volga = { version = "0.9.9", features = ["validation-derive"] }
+volga = { version = "0.15", features = ["validation-derive"] }
 ```
 
 ```rust compile
@@ -266,7 +266,7 @@ impl Validate for KeyValue {
 }
 ```
 
-`Validate::Error` не обязан быть `ValidationError`: подойдёт любой тип, который преобразуется в `Error` из Volga, и отвечает он статусом, который даёт это преобразование. Для собственного типа ошибки это одна реализация [`IntoError`](/volga-docs/ru/reliability-observability/errors.html#собственные-типы-ошибок) — начиная с **0.12.0** она заменяет написанный вручную `From<T> for Error`, который сама и предоставляет.
+`Validate::Error` не обязан быть `ValidationError`: подойдёт любой тип, который преобразуется в `Error` из Волги, и отвечает он статусом, который даёт это преобразование. Для собственного типа ошибки это одна реализация [`IntoError`](/volga-docs/ru/reliability-observability/errors.html#собственные-типы-ошибок) — начиная с **0.12.0** она заменяет написанный вручную `From<T> for Error`, который сама и предоставляет.
 
 ## `ValidationError`
 

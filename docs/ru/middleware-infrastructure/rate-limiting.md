@@ -7,18 +7,18 @@
 
 ## Включение Rate Limiting
 
-Rate limiting — опциональная функция. Включите её в `Cargo.toml`:
+Rate limiting — опциональная фича. Включите её в `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["rate-limiting"] }
+volga = { version = "0.15", features = ["rate-limiting"] }
 ```
 
-Или включите все функции сразу:
+Или включите все фичи сразу:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["full"] }
+volga = { version = "0.15", features = ["full"] }
 ```
 
 ## Основные концепции
@@ -34,7 +34,7 @@ volga = { version = "...", features = ["full"] }
 
 Политики настраиваются один раз на уровне приложения.
 
-Запрос сверх ограничения отклоняется с `429 Too Many Requests`. Отказ — это ошибка, поэтому он доходит до [`map_err` и `map_problem`](/volga-docs/ru/reliability-observability/errors.html#ошибки-которые-создает-volga), как любая другая.
+Запрос сверх ограничения отклоняется с `429 Too Many Requests`. Отказ — это ошибка, поэтому он доходит до [`map_err` и `map_problem`](/volga-docs/ru/reliability-observability/errors.html#ошибки-которые-создает-волга), как любая другая.
 
 ### Ключ партиционирования (Partition Key)
 

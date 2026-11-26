@@ -11,7 +11,7 @@
 Как и парсинг входящих multipart-запросов, отправка multipart-ответов закрыта за фичей `multipart`. Если вы не используете набор `full`, её нужно явно включить в `Cargo.toml`:
 ```toml
 [dependencies]
-volga = { version = "...", features = ["multipart"] }
+volga = { version = "0.15", features = ["multipart"] }
 ```
 
 ## Возврат multipart-ответа

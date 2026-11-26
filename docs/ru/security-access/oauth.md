@@ -4,16 +4,16 @@
 
 Типы уровня протокола (модели ошибок, документы метаданных, построитель заголовка `WWW-Authenticate`, вывод well-known URL) находятся в модуле [`volga::auth::oauth`](https://docs.rs/volga/latest/volga/auth/oauth/index.html) и совместно используются с отдельным [OAuth-клиентом](./oauth-client.md).
 
-## Feature-флаги
+## Фичи
 
-| Feature | Что включает |
+| Фича | Что включает |
 |---|---|
 | `oauth` | Базовые типы OAuth 2.1 / OIDC в `volga::auth::oauth` и отдачу метаданных (включается вместе с `jwt-auth`). |
 | `oauth-client` | Валидацию токенов по эмитенту — `App::with_oauth` / `App::use_oauth`. Включает `jwt-auth`. |
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["oauth-client"] }
+volga = { version = "0.15", features = ["oauth-client"] }
 ```
 
 ## Валидация токенов по эмитенту
@@ -105,7 +105,7 @@ let app = App::new()
         .with_client_config(|client| client.require_https(false)));
 ```
 
-С feature `config` те же параметры можно описать в секции `[oauth.client]` файла конфигурации — поля из файла переопределяют вызовы построителя, неизвестные ключи приводят к ошибке при старте, а активация всё так же требует явного вызова `App::use_oauth()` в коде:
+С фичей `config` те же параметры можно описать в секции `[oauth.client]` файла конфигурации — поля из файла переопределяют вызовы построителя, неизвестные ключи приводят к ошибке при старте, а активация всё так же требует явного вызова `App::use_oauth()` в коде:
 
 ```toml
 [oauth.client]
@@ -210,7 +210,7 @@ let mut app = App::new()
 
 Объявление поддержки RFC 9207 делает её **обязательной** для клиентов: [валидация callback](/volga-docs/ru/security-access/oauth-client.html#валидация-callback) в `volga-oauth-client` после этого отклонит ответ без `iss`. Метод `with_authorization_response_iss_parameter` также принимается в секции `[oauth.server]` файла конфигурации. Клиентская половина второго описана в разделе [DPoP](/volga-docs/ru/security-access/dpop.html); на стороне ресурса поле `dpop_signing_alg_values_supported` доступно у [`ProtectedResourceMetadata`](https://docs.rs/volga/latest/volga/auth/oauth/struct.ProtectedResourceMetadata.html) под тем же именем.
 
-Оба документа также могут приходить из секций `[oauth.resource]` / `[oauth.server]` файла конфигурации (feature `config`); файл переопределяет предыдущие вызовы построителя. Сокращение `set_*` настраивает минимальный документ только по идентификатору:
+Оба документа также могут приходить из секций `[oauth.resource]` / `[oauth.server]` файла конфигурации (фича `config`); файл переопределяет предыдущие вызовы построителя. Сокращение `set_*` настраивает минимальный документ только по идентификатору:
 
 ```rust compile-fragment
 let mut app = App::new()

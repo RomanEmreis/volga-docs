@@ -1,6 +1,6 @@
 # Request cancellation
 
-If a long-running task needs to be canceled upon a remote client closing the connection (e.g., closing a browser page), Volga supports tracking those scenarios by introducing a dedicated [`CancellationToken`](https://docs.rs/volga/latest/volga/app/endpoints/args/cancellation_token/type.CancellationToken.html) per HTTP request. Which is powered by [Tokio's](https://tokio.rs/) [`CancellationToken`](https://docs.rs/tokio-util/0.7.13/tokio_util/sync/struct.CancellationToken.html).
+If a long-running task needs to be canceled upon a remote client closing the connection (e.g., closing a browser page), Volga supports tracking those scenarios by introducing a dedicated [`CancellationToken`](https://docs.rs/volga/latest/volga/http/endpoints/args/cancellation_token/type.CancellationToken.html) per HTTP request. Which is powered by [Tokio's](https://tokio.rs/) [`CancellationToken`](https://docs.rs/tokio-util/0.7.13/tokio_util/sync/struct.CancellationToken.html).
 
 This is how it can be used:
 

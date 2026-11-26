@@ -8,7 +8,7 @@ If you're not using the `full` feature set, enable the `openapi` feature in your
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["openapi"] }
+volga = { version = "0.15", features = ["openapi"] }
 ```
 
 ## Serving the Document

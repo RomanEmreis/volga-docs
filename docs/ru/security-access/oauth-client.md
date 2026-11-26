@@ -14,10 +14,10 @@
 
 ```toml
 [dependencies]
-volga-oauth-client = { version = "..." }
+volga-oauth-client = { version = "0.15" }
 ```
 
-### Feature-флаги
+### Фичи
 
 | Флаг | Что включает |
 |---|---|
@@ -161,7 +161,7 @@ let client = OAuthClient::new("my-client")
 
 ### `private_key_jwt`
 
-Начиная с **v0.9.8** (флаг `private-key-jwt`), клиент может аутентифицироваться утверждением, подписанным его собственным ключом (RFC 7523 §2.2) — при этом общий секрет никогда не покидает клиент:
+Начиная с **v0.9.8** (фича `private-key-jwt`), клиент может аутентифицироваться утверждением, подписанным его собственным ключом (RFC 7523 §2.2) — при этом общий секрет никогда не покидает клиент:
 
 ```rust compile
 use volga_oauth_client::{ClientError, JwsAlgorithm, OAuthClient, PrivateKeyJwt};
@@ -213,7 +213,7 @@ fn publish(key: PrivateKeyJwt, public: PublicJwk) -> Result<(), ClientError> {
 
 ## Хранилище токенов
 
-Сохранение выполняется через трейт [`TokenStore`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/trait.TokenStore.html). [`InMemoryTokenStore`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.InMemoryTokenStore.html) — встроенная реализация в памяти процесса, подходящая для CLI, тестов и одноинстансовых сервисов; всё долговременное (БД, зашифрованный файл, связка ключей ОС) реализуется одной реализацией трейта.
+Сохранение выполняется через типаж [`TokenStore`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/trait.TokenStore.html). [`InMemoryTokenStore`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/struct.InMemoryTokenStore.html) — встроенная реализация в памяти процесса, подходящая для CLI, тестов и одноинстансовых сервисов; всё долговременное (БД, зашифрованный файл, связка ключей ОС) реализуется одной реализацией типажа.
 
 ```rust compile
 use volga_oauth_client::{TokenSet, TokenStore};
@@ -306,7 +306,7 @@ let client = OAuthClient::new("my-client").with_config(config);
 
 ### Проброс ошибок из обработчика
 
-Начиная с **v0.9.8**, при включённом на `volga` флаге `oauth-client`, [`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html) преобразуется в [`volga::Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html), поэтому обработчик, общающийся с сервером авторизации, может пробрасывать ошибку через `?`:
+Начиная с **v0.9.8**, при включённой на `volga` фиче `oauth-client`, [`ClientError`](https://docs.rs/volga-oauth-client/latest/volga_oauth_client/enum.ClientError.html) преобразуется в [`volga::Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html), поэтому обработчик, общающийся с сервером авторизации, может пробрасывать ошибку через `?`:
 
 ```rust compile
 use volga::{HttpResult, ok};

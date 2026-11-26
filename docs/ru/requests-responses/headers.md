@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
 Content-Type: text/plain
 ```
 
-На запрос без этого заголовка Volga отвечает `400 Bad Request` с именем заголовка ещё до обработчика. Для заголовка, которого может не быть, принимайте `Option<Header<T>>`. [`HttpHeaders::try_get()`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) завершается такой же ошибкой. До **0.15.0** отсутствующий заголовок давал `404`.
+На запрос без этого заголовка Волга отвечает `400 Bad Request` с именем заголовка ещё до обработчика. Для заголовка, которого может не быть, принимайте `Option<Header<T>>`. [`HttpHeaders::try_get()`](https://docs.rs/volga/latest/volga/headers/header/struct.HttpHeaders.html) завершается такой же ошибкой. До **0.15.0** отсутствующий заголовок давал `404`.
 
 ### Чтение кастомного HTTP-заголовка с `Header<T>`
 Если вам нужно прочитать свой HTTP-заголовок, создайте структуру и реализуйте для неё типаж [`FromHeaders`](https://docs.rs/volga/latest/volga/headers/trait.FromHeaders.html):
@@ -164,10 +164,10 @@ Received x-api-key: 123-321
 :::
 
 :::info
-Атрибут [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html) является частью дополнительной функции `macros`.
+Атрибут [`http_header`](https://docs.rs/volga/latest/volga/headers/attr.http_header.html) является частью дополнительной фичи `macros`.
 Убедитесь, что она включена в вашем `Cargo.toml`:
 ```toml
-volga = { version = "...", features = ["macros"] }
+volga = { version = "0.15", features = ["macros"] }
 ```
 :::
 

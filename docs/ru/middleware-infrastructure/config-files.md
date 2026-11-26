@@ -10,7 +10,7 @@
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["config"] }
+volga = { version = "0.15", features = ["config"] }
 serde = { version = "1", features = ["derive"] }
 ```
 
@@ -188,7 +188,7 @@ async fn main() -> std::io::Result<()> {
 
 Волга автоматически распознаёт и применяет зарезервированные секции из конфигурационного файла. Эти секции настраивают внутренние компоненты фреймворка и **не требуют** вызова [`bind_section()`](https://docs.rs/volga/latest/volga/config/struct.ConfigBuilder.html#method.bind_section):
 
-| Секция       | Feature-флаг   | Поля                                                          |
+| Секция       | Фича           | Поля                                                          |
 |--------------|----------------|---------------------------------------------------------------|
 | `[server]`   | *(всегда)*     | `host`, `port`, `body_limit_bytes`, `max_header_count`, `max_connections`, `shutdown_timeout_secs`, `header_read_timeout_secs` |
 | `[tls]`      | `tls`          | Настройки TLS-сертификатов                                    |

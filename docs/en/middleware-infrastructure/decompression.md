@@ -8,14 +8,14 @@ To enable request decompression, ensure you include the necessary feature in you
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["decompression-full"] }
+volga = { version = "0.15", features = ["decompression-full"] }
 ```
 
 If you only need specific decompression algorithms, specify them explicitly:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["decompression-brotli", "decompression-gzip"] }
+volga = { version = "0.15", features = ["decompression-brotli", "decompression-gzip"] }
 ```
 
 ## Example of usage

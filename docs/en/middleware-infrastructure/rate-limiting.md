@@ -11,14 +11,14 @@ Rate limiting is an optional feature. Enable it in `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["rate-limiting"] }
+volga = { version = "0.15", features = ["rate-limiting"] }
 ```
 
 Or enable all features at once:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["full"] }
+volga = { version = "0.15", features = ["full"] }
 ```
 
 ## Core Concepts

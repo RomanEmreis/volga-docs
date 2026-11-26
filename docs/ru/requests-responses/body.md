@@ -8,8 +8,8 @@
 
 ```toml
 [dependencies]
-volga = { version = "..." }
-tokio = { version = "...", features = ["full"] }
+volga = { version = "0.15" }
+tokio = { version = "1", features = ["full"] }
 http-body-util = "0.1"
 ```
 
@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Для сборки тела нужны методы трейта [`Body`](https://docs.rs/http-body/latest/http_body/trait.Body.html), которые приходят из расширяющего трейта [`BodyExt`](https://docs.rs/http-body-util/latest/http_body_util/trait.BodyExt.html) крейта `http-body-util` — Волга его не реэкспортирует.
+Для сборки тела нужны методы типажа [`Body`](https://docs.rs/http-body/latest/http_body/trait.Body.html), которые приходят из расширяющего типажа [`BodyExt`](https://docs.rs/http-body-util/latest/http_body_util/trait.BodyExt.html) крейта `http-body-util` — Волга его не реэкспортирует.
 
 ::: warning
 Тело запроса — это поток, который можно прочитать лишь однажды, поэтому [`HttpBody`](https://docs.rs/volga/latest/volga/http/body/struct.HttpBody.html) нельзя комбинировать с другим экстрактором тела в одном обработчике, включая `HttpRequest`: такой обработчик [не соберётся](/volga-docs/ru/getting-started/handlers.html#какие-экстракторы-сочетаются). Экстракторы, читающие только заголовочную часть запроса — [`Path<T>`](/volga-docs/ru/getting-started/route-params.html), [`Query<T>`](/volga-docs/ru/getting-started/query-params.html), [`HttpHeaders`](/volga-docs/ru/requests-responses/headers.html), [`Dc<T>`](/volga-docs/ru/advanced-patterns/di.html) — сочетаются с ним свободно.
@@ -68,8 +68,8 @@ async fn main() -> std::io::Result<()> {
 
 ```toml
 [dependencies]
-volga = { version = "..." }
-tokio = { version = "...", features = ["full"] }
+volga = { version = "0.15" }
+tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
 ```
 

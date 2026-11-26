@@ -1,6 +1,6 @@
 # Свои экстракторы
 
-Обработчики в Volga получают данные через экстракторы: `Json<T>`, `Query<T>`, `Header<T>`, `Dc<T>` и другие. Экстрактором может быть и значение, которое приложение получает из каждого запроса: вошедший пользователь, тенант, локаль клиента. Реализуйте для него [`FromRequestHead`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestHead.html), и обработчики и middleware будут принимать его так же, как встроенный.
+Обработчики в Волге получают данные через экстракторы: `Json<T>`, `Query<T>`, `Header<T>`, `Dc<T>` и другие. Экстрактором может быть и значение, которое приложение получает из каждого запроса: вошедший пользователь, тенант, локаль клиента. Реализуйте для него [`FromRequestHead`](https://docs.rs/volga/latest/volga/http/endpoints/args/trait.FromRequestHead.html), и обработчики и middleware будут принимать его так же, как встроенный.
 
 ## Свой тип
 
@@ -86,7 +86,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Чтение других экстракторов
 
-[`RequestHead::extract()`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.RequestHead.html#method.extract) читает любой встроенный экстрактор заголовочной части или другой ваш экстрактор, так что можно опираться на то, что Volga уже разбирает: `Query<T>`, `Path<T>`, `Header<T>`, `Cookies`, `ClientIp`, `Dc<T>`. Здесь локаль берётся из `?lang=`, если он есть в запросе, а иначе из `Accept-Language`:
+[`RequestHead::extract()`](https://docs.rs/volga/latest/volga/http/endpoints/args/struct.RequestHead.html#method.extract) читает любой встроенный экстрактор заголовочной части или другой ваш экстрактор, так что можно опираться на то, что Волга уже разбирает: `Query<T>`, `Path<T>`, `Header<T>`, `Cookies`, `ClientIp`, `Dc<T>`. Здесь локаль берётся из `?lang=`, если он есть в запросе, а иначе из `Accept-Language`:
 
 ```rust compile
 use serde::Deserialize;
@@ -137,7 +137,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Сервисы из контейнера
 
-С функцией `di` экстрактор может получить сервис через `Dc<T>`. Объявите его в `dependencies()`: тогда [`App::run()`](/volga-docs/ru/advanced-patterns/di.html#что-принимают-обработчики-и-middleware) при старте проверит, что сервис зарегистрирован, — как для `Dc<T>`, который принимает обработчик. Без объявления отсутствующий сервис ронял бы каждый запрос, дошедший до экстрактора.
+С фичей `di` экстрактор может получить сервис через `Dc<T>`. Объявите его в `dependencies()`: тогда [`App::run()`](/volga-docs/ru/advanced-patterns/di.html#что-принимают-обработчики-и-middleware) при старте проверит, что сервис зарегистрирован, — как для `Dc<T>`, который принимает обработчик. Без объявления отсутствующий сервис ронял бы каждый запрос, дошедший до экстрактора.
 
 ```rust compile
 use std::collections::HashMap;
@@ -249,4 +249,4 @@ async fn main() -> std::io::Result<()> {
 
 `FromRequest` и `FromRequestRef` встречаются в сигнатурах `map_get`, `with` и других методов. Это ограничения, а не точки расширения: они запечатаны, так что `impl` одного из них не скомпилируется. Публичными они остаются для того, чтобы их мог назвать обобщённый помощник над обработчиком.
 
-Формат тела, которого Volga не знает, читается в обработчике — из [`HttpBody`](/volga-docs/ru/requests-responses/body.html) или `ByteStream`, с уже применённым ограничением размера тела.
+Формат тела, которого Волга не знает, читается в обработчике — из [`HttpBody`](/volga-docs/ru/requests-responses/body.html) или `ByteStream`, с уже применённым ограничением размера тела.

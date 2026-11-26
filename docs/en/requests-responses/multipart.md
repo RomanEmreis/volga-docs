@@ -11,7 +11,7 @@ This is useful for:
 Like the request side, multipart responses are gated by the `multipart` feature. If you're not using the `full` feature set, enable it explicitly in your `Cargo.toml`:
 ```toml
 [dependencies]
-volga = { version = "...", features = ["multipart"] }
+volga = { version = "0.15", features = ["multipart"] }
 ```
 
 ## Returning a Multipart Response

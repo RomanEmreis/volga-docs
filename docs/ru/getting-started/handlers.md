@@ -138,7 +138,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Возврат ошибок
 
-Обработчик, который может завершиться неудачей, возвращает `Result<T, E>`: `Ok` — это ответ, а начиная с **0.12.0** `Err` — ошибка, которая передаётся [обработчику ошибок](/volga-docs/ru/reliability-observability/errors.html#возврат-ошибок-из-обработчика) и никогда не становится самостоятельным ответом. `E` — это `Error` из Volga, `StatusCode`, пара `(StatusCode, сообщение)`, `std::io::Error` или любой тип, реализующий [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html), — и все они преобразуются через `?`.
+Обработчик, который может завершиться неудачей, возвращает `Result<T, E>`: `Ok` — это ответ, а начиная с **0.12.0** `Err` — ошибка, которая передаётся [обработчику ошибок](/volga-docs/ru/reliability-observability/errors.html#возврат-ошибок-из-обработчика) и никогда не становится самостоятельным ответом. `E` — это `Error` из Волги, `StatusCode`, пара `(StatusCode, сообщение)`, `std::io::Error` или любой тип, реализующий [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html), — и все они преобразуются через `?`.
 
 ```rust compile
 use volga::{App, HttpResult, http::StatusCode, ok};

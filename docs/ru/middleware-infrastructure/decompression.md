@@ -4,17 +4,17 @@
 
 ## Включение распаковки
 
-Чтобы включить распаковку запросов, убедитесь, что вы включили необходимую функцию в `Cargo.toml`. Если вы не используете набор функций `full`, вы можете отдельно подключить функцию `decompression-full` делающую доступными все алгоритмы распаковки:
+Чтобы включить распаковку запросов, убедитесь, что вы включили необходимую функцию в `Cargo.toml`. Если вы не используете набор фич `full`, вы можете отдельно подключить фичу `decompression-full` делающую доступными все алгоритмы распаковки:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["decompression-full"] }
+volga = { version = "0.15", features = ["decompression-full"] }
 ```
 Если вам нужны определенные алгоритмы, вы можете указать их явно:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["decompression-brotli", "decompression-gzip"] }
+volga = { version = "0.15", features = ["decompression-brotli", "decompression-gzip"] }
 ```
 
 ## Пример использования
@@ -58,7 +58,7 @@ curl -v -X POST --location 'http://127.0.0.1:7878/users' \
 
 На тело, превысившее ограничение распаковки, заданное через [`with_decompression_limits()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_decompression_limits) (или, начиная с **0.14.1**, переданное целиком через [`set_decompression_limits()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.set_decompression_limits)), Волга отвечает [`413 Content Too Large`](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/413) — так же, как на тело больше [ограничения размера тела запроса](/volga-docs/ru/requests-responses/body.html#ограничение-размера-тела). Ограничение размера тела считается по распакованному телу.
 
-Алгоритм, которого в Volga нет, подключается в собственном [`tap_req`](/volga-docs/ru/middleware-infrastructure/middleware.html#замена-тела): `req.try_map_body(decode)` оборачивает тело в ваш декодер под тем же ограничением размера тела.
+Алгоритм, которого в Волге нет, подключается в собственном [`tap_req`](/volga-docs/ru/middleware-infrastructure/middleware.html#замена-тела): `req.try_map_body(decode)` оборачивает тело в ваш декодер под тем же ограничением размера тела.
 
 ### Размер окна
 

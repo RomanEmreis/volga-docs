@@ -388,7 +388,7 @@ Volga fully supports the [Problem Details](https://www.rfc-editor.org/rfc/rfc945
 To enable this functionality, ensure that the `problem-details` feature is activated in your app's `Cargo.toml`:
 ```toml
 [dependencies]
-volga = { version = "...", features = ["problem-details"] }
+volga = { version = "0.15", features = ["problem-details"] }
 ```
 Then, you may return the [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) from request handler:
 ```rust compile

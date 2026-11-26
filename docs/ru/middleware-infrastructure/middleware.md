@@ -1,14 +1,14 @@
 # Основы Middleware
 
-Volga предоставляет инструменты для построения цепочек промежуточной обработки (middleware) — как для отдельных маршрутов, так и для групп маршрутов или всего приложения.
+Волга предоставляет инструменты для построения цепочек промежуточной обработки (middleware) — как для отдельных маршрутов, так и для групп маршрутов или всего приложения.
 
 ## Включение поддержки middleware
 
-Если вы не используете полный набор функций `full`, необходимо явно включить фичу `middleware` в `Cargo.toml`:
+Если вы не используете полный набор фич `full`, необходимо явно включить фичу `middleware` в `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["middleware"] }
+volga = { version = "0.15", features = ["middleware"] }
 ```
 
 ## Фильтры
@@ -136,11 +136,11 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Если экстрактор не сработал, замыкание не запускается, и на запрос отвечают ошибкой экстрактора. До **0.15.0** `tap_req` принимал только `Dc<T>`, и только с функцией `di`.
+Если экстрактор не сработал, замыкание не запускается, и на запрос отвечают ошибкой экстрактора. До **0.15.0** `tap_req` принимал только `Dc<T>`, и только с фичей `di`.
 
 ### Замена тела
 
-[`map_body()`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html#method.map_body) и [`try_map_body()`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html#method.try_map_body) ставят новое тело на место тела запроса — например, распакованное алгоритмом, которого в Volga нет:
+[`map_body()`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html#method.map_body) и [`try_map_body()`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequestMut.html#method.try_map_body) ставят новое тело на место тела запроса — например, распакованное алгоритмом, которого в Волге нет:
 
 ```rust compile
 use volga::{App, HttpBody, HttpRequestMut, Json, error::Error, ok};
@@ -195,7 +195,7 @@ async fn main() -> std::io::Result<()> {
 
 * Новое тело читается под [ограничением размера тела](/volga-docs/ru/requests-responses/body.html#ограничение-размера-тела) запроса, как и старое, поэтому тело, которое растёт по пути, получает `413`, как только превысит ограничение.
 * Заголовки остаются как есть. Заголовок, который больше не описывает тело, например `Content-Length` или `Content-Encoding`, удаляется через `remove_header()`.
-* `HttpRequestMut::into_parts()` и `from_parts()` устарели в **0.15.0**: они отдавали расширения запроса, в которых лежит собственное состояние Volga для запроса. Тело заменяйте этими методами, а заголовки — собственными методами `HttpRequestMut`.
+* `HttpRequestMut::into_parts()` и `from_parts()` устарели в **0.15.0**: они отдавали расширения запроса, в которых лежит собственное состояние Волги для запроса. Тело заменяйте этими методами, а заголовки — собственными методами `HttpRequestMut`.
 
 ## Обработка успешного ответа
 
@@ -238,7 +238,7 @@ async fn sum(x: i32, y: i32) -> i32 {
 }
 ```
 
-`map_ok` видит только успешные ответы. Ошибка, в том числе `401`, `404` или `429`, которые [создаёт сама Volga](/volga-docs/ru/reliability-observability/errors.html#ошибки-которые-создает-volga), уходит в `map_err`.
+`map_ok` видит только успешные ответы. Ошибка, в том числе `401`, `404` или `429`, которые [создаёт сама Волга](/volga-docs/ru/reliability-observability/errors.html#ошибки-которые-создает-волга), уходит в `map_err`.
 
 ## Обработка ошибок
 
