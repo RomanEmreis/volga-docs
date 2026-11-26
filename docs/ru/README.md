@@ -1,32 +1,32 @@
 ---
 home: true
-title: "Волга"
+title: Волга
 heroText: Волга
 heroImage: /volga-logo-light.png
 heroImageDark: /volga-logo.png
-tagline: "Быстрый async-first веб-фреймворк для Rust на базе tokio + hyper."
+tagline: Быстрый async-first веб-фреймворк для Rust на базе tokio + hyper.
 actions:
-  - text: "Быстрый старт"
+  - text: Быстрый старт
     link: /ru/getting-started/quick-start.html
     type: primary
-  - text: "API Docs"
+  - text: API Docs
     link: https://docs.rs/volga/latest/volga/
     type: secondary
 features:
-  - title: "Как minimal APIs"
-    details: "Маршруты в коде, типизированные аргументы обработчиков, DI с временами жизни Singleton, Scoped и Transient. Пришли с ASP.NET Core, Spring или Go? Форма вам уже знакома."
-  - title: "Ошибки видны при старте"
-    details: "Сервис, который никто не зарегистрировал, параметр пути, которого нет в маршруте, сломанная настройка аутентификации: приложение останавливается до первого запроса и объясняет почему."
-  - title: "Всё нужное, по выбору"
-    details: "JWT и OAuth, валидация, Problem Details, OpenAPI, Rate Limiting, WebSockets, SSE, HTTP/2. Каждое это фича Cargo; сборка по умолчанию содержит только HTTP-сервер."
-footer: "MIT Licensed • Сфокусирован на производительности"
+  - title: Продуктивность по умолчанию
+    details: Минимальная настройка, понятный роутинг и удобный API обработчиков для фокуса на логике.
+  - title: Все необходимое внутри
+    details: DI, rate limiting, middleware, tracing, CORS, static files и многое другое из коробки.
+  - title: Типобезопасные экстракторы
+    details: JSON, query params, headers, cookies, файлы — все через композицию типизированных экстракторов.
+footer: MIT Licensed • Сфокусирован на производительности
 ---
 
 <script setup>
 const codeTabs = [
   {
     title: "Minimal API",
-    description: "Маршруты в коде и типизированные аргументы обработчиков: без атрибутов и рефлексии. Тело, которое не является корректным JSON, получает 400 ещё до вызова обработчика.",
+    description: "Маршруты в коде, типизированные аргументы. Неверный ввод отклоняется до вызова обработчика.",
     code: [
       "use serde::Deserialize;",
       "use volga::{App, Json, ok};",
@@ -55,7 +55,7 @@ const codeTabs = [
   },
   {
     title: "Валидация",
-    description: "Правила записаны на типе. Неверный ввод не доходит до обработчика: клиент получает все нарушенные правила сразу в формате Problem Details (RFC 9457), а те же правила попадают в вашу схему OpenAPI.",
+    description: "Правила записаны на типе. Все нарушения возвращаются сразу в формате Problem Details.",
     code: [
       "use serde::{Deserialize, Serialize};",
       "use volga::validation::{Valid, Validate};",
@@ -84,7 +84,7 @@ const codeTabs = [
   },
   {
     title: "Внедрение зависимостей",
-    description: "Сервисы разрешаются по типу, без макросов. Забыли зарегистрировать сервис, и приложение не запустится: \"Greeter is not registered, and is resolved by GET /hello/{name}\". А не 500 в продакшене.",
+    description: "Сервисы разрешаются по типу. Забыли зарегистрировать, и приложение не запустится, а не упадёт в продакшене.",
     code: [
       "use volga::{App, di::Dc, ok};",
       "",
@@ -109,7 +109,7 @@ const codeTabs = [
   },
   {
     title: "JWT",
-    description: "Токены проверены, роли соблюдены, проверенные claims переданы в обработчик. Отказы отвечают 401 или 403 с правильным WWW-Authenticate, а bearer-токен по обычному HTTP по умолчанию отклоняется.",
+    description: "Токены проверены, роли соблюдены, claims переданы в обработчик.",
     code: [
       "use serde::Deserialize;",
       "use volga::auth::{Authenticated, DecodingKey, roles};",
@@ -136,7 +136,7 @@ const codeTabs = [
   },
   {
     title: "Всё в комплекте",
-    description: "OpenAPI со Swagger UI, CORS и Rate Limiting по IP, по одной строке. Сжатие, WebSockets, SSE, TLS и статические файлы подключаются так же.",
+    description: "OpenAPI со Swagger UI, CORS и Rate Limiting, по одной строке.",
     code: [
       "use volga::App;",
       "use volga::rate_limiting::{TokenBucket, by};",
@@ -160,7 +160,7 @@ const codeTabs = [
   },
   {
     title: "Тестирование",
-    description: "Запустите настоящее приложение на свободном порту и вызывайте его по HTTP. Один тест проверяет маршрутизацию, middleware, аутентификацию и ошибки, а тесты идут параллельно.",
+    description: "Запустите настоящее приложение и тестируйте его по HTTP.",
     code: [
       "use volga::{App, ok, test::TestServer};",
       "",
@@ -182,18 +182,18 @@ const codeTabs = [
 ]
 </script>
 
-## Почему Волга
+## Масштабируйте API уверенно
 
-Если вы писали minimal API на ASP.NET Core, контроллер на Spring или обработчик на Go, [эта страница](/volga-docs/ru/getting-started/coming-from.html) сопоставит знакомое с Волгой. Чтобы увидеть, как части работают вместе, соберите законченный сервис в [туториале](/volga-docs/ru/tutorial/overview.html).
+Волга предоставляет производительные примитивы и современные практики разработки. От роутинга до middleware и продвинутой инфраструктуры — масштабируйте сервисы без переписывания базовых вещей.
 
-## Как это выглядит в коде
+## Примеры, которые цепляют
 
 <CodeShowcase :tabs="codeTabs" />
 
 ## Изучайте документацию дальше
 
 - [Быстрый старт](/volga-docs/ru/getting-started/quick-start.html)
-- [Если вы пришли с ASP.NET Core, Spring или Go](/volga-docs/ru/getting-started/coming-from.html)
 - [Туториал: сервис закладок](/volga-docs/ru/tutorial/overview.html)
 - [Внедрение зависимостей](/volga-docs/ru/advanced-patterns/di.html)
-- [Agent Skill](/volga-docs/ru/agent-skill.html)
+- [Ограничение запросов](/volga-docs/ru/middleware-infrastructure/rate-limiting.html)
+- [Работа с JSON](/volga-docs/ru/requests-responses/json-payload.html)

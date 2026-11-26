@@ -1,32 +1,32 @@
 ---
 home: true
-title: "Volga"
+title: Volga
 heroText: Volga
 heroImage: /volga-logo-light.png
 heroImageDark: /volga-logo.png
-tagline: "Fast, async-first web framework for Rust built on tokio + hyper."
+tagline: Fast, async-first web framework for Rust built on tokio + hyper.
 actions:
-  - text: "Get Started"
+  - text: Get Started
     link: /en/getting-started/quick-start.html
     type: primary
-  - text: "API Docs"
+  - text: API Docs
     link: https://docs.rs/volga/latest/volga/
     type: secondary
 features:
-  - title: "Feels like minimal APIs"
-    details: "Routes in code, typed handler arguments, DI with singleton, scoped and transient lifetimes. Coming from ASP.NET Core, Spring or Go? You already know the shape."
-  - title: "Mistakes fail at startup"
-    details: "A service nobody registered, a path parameter the route never declares, a broken auth setup: the app stops before it serves a single request, and says why."
-  - title: "Batteries, opt-in"
-    details: "JWT and OAuth, validation, Problem Details, OpenAPI, rate limiting, WebSockets, SSE, HTTP/2. Each is a Cargo feature; the default build is just the HTTP server."
-footer: "MIT Licensed • Built for performance"
+  - title: Productive by default
+    details: Minimal setup, clear routing, and an ergonomic handler API that keeps your focus on the business logic.
+  - title: Batteries included
+    details: Built-in DI, rate limiting, middleware, tracing, CORS, static files, and more.
+  - title: Type-safe extractors
+    details: Read JSON, query params, headers, cookies, or files with composable, strongly typed extractors.
+footer: MIT Licensed • Built for performance
 ---
 
 <script setup>
 const codeTabs = [
   {
     title: "Minimal API",
-    description: "Routes in code and typed handler arguments: no attributes, no reflection. A body that is not valid JSON is answered 400 before your handler runs.",
+    description: "Routes in code, typed handler arguments. Bad input is rejected before your handler runs.",
     code: [
       "use serde::Deserialize;",
       "use volga::{App, Json, ok};",
@@ -55,7 +55,7 @@ const codeTabs = [
   },
   {
     title: "Validation",
-    description: "Rules live on the type. Invalid input never reaches the handler: the client gets every broken rule at once as Problem Details (RFC 9457), and the same rules appear in your OpenAPI schema.",
+    description: "Rules live on the type. Every broken rule comes back at once as Problem Details.",
     code: [
       "use serde::{Deserialize, Serialize};",
       "use volga::validation::{Valid, Validate};",
@@ -84,7 +84,7 @@ const codeTabs = [
   },
   {
     title: "Dependency Injection",
-    description: "Services resolved by type, no macros. Forget to register one and the app refuses to start: \"Greeter is not registered, and is resolved by GET /hello/{name}\". Not a 500 in production.",
+    description: "Services resolved by type. Forget one and the app won't start, instead of failing in production.",
     code: [
       "use volga::{App, di::Dc, ok};",
       "",
@@ -109,7 +109,7 @@ const codeTabs = [
   },
   {
     title: "JWT Auth",
-    description: "Tokens checked, roles enforced, verified claims handed to your handler. Rejections answer 401 or 403 with the right WWW-Authenticate challenge, and a bearer token over plain HTTP is refused by default.",
+    description: "Tokens checked, roles enforced, verified claims handed to your handler.",
     code: [
       "use serde::Deserialize;",
       "use volga::auth::{Authenticated, DecodingKey, roles};",
@@ -136,7 +136,7 @@ const codeTabs = [
   },
   {
     title: "Batteries",
-    description: "OpenAPI with Swagger UI, CORS and per-IP rate limiting, one line each. Compression, WebSockets, SSE, TLS and static files work the same way.",
+    description: "OpenAPI with Swagger UI, CORS and rate limiting, one line each.",
     code: [
       "use volga::App;",
       "use volga::rate_limiting::{TokenBucket, by};",
@@ -160,7 +160,7 @@ const codeTabs = [
   },
   {
     title: "Testing",
-    description: "Start the real app on a free port and call it over HTTP. One test covers routing, middleware, auth and errors, and tests run in parallel.",
+    description: "Start the real app and test it over HTTP.",
     code: [
       "use volga::{App, ok, test::TestServer};",
       "",
@@ -182,18 +182,18 @@ const codeTabs = [
 ]
 </script>
 
-## Why Volga
+## Build APIs that scale with confidence
 
-If you have written an ASP.NET Core minimal API, a Spring controller or a Go handler, [this page](/volga-docs/en/getting-started/coming-from.html) maps what you know to Volga. To see the pieces work together, build a complete service in the [tutorial](/volga-docs/en/tutorial/overview.html).
+Volga ships with performance-friendly primitives and modern developer ergonomics. From routing to middleware and advanced infrastructure features, you can scale from a single endpoint to a full microservice surface without rewriting core pieces.
 
-## See It in Code
+## Examples that hook developers fast
 
 <CodeShowcase :tabs="codeTabs" />
 
 ## Explore the docs
 
 - [Quick Start](/volga-docs/en/getting-started/quick-start.html)
-- [Coming from ASP.NET Core, Spring or Go](/volga-docs/en/getting-started/coming-from.html)
 - [Tutorial: a Bookmarks Service](/volga-docs/en/tutorial/overview.html)
 - [Dependency Injection](/volga-docs/en/advanced-patterns/di.html)
-- [Agent Skill](/volga-docs/en/agent-skill.html)
+- [Rate Limiting](/volga-docs/en/middleware-infrastructure/rate-limiting.html)
+- [Handling JSON](/volga-docs/en/requests-responses/json-payload.html)
