@@ -301,7 +301,7 @@ otherwise. Debug builds only.
 
 ```toml
 [dev-dependencies]
-volga = { version = "0.12", features = ["test"] }
+volga = { version = "0.15", features = ["test"] }
 ```
 
 ```rust

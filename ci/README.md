@@ -16,6 +16,25 @@ unchanged tree produces a byte-identical archive. The `volga/` prefix is kept
 deliberately — the directory name has to match the skill's `name`, so
 unzipping must produce `volga/` rather than loose files.
 
+## `check-docs.py`
+
+Checks the rules in [CONTRIBUTING.md](../CONTRIBUTING.md) that a script can
+check, in a second, with nothing to install:
+
+* **One Volga version.** Every `volga*` dependency in a `Cargo.toml` snippet on
+  the site or in the skill, `VOLGA_VERSION` in CI, the default of
+  `check-snippets.py`, the skill's `volga-version`, the Agent Skill page's
+  download note and the current release on the Migration page all agree with
+  `VOLGA_VERSION` in `.github/workflows/ci.yml`.
+* **No version history in guides.** "Since 0.13", "Upgrading from", "Начиная с
+  0.13" and the like fail anywhere in `docs/` except the Migration and Agent
+  Skill pages. The skill is exempt.
+* **Same pages in both locales.** Every `docs/en` page has its `docs/ru` pair.
+
+```bash
+python3 ci/check-docs.py
+```
+
 ## `check-snippets.py`
 
 Compiles the Rust snippets on the site against the published `volga` crates, so
