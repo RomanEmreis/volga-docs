@@ -1,15 +1,29 @@
-# Basic Middleware
+# Middleware
 
-Volga provides several tools to help you build middleware pipelines, whether for individual routes, route groups, or the entire application.
+Middleware is code that runs for every request of a scope, before or after its handler: checking an API key, adding a header, logging, measuring time. It can be registered on the whole `App`, on a [route group](/volga-docs/en/getting-started/route-groups.html) or on a single route, and the same methods exist on all three. A request passes the application's middleware first, then its group's, then its route's, and the response goes back the same way.
 
 ## Enabling Middleware
 
-If you're not using the `full` feature set, make sure to explicitly enable the `middleware` feature in your `Cargo.toml`:
+If you're not using the `full` feature set, enable the `middleware` feature in your `Cargo.toml`:
 
 ```toml
 [dependencies]
 volga = { version = "0.15", features = ["middleware"] }
 ```
+
+## Choosing a Method
+
+| Method | Use it to | Runs |
+|---|---|---|
+| [`filter()`](#filters) | refuse a request before it reaches the handler | before the handler |
+| [`tap_req()`](#handling-incoming-requests) | change the request: add a header, replace the body | before the handler |
+| [`map_ok()`](#handling-successful-responses) | change a successful response | after the handler |
+| [`map_err()`](#handling-errors) | turn errors into responses | after an error |
+| [`with()`](#running-code-around-the-handler) | run code around the handler, or answer instead of it | around the handler |
+| [`wrap()`](#with-or-wrap) | the same, with the whole request, body included | around the handler |
+| [`attach()`](/volga-docs/en/middleware-infrastructure/parameterized-middleware.html) | register a reusable middleware type that carries its own settings | around the handler |
+
+Start with the narrowest method that does the job. The first four take [extractors](/volga-docs/en/getting-started/extractors.html) as a handler does, and their signature says what they can change. If you come from ASP.NET Core or Go, `with()` and `wrap()` are the familiar middleware that calls `next`, and the other four are shortcuts for its most common uses.
 
 ## Filters
 
@@ -276,6 +290,91 @@ A `map_err` on a route or a group covers the whole scope, its middleware include
 By attaching [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) to the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), you configure a global error handler. You can read more about advanced error handling [here](/volga-docs/en/reliability-observability/errors.html).
 :::
 
+## Running Code Around the Handler
+
+[`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) and [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) receive the rest of the pipeline as `next`. Code before `next` runs on the way in, code after it on the way out. Middleware runs in the order it was registered, so the first one registered is the outermost:
+
+```rust compile
+use volga::{App, ok};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // Middleware 1
+    app.wrap(|context, next| async move {
+        println!("Before Middleware 2");
+        let response = next(context).await;
+        println!("After Middleware 2");
+        response
+    });
+
+    // Middleware 2
+    app.with(|next| async move {
+        println!("Before Request Handler");
+        let response = next.await;
+        println!("After Request Handler");
+        response
+    });
+
+    app.map_get("/hello", || async {
+        ok!("Hello World!")
+    });
+
+    app.run().await
+}
+```
+
+A middleware that returns without calling `next` answers instead of everything after it, the handler included:
+
+```rust compile
+use volga::{App, ok, status};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.with(|_| async {
+        // `next` is never called, so the handler never runs
+        status!(400)
+    });
+
+    app.map_get("/hello", || async {
+        ok!()
+    });
+
+    app.run().await
+}
+```
+
+To refuse a request on a condition, a [filter](#filters) says the same in less code.
+
+### `with()` or `wrap()`
+
+`with()` takes extractors before `next`, as a handler does: headers, path and query parameters, `Dc<T>`. It covers most cases, but it does not see the request body:
+
+```rust compile
+use std::time::Instant;
+use volga::{App, Path, middleware::Next};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_get("/users/{id}", |id: u32| async move { id.to_string() })
+        .with(|Path(id): Path<u32>, next: Next| async move {
+            let started = Instant::now();
+            let response = next.await;
+            println!("user {id} answered in {:?}", started.elapsed());
+            response
+        });
+
+    app.run().await
+}
+```
+
+`wrap()` receives the whole request as an [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/struct.HttpContext.html), body included, which is what compression, decoding and similar middleware need. Prefer `with()` unless you need the body.
+
 ## Synchronous Middleware
 
 [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter), [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok), [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) and [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) also accept a plain `fn` or a closure that returns its verdict, response or request directly, when there is nothing to await — on [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), a route and a route group alike, just as [handlers](/volga-docs/en/getting-started/handlers.html#synchronous-handlers) do:
@@ -309,6 +408,44 @@ fn tag_response(mut resp: HttpResponse) -> HttpResult {
 
 [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap), [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) and [`attach()`](/volga-docs/en/middleware-infrastructure/parameterized-middleware.html) stay asynchronous, since what they exist for is awaiting `next`.
 
+## Requests That Match No Route
+
+Routing runs first and decides *what* answers a request. All three of its outcomes — the matched route, the fallback handler, and a `405` carrying its `Allow` header — travel through the same global chain.
+
+Three things follow from that:
+
+* **A short-circuiting global middleware decides unmatched requests too.** `filter`, a `with` that returns early, and `authorize` run before routing's answer is known, so a global authorization middleware answers `401` for a path that does not exist rather than `404` — which leaks less about what the service has. Per-route and per-group middleware are unaffected: those belong to a route that by definition matched.
+* **Rate limiting counts requests that match no route.** A limiter's budget is spent by traffic that never reaches a handler, so size it against real traffic rather than against the route count.
+* **The per-request scope is built for those requests.** [`ClientIp`](https://docs.rs/volga/latest/volga/struct.ClientIp.html), `CancellationToken`, `Config<T>`, `HostEnv` and `Dc<T>` work inside a fallback handler, and the application's request body limit applies there too — no route or group claimed the request, so no [limit of theirs](/volga-docs/en/requests-responses/body.html#per-route-group-and-per-route) does.
+
+### Telling the two apart
+
+Middleware that should only do its work for a real endpoint reads [`matched_route()`](https://docs.rs/volga/latest/volga/middleware/struct.HttpContext.html#method.matched_route):
+
+```rust compile
+use volga::App;
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.wrap(|ctx, next| async move {
+        if !ctx.matched_route() {
+            // nothing to meter for a request no route will answer
+            return next(ctx).await;
+        }
+
+        next(ctx).await
+    });
+
+    app.run().await
+}
+```
+
+It answers `true` when routing matched an endpoint for this request, and `false` for the requests answered by the fallback or by a `405`. It answers the same at every layer: a route's or a group's own middleware runs after the route pipeline has been taken and still sees `true`. The CORS middleware is the first caller — it gates the preflight short-circuit on it.
+
 ## Examples
+
+* [Middleware example](https://github.com/RomanEmreis/volga/blob/main/examples/middleware/src/main.rs)
 * [Request filter example](https://github.com/RomanEmreis/volga/blob/main/examples/request_validation/src/main.rs)
 * [Response handler example](https://github.com/RomanEmreis/volga/blob/main/examples/response_handler/src/main.rs)

@@ -43,7 +43,7 @@ An `Err` stops the request before the handler runs, and goes to the [error handl
 The same impl serves everywhere a built-in extractor of the head goes:
 
 * as a handler argument;
-* in middleware: [`with()`](/volga-docs/en/middleware-infrastructure/middlewares.html), [`filter()`](/volga-docs/en/middleware-infrastructure/middleware.html#filters), [`tap_req()`](/volga-docs/en/middleware-infrastructure/middleware.html#handling-incoming-requests), `map_ok()`, [`map_err()`](/volga-docs/en/reliability-observability/errors.html) and [`map_fallback()`](/volga-docs/en/reliability-observability/errors.html#the-fallback-handler);
+* in middleware: [`with()`](/volga-docs/en/middleware-infrastructure/middleware.html#running-code-around-the-handler), [`filter()`](/volga-docs/en/middleware-infrastructure/middleware.html#filters), [`tap_req()`](/volga-docs/en/middleware-infrastructure/middleware.html#handling-incoming-requests), `map_ok()`, [`map_err()`](/volga-docs/en/reliability-observability/errors.html) and [`map_fallback()`](/volga-docs/en/reliability-observability/errors.html#the-fallback-handler);
 * as `Option<T>`, which reads `None` where the extractor fails, and as `Result<T, Error>`, which hands the failure to the handler;
 * through [`HttpRequest::extract()`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequest.html#method.extract), in a handler that takes the whole request.
 

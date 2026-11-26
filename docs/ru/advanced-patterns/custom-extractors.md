@@ -43,7 +43,7 @@ async fn main() -> std::io::Result<()> {
 Одна и та же реализация работает везде, куда подходит встроенный экстрактор заголовочной части:
 
 * как аргумент обработчика;
-* в middleware: [`with()`](/volga-docs/ru/middleware-infrastructure/middlewares.html), [`filter()`](/volga-docs/ru/middleware-infrastructure/middleware.html#фильтры), [`tap_req()`](/volga-docs/ru/middleware-infrastructure/middleware.html#обработка-входящего-запроса), `map_ok()`, [`map_err()`](/volga-docs/ru/reliability-observability/errors.html) и [`map_fallback()`](/volga-docs/ru/reliability-observability/errors.html#fallback-обработчик);
+* в middleware: [`with()`](/volga-docs/ru/middleware-infrastructure/middleware.html#код-вокруг-обработчика), [`filter()`](/volga-docs/ru/middleware-infrastructure/middleware.html#фильтры), [`tap_req()`](/volga-docs/ru/middleware-infrastructure/middleware.html#обработка-входящего-запроса), `map_ok()`, [`map_err()`](/volga-docs/ru/reliability-observability/errors.html) и [`map_fallback()`](/volga-docs/ru/reliability-observability/errors.html#fallback-обработчик);
 * как `Option<T>`, который даёт `None`, если экстрактор не сработал, и как `Result<T, Error>`, который передаёт ошибку обработчику;
 * через [`HttpRequest::extract()`](https://docs.rs/volga/latest/volga/http/request/struct.HttpRequest.html#method.extract) в обработчике, который принимает весь запрос.
 

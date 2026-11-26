@@ -57,7 +57,7 @@ export default defineUserConfig({
           {
             text: 'Getting Started',
             prefix: '/en/getting-started/',
-            children: ['quick-start', 'features', 'handlers', 'responses', 'extractors', 'route-params', 'query-params', 'route-groups'],
+            children: ['quick-start', 'features', 'handlers', 'responses', 'extractors', 'route-params', 'query-params', 'route-groups', '/en/advanced-patterns/di'],
           },
           {
             text: 'Requests & Responses',
@@ -67,7 +67,7 @@ export default defineUserConfig({
           {
             text: 'Middleware & Infrastructure',
             prefix: '/en/middleware-infrastructure/',
-            children: ['middleware', 'middlewares', 'parameterized-middleware', 'compression', 'decompression', 'cors', 'static-files', 'rate-limiting', 'config-files', 'openapi'],
+            children: ['middleware', 'parameterized-middleware', 'compression', 'decompression', 'cors', 'static-files', 'rate-limiting', 'config-files', 'openapi'],
           },
           {
             text: 'Security & Access',
@@ -87,7 +87,7 @@ export default defineUserConfig({
           {
             text: 'Advanced Patterns',
             prefix: '/en/advanced-patterns/',
-            children: ['di', 'custom-extractors', 'blocking', 'custom-trace-opt-head'],
+            children: ['custom-extractors', 'blocking', 'custom-trace-opt-head'],
           },
           {
             text: 'Reference',
@@ -128,7 +128,7 @@ export default defineUserConfig({
           {
             text: 'Старт',
             prefix: '/ru/getting-started/',
-            children: ['quick-start', 'features', 'handlers', 'responses', 'extractors', 'route-params', 'query-params', 'route-groups'],
+            children: ['quick-start', 'features', 'handlers', 'responses', 'extractors', 'route-params', 'query-params', 'route-groups', '/ru/advanced-patterns/di'],
           },
           {
             text: 'Запросы и ответы',
@@ -138,7 +138,7 @@ export default defineUserConfig({
           {
             text: 'Middleware и инфраструктура',
             prefix: '/ru/middleware-infrastructure/',
-            children: ['middleware', 'middlewares', 'parameterized-middleware', 'compression', 'decompression', 'cors', 'static-files', 'rate-limiting', 'config-files', 'openapi'],
+            children: ['middleware', 'parameterized-middleware', 'compression', 'decompression', 'cors', 'static-files', 'rate-limiting', 'config-files', 'openapi'],
           },
           {
             text: 'Безопасность и доступ',
@@ -158,7 +158,7 @@ export default defineUserConfig({
           {
             text: 'Продвинутые паттерны',
             prefix: '/ru/advanced-patterns/',
-            children: ['di', 'custom-extractors', 'blocking', 'custom-trace-opt-head'],
+            children: ['custom-extractors', 'blocking', 'custom-trace-opt-head'],
           },
           {
             text: 'Справочник',

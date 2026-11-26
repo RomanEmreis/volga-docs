@@ -1,47 +1,6 @@
-# Global Error Handling
+# Error Handling
 
-Volga provides a global error handling mechanism that catches all [`Error`](https://doc.rust-lang.org/std/error/trait.Error.html) values that may occur in request handlers and middleware. This can be easily achieved using the [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) method of the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) to register a function that handles errors.  
-
-The function receives an [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) object and should return a response that implements the [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) trait. Like a request handler, it can be [asynchronous or synchronous](/volga-docs/en/getting-started/handlers.html).
-
-### Example:
-```rust compile
-use volga::{App, error::Error, status};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let mut app = App::new();
-    
-    app.map_get("/error", || async {
-        std::io::Error::other("some error")
-    });
-
-    // Enabling global error handler
-    app.map_err(|error: Error| async move {
-        status!(error.status().as_u16(), "{:?}", error)
-    });
-
-    app.run().await
-}
-```
-In this example, we intentionally create a request handler that produces an error, and define an error handler that answers with the error's status and message. [`status()`](https://docs.rs/volga/latest/volga/error/struct.Error.html#method.status) is the status the error carries: `500` for this one, `404` for a path no route answers, `401` for a refused token.
-
-::: warning Answer with the error's own status
-The error handler answers every error, including the [requests Volga refuses itself](#errors-volga-produces-itself). One that answers with a fixed status, such as `status!(500, ..)`, turns every `401`, `404`, `405` and `429` into a `500`.
-:::
-
-In fact, this is how the default error handler is implemented — except that an error [carrying a response of its own](#answering-with-a-body-of-its-own) answers with that response. If we remove the [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) method, the response remains unchanged. However, defining a custom error handler offers greater flexibility for advanced logging and tracing.  
-
-A handler that only needs to look at an error can return it as it came: the error is then answered exactly as the default handler would answer it.
-
-```rust compile-fragment
-use volga::error::Error;
-
-app.map_err(|error: Error| {
-    eprintln!("{} {error}", error.status());
-    error
-});
-```
+An error in Volga travels one way. A handler returns `Result<T, E>`, its `Err` becomes an [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html), and the **error handler** turns that error into the response. The same happens to an error from middleware and to a request Volga refuses itself, such as a `404`, a `401` or a body over the limit. Without configuration the default error handler answers with the error's status and message. To change how every error looks, register your own with `map_err`, or use [`map_problem()`](#global-error-handling-with-problem-details) for [Problem Details](#problem-details).
 
 ## Returning Errors from a Handler
 
@@ -95,7 +54,7 @@ Integers are left out on purpose: `Err(404)` reads as a status and as an applica
 A string carries no status, so `Err("name is required")` or `Err(format!(..))` answers `500 Internal Server Error`. Give a client error its status: `Err((StatusCode::BAD_REQUEST, "name is required"))`.
 :::
 
-Since the error goes through the error handler, everything `map_err` does — logging, [Problem Details](#global-error-handling-with-problem-details), a JSON envelope of your own — applies to it as well. The same goes for the `Err` returned from `map_fallback`, `map_err` itself, the [`with`](/volga-docs/en/middleware-infrastructure/middlewares.html) and [`map_ok`](/volga-docs/en/middleware-infrastructure/middleware.html#handling-successful-responses) middleware, and — with one difference — from a [filter](/volga-docs/en/middleware-infrastructure/middleware.html#what-a-filter-returns).
+Since the error goes through the error handler, everything `map_err` does — logging, [Problem Details](#global-error-handling-with-problem-details), a JSON envelope of your own — applies to it as well. The same goes for the `Err` returned from `map_fallback`, `map_err` itself, the [`with`](/volga-docs/en/middleware-infrastructure/middleware.html#running-code-around-the-handler) and [`map_ok`](/volga-docs/en/middleware-infrastructure/middleware.html#handling-successful-responses) middleware, and — with one difference — from a [filter](/volga-docs/en/middleware-infrastructure/middleware.html#what-a-filter-returns).
 
 ### Error Types of Your Own
 
@@ -206,6 +165,50 @@ impl IntoError for NotFound {
 
 `describe_openapi` exists only while Volga's `openapi` feature is on. If your crate enables that feature through a feature of its own, put the same `#[cfg(feature = "..")]` on the method. See [OpenAPI](/volga-docs/en/middleware-infrastructure/openapi.html) for the rest.
 
+## The Error Handler
+
+The [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) method of the [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) registers the function that answers every error of the application, from handlers, middleware and Volga itself.
+
+The function receives an [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) object and should return a response that implements the [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html) trait. Like a request handler, it can be [asynchronous or synchronous](/volga-docs/en/getting-started/handlers.html).
+
+```rust compile
+use volga::{App, error::Error, status};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+    
+    app.map_get("/error", || async {
+        std::io::Error::other("some error")
+    });
+
+    // Enabling global error handler
+    app.map_err(|error: Error| async move {
+        status!(error.status().as_u16(), "{:?}", error)
+    });
+
+    app.run().await
+}
+```
+In this example, we intentionally create a request handler that produces an error, and define an error handler that answers with the error's status and message. [`status()`](https://docs.rs/volga/latest/volga/error/struct.Error.html#method.status) is the status the error carries: `500` for this one, `404` for a path no route answers, `401` for a refused token.
+
+::: warning Answer with the error's own status
+The error handler answers every error, including the [requests Volga refuses itself](#errors-volga-produces-itself). One that answers with a fixed status, such as `status!(500, ..)`, turns every `401`, `404`, `405` and `429` into a `500`.
+:::
+
+In fact, this is how the default error handler is implemented — except that an error [carrying a response of its own](#answering-with-a-body-of-its-own) answers with that response. If we remove the [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) method, the response remains unchanged. However, defining a custom error handler offers greater flexibility for advanced logging and tracing.  
+
+A handler that only needs to look at an error can return it as it came: the error is then answered exactly as the default handler would answer it.
+
+```rust compile-fragment
+use volga::error::Error;
+
+app.map_err(|error: Error| {
+    eprintln!("{} {error}", error.status());
+    error
+});
+```
+
 ## Errors Volga Produces Itself
 
 A request Volga refuses on its own reaches the error handler too, as an error with its status. Some of these errors carry headers, which stay on whatever response the handler answers with:
@@ -305,64 +308,6 @@ async fn main() -> std::io::Result<()> {
 * **A scope has one error handler.** A second `map_err` or `map_problem` replaces the first, as on `App`.
 * **An error passes outwards.** A scoped handler that answers with the error itself hands it to the group around it, and then to `App::map_err`.
 * **What runs outside every scope** — the global middleware and the application's fallback — reaches `App::map_err` alone.
-
-## The Fallback Handler
-
-[`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) registers the handler that answers a request no route matched. It takes the same arguments [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) does — extractors of the head: headers, the URI, cookies, [`ClientIp`](https://docs.rs/volga/latest/volga/struct.ClientIp.html), [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html), an [extractor of your own](/volga-docs/en/advanced-patterns/custom-extractors.html). Not the body: nothing matched, so there is no route to say how a body should be read, and path parameters are out for the same reason.
-
-```rust compile
-use volga::{App, ClientIp, http::Uri, error::Error, not_found, status};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let mut app = App::new();
-
-    app.map_fallback(|uri: Uri, ip: ClientIp| async move {
-        not_found!("no route for {uri} (from {ip})")
-    });
-
-    // An error out of the fallback lands here, like any other
-    app.map_err(|error: Error| async move {
-        status!(error.status().as_u16(), "{:?}", error)
-    });
-
-    app.run().await
-}
-```
-
-A fallback runs inside a full per-request scope, so it takes the same extractors any other handler takes — `ClientIp`, `CancellationToken`, `Config<T>`, `HostEnv`, `Dc<T>` — and the application's request body limit applies to it. A [group's fallback](/volga-docs/en/getting-started/route-groups.html#a-fallback-for-the-group) takes the group's limit instead. An error it returns is answered by the application's `map_err` handler, as an error from any other handler is, so a service that shapes its errors shapes them here too.
-
-### One Fallback per Part of the API
-
-One handler for every unknown path in the application is often one too few: an API wants JSON and a browser-facing SPA wants its shell. A [route group](/volga-docs/en/getting-started/route-groups.html#a-fallback-for-the-group) carries a fallback of its own, and the router picks the deepest prefix that has one:
-
-```rust compile
-use volga::{App, http::Uri, error::Problem, not_found};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let mut app = App::new();
-
-    app.group("/api", |api| {
-        // Everything unknown under /api answers in the API's own shape
-        api.map_fallback(|uri: Uri| async move {
-            let problem: Problem = Problem::new(404)
-                .with_detail("No endpoint at this path")
-                .with_instance(uri.path());
-            problem
-        });
-    });
-
-    // Everything else
-    app.map_fallback(|| async { not_found!("not found") });
-
-    app.run().await
-}
-```
-
-The group's middleware — `authorize`, a rate limiter, a request-id `tap_req` — runs around its fallback as it runs around its routes, so an unknown path behind authentication is refused rather than listed.
-
-`Problem` carries its extensions as a type parameter, so the annotation is what picks the default map up — one built with [`with_extensions()`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html#method.with_extensions) needs none.
 
 ## Problem Details
 
@@ -522,6 +467,64 @@ Problem::new(400)
     .with_instance("/problem")
     .add_param("reason", "The ID must be provided");
 ```
+
+## The Fallback Handler
+
+[`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) registers the handler that answers a request no route matched. It takes the same arguments [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) does — extractors of the head: headers, the URI, cookies, [`ClientIp`](https://docs.rs/volga/latest/volga/struct.ClientIp.html), [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html), an [extractor of your own](/volga-docs/en/advanced-patterns/custom-extractors.html). Not the body: nothing matched, so there is no route to say how a body should be read, and path parameters are out for the same reason.
+
+```rust compile
+use volga::{App, ClientIp, http::Uri, error::Error, not_found, status};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_fallback(|uri: Uri, ip: ClientIp| async move {
+        not_found!("no route for {uri} (from {ip})")
+    });
+
+    // An error out of the fallback lands here, like any other
+    app.map_err(|error: Error| async move {
+        status!(error.status().as_u16(), "{:?}", error)
+    });
+
+    app.run().await
+}
+```
+
+A fallback runs inside a full per-request scope, so it takes the same extractors any other handler takes — `ClientIp`, `CancellationToken`, `Config<T>`, `HostEnv`, `Dc<T>` — and the application's request body limit applies to it. A [group's fallback](/volga-docs/en/getting-started/route-groups.html#a-fallback-for-the-group) takes the group's limit instead. An error it returns is answered by the application's `map_err` handler, as an error from any other handler is, so a service that shapes its errors shapes them here too.
+
+### One Fallback per Part of the API
+
+One handler for every unknown path in the application is often one too few: an API wants JSON and a browser-facing SPA wants its shell. A [route group](/volga-docs/en/getting-started/route-groups.html#a-fallback-for-the-group) carries a fallback of its own, and the router picks the deepest prefix that has one:
+
+```rust compile
+use volga::{App, http::Uri, error::Problem, not_found};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.group("/api", |api| {
+        // Everything unknown under /api answers in the API's own shape
+        api.map_fallback(|uri: Uri| async move {
+            let problem: Problem = Problem::new(404)
+                .with_detail("No endpoint at this path")
+                .with_instance(uri.path());
+            problem
+        });
+    });
+
+    // Everything else
+    app.map_fallback(|| async { not_found!("not found") });
+
+    app.run().await
+}
+```
+
+The group's middleware — `authorize`, a rate limiter, a request-id `tap_req` — runs around its fallback as it runs around its routes, so an unknown path behind authentication is refused rather than listed.
+
+`Problem` carries its extensions as a type parameter, so the annotation is what picks the default map up — one built with [`with_extensions()`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html#method.with_extensions) needs none.
 
 For a complete example, see the full implementation:
 - [Global Error Handling](https://github.com/RomanEmreis/volga/blob/main/examples/global_error_handler/src/main.rs).
