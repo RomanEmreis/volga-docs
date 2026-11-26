@@ -167,4 +167,4 @@ async fn create_user(Json(user): Json<User>, users: Dc<Users>) -> HttpResult {
 * **Возможности включаются явно.** Сборка по умолчанию содержит только HTTP-сервер. DI, middleware, аутентификация и остальное это [фичи Cargo](/volga-docs/ru/getting-started/features.html); пока вы изучаете Волгу, `features = ["full"]` включает их все.
 * **Проверки при старте ловят ошибки сборки.** `App::run()` не запускается, если обработчик принимает сервис, который никто не зарегистрировал, а `map_*` паникует, если обработчик читает параметр пути, которого маршрут не объявляет.
 
-Дальше пройдите [Быстрый старт](/volga-docs/ru/getting-started/quick-start.html), затем прочитайте [Обработчики](/volga-docs/ru/getting-started/handlers.html) и [Экстракторы](/volga-docs/ru/getting-started/extractors.html).
+Дальше пройдите [Быстрый старт](/volga-docs/ru/getting-started/quick-start.html), затем прочитайте [Обработчики](/volga-docs/ru/getting-started/handlers.html) и [Экстракторы](/volga-docs/ru/getting-started/extractors.html) или соберите целый сервис в [туториале](/volga-docs/ru/tutorial/overview.html).

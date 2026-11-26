@@ -167,3 +167,5 @@ fn main() {
 :::
 
 Полный пример можно найти [здесь](https://github.com/RomanEmreis/volga/blob/main/examples/hello_world/src/main.rs).
+
+Чтобы увидеть, как части работают вместе, соберите законченный JSON API в [туториале](/volga-docs/ru/tutorial/overview.html): маршруты, внедрение зависимостей, валидация, JWT-аутентификация и тесты.

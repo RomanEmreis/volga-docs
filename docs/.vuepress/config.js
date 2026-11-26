@@ -60,6 +60,11 @@ export default defineUserConfig({
             children: ['quick-start', 'coming-from', 'features', 'handlers', 'responses', 'extractors', 'route-params', 'query-params', 'route-groups', '/en/advanced-patterns/di'],
           },
           {
+            text: 'Tutorial',
+            prefix: '/en/tutorial/',
+            children: ['overview', 'first-routes', 'validation-errors', 'authentication', 'testing'],
+          },
+          {
             text: 'Requests & Responses',
             prefix: '/en/requests-responses/',
             children: ['headers', 'json-payload', 'form', 'files', 'multipart', 'body', 'cookie', 'validation'],
@@ -129,6 +134,11 @@ export default defineUserConfig({
             text: 'Старт',
             prefix: '/ru/getting-started/',
             children: ['quick-start', 'coming-from', 'features', 'handlers', 'responses', 'extractors', 'route-params', 'query-params', 'route-groups', '/ru/advanced-patterns/di'],
+          },
+          {
+            text: 'Туториал',
+            prefix: '/ru/tutorial/',
+            children: ['overview', 'first-routes', 'validation-errors', 'authentication', 'testing'],
           },
           {
             text: 'Запросы и ответы',
