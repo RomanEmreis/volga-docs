@@ -2,6 +2,8 @@
 
 Build a basic "Hello, World" HTTP API using Volga.
 
+Coming from ASP.NET Core, Spring or Go? [This page](/volga-docs/en/getting-started/coming-from.html) maps what you already know to Volga.
+
 ## Prerequisites
 
 ### Install Rust
