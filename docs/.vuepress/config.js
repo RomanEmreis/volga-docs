@@ -57,7 +57,7 @@ export default defineUserConfig({
           {
             text: 'Getting Started',
             prefix: '/en/getting-started/',
-            children: ['quick-start', 'handlers', 'route-params', 'query-params', 'route-groups'],
+            children: ['quick-start', 'features', 'handlers', 'responses', 'extractors', 'route-params', 'query-params', 'route-groups'],
           },
           {
             text: 'Requests & Responses',
@@ -77,7 +77,7 @@ export default defineUserConfig({
           {
             text: 'Reliability & Observability',
             prefix: '/en/reliability-observability/',
-            children: ['errors', 'tracing', 'cancellation', 'graceful-shutdown'],
+            children: ['errors', 'testing', 'tracing', 'cancellation', 'graceful-shutdown'],
           },
           {
             text: 'Protocols & Realtime',
@@ -123,7 +123,7 @@ export default defineUserConfig({
           {
             text: 'Старт',
             prefix: '/ru/getting-started/',
-            children: ['quick-start', 'handlers', 'route-params', 'query-params', 'route-groups'],
+            children: ['quick-start', 'features', 'handlers', 'responses', 'extractors', 'route-params', 'query-params', 'route-groups'],
           },
           {
             text: 'Запросы и ответы',
@@ -143,7 +143,7 @@ export default defineUserConfig({
           {
             text: 'Надежность и наблюдаемость',
             prefix: '/ru/reliability-observability/',
-            children: ['errors', 'tracing', 'cancellation', 'graceful-shutdown'],
+            children: ['errors', 'testing', 'tracing', 'cancellation', 'graceful-shutdown'],
           },
           {
             text: 'Протоколы и realtime',
