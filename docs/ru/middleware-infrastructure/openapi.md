@@ -1,6 +1,6 @@
 # OpenAPI
 
-Volga описывает приложение в формате [OpenAPI 3.0](https://spec.openapis.org/oas/v3.0.3) по тому, что уже написано: по шаблонам маршрутов, по экстракторам, которые принимает обработчик, и по типам, которые он возвращает. Не нужно ни макросов, ни рефлексии во время выполнения; то, чего маршрут не может сказать о себе сам, дописывается рядом с ним, в коде.
+Волга описывает приложение в формате [OpenAPI 3.0](https://spec.openapis.org/oas/v3.0.3) по тому, что уже написано: по шаблонам маршрутов, по экстракторам, которые принимает обработчик, и по типам, которые он возвращает. Не нужно ни макросов, ни рефлексии во время выполнения; то, чего маршрут не может сказать о себе сам, дописывается рядом с ним, в коде.
 
 ## Включение OpenAPI
 
@@ -8,12 +8,12 @@ Volga описывает приложение в формате [OpenAPI 3.0](ht
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["openapi"] }
+volga = { version = "0.15", features = ["openapi"] }
 ```
 
 ## Публикация документа
 
-Настройка документа и его публикация — два отдельных шага, как и везде в Volga: [`with_open_api()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_open_api) описывает документ, [`use_open_api()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_open_api) регистрирует эндпоинты, которые его отдают.
+Настройка документа и его публикация — два отдельных шага, как и везде в Волге: [`with_open_api()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with_open_api) описывает документ, [`use_open_api()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.use_open_api) регистрирует эндпоинты, которые его отдают.
 
 ```rust compile
 use volga::App;

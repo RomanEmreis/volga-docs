@@ -8,7 +8,7 @@ If you're not using the `full` feature set, make sure to explicitly enable the `
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["middleware"] }
+volga = { version = "0.15", features = ["middleware"] }
 ```
 
 ## Filters

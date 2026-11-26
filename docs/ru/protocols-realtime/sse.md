@@ -33,7 +33,7 @@ async fn main() -> std::io::Result<()> {
 
 Волга предоставляет структуру [`Message`](https://docs.rs/volga/latest/volga/http/endpoints/args/sse/struct.Message.html), которая поможет вам создавать и настраивать сообщения SSE.
 
-Для простых текстовых сообщений используйте метод [`data()`](https://docs.rs/volga/latest/volga/http/endpoints/args/sse/struct.Message.html#method.data), как показано выше. Если вам необходимо отправить структурированные данные, такие как JSON, используйте метод [`json()`](https://docs.rs/volga/latest/volga/http/endpoints/args/sse/struct.Message.html#method.json), который принимает любой тип, реализующий типаж [`serde::Serialize`](https://docs.rs/serde/1.0.219/serde/ser/trait.Serialize.html):
+Для простых текстовых сообщений используйте метод [`data()`](https://docs.rs/volga/latest/volga/http/endpoints/args/sse/struct.Message.html#method.data), как показано выше. Если вам необходимо отправить структурированные данные, такие как JSON, используйте метод [`json()`](https://docs.rs/volga/latest/volga/http/endpoints/args/sse/struct.Message.html#method.json), который принимает любой тип, реализующий трейт [`serde::Serialize`](https://docs.rs/serde/1.0.219/serde/ser/trait.Serialize.html):
 
 ```rust compile-fragment
 use volga::http::sse::Message;

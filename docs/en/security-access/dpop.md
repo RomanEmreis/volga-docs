@@ -6,7 +6,7 @@ Available since **v0.9.8** behind the `dpop` feature of `volga-oauth-client`:
 
 ```toml
 [dependencies]
-volga-oauth-client = { version = "...", features = ["dpop"] }
+volga-oauth-client = { version = "0.15", features = ["dpop"] }
 ```
 
 ::: info

@@ -4,23 +4,23 @@
 
 ## Переключение между WebSockets и WebSocket-over-HTTP/2
 
-При работе под HTTP/2, Волга использует WebSocket-over-HTTP/2 по-умолчанию и переключается на WebSockets, когда доступен только HTTP/1. Это поведение, так же, можно настроить с помощью флагов.
+При работе под HTTP/2, Волга использует WebSocket-over-HTTP/2 по-умолчанию и переключается на WebSockets, когда доступен только HTTP/1. Это поведение также можно настроить с помощью фич.
 
 ### WebSockets
 ```toml
 [dependencies]
-volga = { version = "...", features = ["ws"] }
+volga = { version = "0.15", features = ["ws"] }
 ```
 
 ### WebSocket-over-HTTP/2
 ```toml
 [dependencies]
-volga = { version = "...", features = ["http2", "ws"] }
+volga = { version = "0.15", features = ["http2", "ws"] }
 ```
 
 ## Простой сервер
 
-После обновления `Cargo.toml` с флагом `ws` вы можете реализовать базовый обработчик сообщений с помощью метода [`map_msg()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_msg). Следующий пример отвечает отформатированной строкой, содержащей полученное сообщение:
+После обновления `Cargo.toml` с фичей `ws` вы можете реализовать базовый обработчик сообщений с помощью метода [`map_msg()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_msg). Следующий пример отвечает отформатированной строкой, содержащей полученное сообщение:
 
 ```rust compile
 use volga::App;
@@ -82,7 +82,7 @@ async fn main() -> std::io::Result<()> {
 
 ### Собственные типы сообщений
 
-Сообщение — это всё, что реализует `TryFrom<`[`Message`](https://docs.rs/volga/latest/volga/ws/args/struct.Message.html)`>`, а ответ — всё, что реализует `TryInto<Message>`. Начиная с **0.12.0** ошибкой их преобразования может быть любой тип, который превращается в `Error` из Volga, — `serde_json::Error`, пара `(StatusCode, E)`, ваш собственный тип, реализующий [`IntoError`](/volga-docs/ru/reliability-observability/errors.html#собственные-типы-ошибок), — а не только сам `Error`. То же верно для `WebSocket::on_msg`, `WebSocket::recv` и `send`, `WsStream::recv` и `WsSink::send`.
+Сообщение — это всё, что реализует `TryFrom<`[`Message`](https://docs.rs/volga/latest/volga/ws/args/struct.Message.html)`>`, а ответ — всё, что реализует `TryInto<Message>`. Начиная с **0.12.0** ошибкой их преобразования может быть любой тип, который превращается в `Error` из Волги, — `serde_json::Error`, пара `(StatusCode, E)`, ваш собственный тип, реализующий [`IntoError`](/volga-docs/ru/reliability-observability/errors.html#собственные-типы-ошибок), — а не только сам `Error`. То же верно для `WebSocket::on_msg`, `WebSocket::recv` и `send`, `WsStream::recv` и `WsSink::send`.
 
 ```rust compile
 use serde::Deserialize;

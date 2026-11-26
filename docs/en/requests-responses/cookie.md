@@ -9,13 +9,13 @@ To use cookies in your app, you need to enable the appropriate feature flags in 
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["cookie"] }
+volga = { version = "0.15", features = ["cookie"] }
 
 # Optional: explicitly depend on the cookie crate
 cookie = "0.18.1"
 ```
 
-For signed or private cookies, see the [Signed & Private Cookies](#signed--private-cookies) section.
+For signed or private cookies, see the [Signed & Private Cookies](#signed-private-cookies) section.
 
 
 ## Basic Usage
@@ -113,13 +113,13 @@ Update your `Cargo.toml` to include the desired feature and the DI system (`di`)
 
 ```toml
 # For signed cookies
-volga = { version = "...", features = ["signed-cookie", "di"] }
+volga = { version = "0.15", features = ["signed-cookie", "di"] }
 
 # For private cookies
-volga = { version = "...", features = ["private-cookie", "di"] }
+volga = { version = "0.15", features = ["private-cookie", "di"] }
 
 # For all cookies features
-volga = { version = "...", features = ["cookie-full", "di"] }
+volga = { version = "0.15", features = ["cookie-full", "di"] }
 ```
 
 ### Register Secret Keys

@@ -10,7 +10,7 @@ If you're not using the `full` feature set, you need to enable the `config` feat
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["config"] }
+volga = { version = "0.15", features = ["config"] }
 serde = { version = "1", features = ["derive"] }
 ```
 

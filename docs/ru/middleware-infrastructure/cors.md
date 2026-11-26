@@ -2,11 +2,11 @@
 
 Волга поддерживает легко настраиваемый middleware для [CORS](https://developer.mozilla.org/docs/Web/HTTP/CORS).
 
-Он входит в состав набора функций `full`. Однако, если вы его не используете, вы можете включить функцию `middleware` в `Cargo.toml`, чтобы добавить поддержку CORS:  
+Он входит в состав набора фич `full`. Однако, если вы его не используете, вы можете включить фичу `middleware` в `Cargo.toml`, чтобы добавить поддержку CORS:  
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["middleware"] }
+volga = { version = "0.15", features = ["middleware"] }
 ```
 
 ## Базовая настройка  

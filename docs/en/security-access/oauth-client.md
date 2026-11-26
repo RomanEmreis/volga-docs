@@ -14,7 +14,7 @@ Since **v0.9.8** the tokens they obtain can also be sender-constrained with [`Dp
 
 ```toml
 [dependencies]
-volga-oauth-client = { version = "..." }
+volga-oauth-client = { version = "0.15" }
 ```
 
 ### Feature flags

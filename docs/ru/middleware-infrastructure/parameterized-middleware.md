@@ -1,6 +1,6 @@
 # Параметризованные Middleware
 
-Помимо встроенных middleware-замыканий, регистрируемых через [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) и [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), Volga также поддерживает регистрацию middleware в виде повторно используемых настраиваемых типов через метод [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach).
+Помимо встроенных middleware-замыканий, регистрируемых через [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) и [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), Волга также поддерживает регистрацию middleware в виде повторно используемых настраиваемых типов через метод [`attach()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.attach).
 
 Такой подход удобен, когда middleware требует собственного состояния, конфигурации или должен использоваться повторно в нескольких приложениях.
 

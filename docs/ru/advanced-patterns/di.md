@@ -2,11 +2,11 @@
 
 Волга поддерживает мощный механизм внедрения зависимостей (Dependency Injection, DI) с тремя жизненными циклами: **Singleton**, **Scoped** и **Transient**.
 
-Если вы не используете функцию `full`, то, включите функцию `di`, либо переключитесь на `full` в вашем `Cargo.toml`:
+Если вы не используете фичу `full`, то, включите фичу `di`, либо переключитесь на `full` в вашем `Cargo.toml`:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["di"] }
+volga = { version = "0.15", features = ["di"] }
 ```
 
 ## Жизненные циклы зависимостей
@@ -59,7 +59,7 @@ async fn main() -> std::io::Result<()> {
 - [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) работает аналогично другим экстракторам, таким как [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html) или [`Query<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/query/struct.Query.html).
 
 ::: info
-Тип `T` должен реализовывать типажи [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html) и [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html).
+Тип `T` должен реализовывать трейты [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html) и [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html).
 :::
 
 ### Scoped
@@ -116,7 +116,7 @@ async fn main() -> std::io::Result<()> {
 
 #### Регистрация с помощью `Default` или фабрики
 
-Чтобы использовать метод [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped), тип должен реализовывать типаж [`Inject`](https://docs.rs/volga/latest/volga/di/trait.Inject.html). Это удобный и мощный подход, когда ваш тип зависит от других сервисов, зарегистрированных в контейнере зависимостей.
+Чтобы использовать метод [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped), тип должен реализовывать трейт [`Inject`](https://docs.rs/volga/latest/volga/di/trait.Inject.html). Это удобный и мощный подход, когда ваш тип зависит от других сервисов, зарегистрированных в контейнере зависимостей.
 
 Однако, если у типа нет зависимостей, вы можете зарегистрировать его напрямую, используя фабрику:
 
@@ -314,7 +314,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Использование DI в middleware
 Чтобы внедрить зависимость в middleware, в случае использования [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with), `filter()`, `map_ok()`, `map_err()` или `tap_req()` можно воспользоваться структурой [`Dc`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) аналогично использованию в обработчиках запросов. Для [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) используйте метод [`resolve::<T>()`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve), либо [`resolve_shared::<T>`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html#method.resolve_shared) структуры [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/http_context/struct.HttpContext.html).
-Основное различие между ними заключается в том, что первый метод требует реализации типажа [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) для `T`, тогда как последний просто возвращает [`Arc<T>`](https://doc.rust-lang.org/std/sync/struct.Arc.html).
+Основное различие между ними заключается в том, что первый метод требует реализации трейта [`Clone`](https://doc.rust-lang.org/std/clone/trait.Clone.html) для `T`, тогда как последний просто возвращает [`Arc<T>`](https://doc.rust-lang.org/std/sync/struct.Arc.html).
 `Dc<T>`, принятый в этих методах, входит в [стартовую проверку](#что-принимают-обработчики-и-middleware); то, что `wrap()` резолвит во время выполнения, — нет.
 
 ```rust

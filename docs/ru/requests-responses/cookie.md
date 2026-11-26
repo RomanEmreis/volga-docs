@@ -1,21 +1,21 @@
-# Cookies
+# Cookie
 
 Волга обеспечивает полную поддержку cookie посредством интеграции с библиотекой [`cookie`](https://crates.io/crates/cookie). В этом руководстве объясняется, как включить и использовать функциональность cookie в вашем приложении, включая базовое использование, настройку и безопасные (подписанные и закрытые) файлы cookie.
 
 
-## Enabling Cookie Support
+## Включение поддержки cookie
 
-Чтобы использовать cookie в вашем приложении, вам необходимо включить соответствующие флаги функций в вашем `Cargo.toml`. Если вы не используете `full` набор функций, добавьте флаг `cookie` вручную:
+Чтобы использовать cookie в вашем приложении, вам необходимо включить соответствующие фичи в вашем `Cargo.toml`. Если вы не используете набор фич `full`, добавьте фичу `cookie` вручную:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["cookie"] }
+volga = { version = "0.15", features = ["cookie"] }
 
 # Необязательно: явно добавить библиотеку cookie
 cookie = "0.18.1"
 ```
 
-Информацию о подписанных или закрытых cookie см. в разделе [Signed & Private Cookies](#signed--private-cookies).
+Информацию о подписанных или закрытых cookie см. в разделе [«Подписанные и закрытые cookie»](#подписанные-и-закрытые-cookie).
 
 
 ## Пример использования
@@ -64,7 +64,7 @@ async fn main() -> std::io::Result<()> {
 * Вы можете связать несколько добавлений cookie с помощью метода [`.add(...)`](https://docs.rs/volga/latest/volga/http/cookie/struct.Cookies.html#method.add).
 
 
-## Создание защищенных Cookies
+## Создание защищённых cookie
 
 Для защищенных или настраиваемых cookie (например, `HttpOnly`, `Secure`, кастомный домен/путь) используйте [`CookieBuilder`](https://docs.rs/cookie/latest/cookie/struct.CookieBuilder.html):
 
@@ -85,7 +85,7 @@ cookies.add(cookie);
 [`Cookie::build(...)`](https://docs.rs/cookie/latest/cookie/struct.Cookie.html#method.build) принимает либо кортеж имя/значение, либо просто имя, в зависимости от ваших потребностей.
 :::
 
-## Чтение Cookies
+## Чтение cookie
 
 Вот как можно получить cookie по имени:
 
@@ -96,7 +96,7 @@ if let Some(cookie) = cookies.get("session-id") {
 ```
 
 
-## Signed & Private Cookies
+## Подписанные и закрытые cookie
 
 Для защиты целостности или конфиденциальности cookie Волга поддерживает два безопасных режима:
 
@@ -105,17 +105,17 @@ if let Some(cookie) = cookies.get("session-id") {
 | **Signed**     | Обнаружение несанкционированного доступа (читаемо)         | `signed-cookie`  | [`SignedCookies`](https://docs.rs/volga/latest/volga/http/cookie/signed/struct.SignedCookies.html)  |
 | **Private**    | Защищен от несанкционированного доступа и зашифрован (скрыт) | `private-cookie` | [`PrivateCookies`](https://docs.rs/volga/latest/volga/http/cookie/private/struct.PrivateCookies.html) |
 
-Обновите `Cargo.toml`, подключив желаемый флаг, а так же Внедрение зависимостей (`di`):
+Обновите `Cargo.toml`, подключив нужную фичу, а также внедрение зависимостей (`di`):
 
 ```toml
 # Для signed cookies
-volga = { version = "...", features = ["signed-cookie", "di"] }
+volga = { version = "0.15", features = ["signed-cookie", "di"] }
 
 # Для private cookies
-volga = { version = "...", features = ["private-cookie", "di"] }
+volga = { version = "0.15", features = ["private-cookie", "di"] }
 
 # Для всех cookies
-volga = { version = "...", features = ["cookie-full", "di"] }
+volga = { version = "0.15", features = ["cookie-full", "di"] }
 ```
 
 ### Регистрация секретных ключей
@@ -138,7 +138,7 @@ app.add_singleton(PrivateKey::generate());
 
 После регистрации вы можете извлечь [`SignedCookies`](https://docs.rs/volga/latest/volga/http/cookie/signed/struct.SignedCookies.html) или [`PrivateCookies`](https://docs.rs/volga/latest/volga/http/cookie/private/struct.PrivateCookies.html) точно так же, как [`Cookies`](https://docs.rs/volga/latest/volga/http/cookie/struct.Cookies.html).
 
-## Best Practices
+## Рекомендации
 
 * **Используйте флаги `HttpOnly` и `Secure`** для сессионных или аутентификационных cookie, чтобы предотвратить XSS и перехват.
 * **Установите политику `SameSite`** (через `cookie::CookieBuilder`) для межсайтовой защиты.

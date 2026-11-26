@@ -12,7 +12,7 @@ Having the ability to call the [`next`](https://docs.rs/volga/latest/volga/middl
 First of all, if you're not using the `full` features, you need to enable the `middleware` feature in your `Cargo.toml`
 ```toml
 [dependencies]
-volga = { version = "...", features = ["middleware"] }
+volga = { version = "0.15", features = ["middleware"] }
 ```
 
 ### Example: Sequential Middleware Execution

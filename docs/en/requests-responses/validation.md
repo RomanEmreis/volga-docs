@@ -16,7 +16,7 @@ The `Validate` trait and the `Valid<E>` extractor are always available. The deri
 `validation-derive` feature, which is part of `full`:
 ```toml
 [dependencies]
-volga = { version = "0.9.9", features = ["validation-derive"] }
+volga = { version = "0.15", features = ["validation-derive"] }
 ```
 
 ```rust compile

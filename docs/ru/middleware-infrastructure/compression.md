@@ -4,17 +4,17 @@
 
 ## Включение сжатия
 
-Чтобы включить сжатие ответов, убедитесь, что вы включили необходимую функцию в `Cargo.toml`. Если вы не используете набор функций `full`, вы можете отдельно подключить функцию `compression-full` делающую доступными все алгоритмы сжатия:
+Чтобы включить сжатие ответов, убедитесь, что вы включили необходимую функцию в `Cargo.toml`. Если вы не используете набор фич `full`, вы можете отдельно подключить фичу `compression-full` делающую доступными все алгоритмы сжатия:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["compression-full"] }
+volga = { version = "0.15", features = ["compression-full"] }
 ```
 Если вам нужны определенные алгоритмы сжатия, вы можете указать их явно:
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["compression-brotli", "compression-gzip"] }
+volga = { version = "0.15", features = ["compression-brotli", "compression-gzip"] }
 ```
 
 ## Пример использования

@@ -98,7 +98,7 @@ Before **0.15.1**, `save()` joined the folder with the name as sent, so a client
 In case, if you need to upload multiple files, you can leverage a multipart file uploading. It's a separate feature  and if you're not using the `full` feature set it can be explicitly enabled in your `Cargo.toml`:
 ```toml
 [dependencies]
-volga = { version = "...", features = ["multipart"] }
+volga = { version = "0.15", features = ["multipart"] }
 ```
 ### Example of Multipart file uploading
 This example demonstrates how to upload multiple files:

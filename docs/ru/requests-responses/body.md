@@ -8,8 +8,8 @@
 
 ```toml
 [dependencies]
-volga = { version = "..." }
-tokio = { version = "...", features = ["full"] }
+volga = { version = "0.15" }
+tokio = { version = "1", features = ["full"] }
 http-body-util = "0.1"
 ```
 
@@ -68,8 +68,8 @@ async fn main() -> std::io::Result<()> {
 
 ```toml
 [dependencies]
-volga = { version = "..." }
-tokio = { version = "...", features = ["full"] }
+volga = { version = "0.15" }
+tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
 ```
 

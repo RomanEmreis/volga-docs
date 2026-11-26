@@ -13,7 +13,7 @@ The protocol-level types (error models, metadata documents, the `WWW-Authenticat
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["oauth-client"] }
+volga = { version = "0.15", features = ["oauth-client"] }
 ```
 
 ## Validating Tokens Against an Issuer

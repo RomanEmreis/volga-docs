@@ -9,13 +9,13 @@ If running under HTTP/2, Volga uses WebSocket-over-HTTP/2 by default and falls b
 ### WebSockets
 ```toml
 [dependencies]
-volga = { version = "...", features = ["ws"] }
+volga = { version = "0.15", features = ["ws"] }
 ```
 
 ### WebSocket-over-HTTP/2
 ```toml
 [dependencies]
-volga = { version = "...", features = ["http2", "ws"] }
+volga = { version = "0.15", features = ["http2", "ws"] }
 ```
 
 ## Simple Server

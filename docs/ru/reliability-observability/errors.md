@@ -1,8 +1,8 @@
 # Центральный обработчик ошибок
 
-Волга предоставляет централизованный механизм обработки ошибок, который перехватывает все ошибки, реализующие типаж [`Error`](https://doc.rust-lang.org/std/error/trait.Error.html), возникающие в обработчиках запросов и middleware. Для этого можно воспользоваться методом [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) типа [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) для регистрации функции, обрабатывающей ошибки.
+Волга предоставляет централизованный механизм обработки ошибок, который перехватывает все ошибки, реализующие трейт [`Error`](https://doc.rust-lang.org/std/error/trait.Error.html), возникающие в обработчиках запросов и middleware. Для этого можно воспользоваться методом [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) типа [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) для регистрации функции, обрабатывающей ошибки.
 
-Функция принимает объект типа [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) и должна вернуть ответ, реализующий типаж [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html). Как и обработчик запроса, она может быть [асинхронной или синхронной](/volga-docs/ru/getting-started/handlers.html).
+Функция принимает объект типа [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) и должна вернуть ответ, реализующий трейт [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html). Как и обработчик запроса, она может быть [асинхронной или синхронной](/volga-docs/ru/getting-started/handlers.html).
 
 ### Пример:
 ```rust compile
@@ -27,7 +27,7 @@ async fn main() -> std::io::Result<()> {
 В этом примере мы намеренно создаем обработчик запросов, который выдает ошибку, и определяем обработчик ошибок, который отвечает статусом и сообщением этой ошибки. [`status()`](https://docs.rs/volga/latest/volga/error/struct.Error.html#method.status) — это статус, который несёт ошибка: `500` у этой, `404` у пути, на который не отвечает ни один маршрут, `401` у отклонённого токена.
 
 ::: warning Отвечайте собственным статусом ошибки
-Обработчик ошибок отвечает на все ошибки, включая [запросы, которые Volga отклоняет сама](#ошибки-которые-создает-volga). Обработчик с фиксированным статусом, например `status!(500, ..)`, превращает каждый `401`, `404`, `405` и `429` в `500`.
+Обработчик ошибок отвечает на все ошибки, включая [запросы, которые Волга отклоняет сама](#ошибки-которые-создает-волга). Обработчик с фиксированным статусом, например `status!(500, ..)`, превращает каждый `401`, `404`, `405` и `429` в `500`.
 :::
 
 Фактически, именно так реализован обработчик ошибок по умолчанию — с той разницей, что ошибка, [несущая собственный ответ](#ответ-с-собственным-телом), отвечает этим ответом. Если мы удалим метод [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err), ответ останется неизменным. Однако переопределение пользовательского обработчика ошибок обеспечивает большую гибкость для логирования и трассировки.
@@ -45,7 +45,7 @@ app.map_err(|error: Error| {
 
 ## Возврат ошибок из обработчика
 
-Обработчик, который может завершиться неудачей, возвращает `Result<T, E>`. `Ok` отвечает значением `T`, как и любой другой ответ. Начиная с **0.12.0** `Err` — это ошибка, а не второй вид ответа: она превращается в [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) через типаж [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) и передаётся обработчику ошибок — зарегистрированному через `map_err` или обработчику по умолчанию — точно так же, как ошибка из любого другого места.
+Обработчик, который может завершиться неудачей, возвращает `Result<T, E>`. `Ok` отвечает значением `T`, как и любой другой ответ. Начиная с **0.12.0** `Err` — это ошибка, а не второй вид ответа: она превращается в [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) через трейт [`IntoError`](https://docs.rs/volga/latest/volga/error/trait.IntoError.html) и передаётся обработчику ошибок — зарегистрированному через `map_err` или обработчику по умолчанию — точно так же, как ошибка из любого другого места.
 
 ```rust compile
 use volga::{App, Json, http::StatusCode};
@@ -83,7 +83,7 @@ async fn main() -> std::io::Result<()> {
 | `StatusCode` | этот статус | каноническая фраза статуса, например `Not Found` |
 | `(StatusCode, E)`, где `E` — сообщение или любая ошибка | этот статус | сообщение `E` |
 | `std::io::Error` | по виду ошибки: `NotFound` → `404`, `PermissionDenied` → `403`, `AlreadyExists` → `409`, `InvalidInput` → `400`, большинство остальных → `500` | её сообщение |
-| собственные ошибки Volga — `ValidationError`, `OAuthError`, `serde_json::Error` и другие | собственный | их сообщение |
+| собственные ошибки Волги — `ValidationError`, `OAuthError`, `serde_json::Error` и другие | собственный | их сообщение |
 | `Problem<E>` (фича `problem-details`) | статус problem | [сам problem](#problem-как-ошибка) |
 | `String`, `&'static str`, `Cow<'static, str>`, `Box<str>` | `500` | сообщение |
 | `Box<dyn std::error::Error + Send + Sync>` | `500` | её сообщение |
@@ -204,7 +204,7 @@ impl IntoError for NotFound {
 }
 ```
 
-`describe_openapi` существует, только пока включена фича Volga `openapi`. Если ваш крейт включает её через собственную фичу, поставьте на метод тот же `#[cfg(feature = "..")]`. Остальное — на странице [OpenAPI](/volga-docs/ru/middleware-infrastructure/openapi.html).
+`describe_openapi` существует, только пока включена фича Волги `openapi`. Если ваш крейт включает её через собственную фичу, поставьте на метод тот же `#[cfg(feature = "..")]`. Остальное — на странице [OpenAPI](/volga-docs/ru/middleware-infrastructure/openapi.html).
 
 ### Переход с 0.11
 
@@ -219,23 +219,23 @@ impl IntoError for NotFound {
 Всё это относится и к `map_err`, `map_fallback`, `with` и `map_ok`, а также к [`Err` фильтра](/volga-docs/ru/middleware-infrastructure/middleware.html#что-возвращает-фильтр).
 :::
 
-## Ошибки, которые создаёт Volga
+## Ошибки, которые создаёт Волга
 
-Запрос, который Volga отклоняет сама, тоже доходит до обработчика ошибок — как ошибка со своим статусом. Некоторые из этих ошибок несут заголовки, и они остаются на ответе, которым бы ни ответил обработчик:
+Запрос, который Волга отклоняет сама, тоже доходит до обработчика ошибок — как ошибка со своим статусом. Некоторые из этих ошибок несут заголовки, и они остаются на ответе, которым бы ни ответил обработчик:
 
 | Кто отклоняет | Статус | Заголовки ошибки |
 |---|---|---|
 | Экстрактор, который не может прочитать запрос: тело или параметр не разбираются, нет заголовка | `400` | |
 | Тело больше [ограничения](/volga-docs/ru/requests-responses/body.html#ограничение-размера-тела) | `413` | |
-| Маршрутизатор: путь, на который ничто не отвечает | `404` | |
-| Маршрутизатор: метод, которого у пути нет | `405` | `Allow` |
+| Роутер: путь, на который ничто не отвечает | `404` | |
+| Роутер: метод, которого у пути нет | `405` | `Allow` |
 | [`authorize`](/volga-docs/ru/security-access/auth.html#чем-отвечает-сервер-на-отклоненныи-запрос) | `400`, `401`, `403`, `503` | `WWW-Authenticate`, `Cache-Control: no-store` |
 | [Ограничение частоты запросов](/volga-docs/ru/middleware-infrastructure/rate-limiting.html) | `429` | |
 | [Статические файлы](/volga-docs/ru/middleware-infrastructure/static-files.html): каталог без листинга, путь за пределами корня | `403` | |
 | Статические файлы: fallback-файл не настроен | `404` | |
 | [Сжатие](/volga-docs/ru/middleware-infrastructure/compression.html): в `Accept-Encoding` нет ничего, что сервер умеет | `406` | `Vary`, `Accept-Encoding` |
 
-Поэтому `map_err` и `map_problem` оформляют их все, и клиент API, который отвечает в формате Problem Details, получает его и на `401`, `404` или `429`. Обработчик по умолчанию отвечает сообщением ошибки в виде текста: для `404` и `405` маршрутизатора это reason phrase, для `authorize` — описание из challenge.
+Поэтому `map_err` и `map_problem` оформляют их все, и клиент API, который отвечает в формате Problem Details, получает его и на `401`, `404` или `429`. Обработчик по умолчанию отвечает сообщением ошибки в виде текста: для `404` и `405` роутера это reason phrase, для `authorize` — описание из challenge.
 
 ```rust compile
 use volga::{App, HttpResult, error::Error, status};
@@ -290,7 +290,7 @@ async fn main() -> std::io::Result<()> {
 * Обработчик, который отвечает самой ошибкой, передаёт её дальше вместе с заголовками, и добавляются они один раз — там, где на ошибку в итоге отвечают.
 * К ответу, [прикреплённому через `with_response()`](#ответ-с-собственным-телом), они добавляются тоже.
 
-Собственные ошибки Volga устроены так же: challenge у `authorize`, `Allow` у `405` и [заголовки CORS](/volga-docs/ru/middleware-infrastructure/cors.html) у ответа с ошибкой.
+Собственные ошибки Волги устроены так же: challenge у `authorize`, `Allow` у `405` и [заголовки CORS](/volga-docs/ru/middleware-infrastructure/cors.html) у ответа с ошибкой.
 
 ## Обработчик ошибок маршрута или группы
 
@@ -385,10 +385,10 @@ Middleware группы — `authorize`, ограничитель частоты
 
 Волга полностью поддерживает формат [Problem Details](https://www.rfc-editor.org/rfc/rfc9457), который предоставляет машиночитаемые сведения об ошибках в ответах HTTP. Это устраняет необходимость определять пользовательские форматы ошибок для API.
 
-Чтобы включить эту возможность, убедитесь, что функция `problem-details` активирована в `Cargo.toml` вашего приложения:
+Чтобы включить эту возможность, убедитесь, что фича `problem-details` активирована в `Cargo.toml` вашего приложения:
 ```toml
 [dependencies]
-volga = { version = "...", features = ["problem-details"] }
+volga = { version = "0.15", features = ["problem-details"] }
 ```
 Затем вы можете вернуть структуру [`Problem`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html) из обработчика запроса:
 ```rust compile

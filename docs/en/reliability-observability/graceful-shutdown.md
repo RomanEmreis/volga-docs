@@ -159,6 +159,6 @@ async fn main() -> std::io::Result<()> {
 
 ## Shutdown and Request Cancellation
 
-The two are different signals. A shutdown that has just started lets in-flight requests **finish**, so the request's [`CancellationToken`](https://docs.rs/volga/latest/volga/app/endpoints/args/cancellation_token/type.CancellationToken.html) is not cancelled then — a handler cancelling its work on it would fail requests for no reason. The token says the response is no longer wanted: the client went away, or the shutdown timeout ran out and the connection is being closed.
+The two are different signals. A shutdown that has just started lets in-flight requests **finish**, so the request's [`CancellationToken`](https://docs.rs/volga/latest/volga/http/endpoints/args/cancellation_token/type.CancellationToken.html) is not cancelled then — a handler cancelling its work on it would fail requests for no reason. The token says the response is no longer wanted: the client went away, or the shutdown timeout ran out and the connection is being closed.
 
 A long-running handler should observe both: the `CancellationToken`, so it stops working for a response nobody will read, and the `ShutdownHandle`, so it does not hold the shutdown up until the timeout.

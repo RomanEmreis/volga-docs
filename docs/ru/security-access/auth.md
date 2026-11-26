@@ -10,7 +10,7 @@
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["basic-auth"] }
+volga = { version = "0.15", features = ["basic-auth"] }
 ```
 
 ### Пример
@@ -57,7 +57,7 @@ JWT (JSON Web Token) предоставляет расширенные возм�
 
 ```toml
 [dependencies]
-volga = { version = "...", features = ["jwt-auth-full"] }
+volga = { version = "0.15", features = ["jwt-auth-full"] }
 ```
 
 ### Генерация токена
@@ -178,7 +178,7 @@ let app = App::new()
 ::: info
 `EncodingKey`, `DecodingKey` и `Algorithm` — собственные типы Волги в `volga::auth::*`, а не реэкспорты из `jsonwebtoken`, поэтому `jsonwebtoken::ErrorKind` и его конструкторы ключей недоступны: ключи создаются конструкторами PEM / base64 / secret / env / file, которые предоставляет Волга, а начиная с **0.13.2** — и из [JSON Web Key](#ключ-опубликованныи-как-json-web-key). Параметры валидации токена настраиваются через [`BearerAuthConfig`](https://docs.rs/volga/latest/volga/auth/bearer/struct.BearerAuthConfig.html). Начиная с **0.15.1** Волга использует `jsonwebtoken` 12, который отклоняет токен, если в его заголовке указано неизвестное ему критическое расширение (`crit`), поэтому на такой токен приходит `401`.
 
-Начиная с **v0.9.8**, `volga::auth::Algorithm` — это реэкспорт [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) из `volga-oauth-core`: варианты, значение по-умолчанию `HS256` и поведение не изменились, но теперь тип общий с клиентскими крейтами — утверждение `private_key_jwt` и bearer-токен, который выпускает сервер, описываются одним словарём. Он также реэкспортируется из `volga::auth::oauth`, где его можно назвать без флага `jwt-auth`.
+Начиная с **v0.9.8**, `volga::auth::Algorithm` — это реэкспорт [`JwsAlgorithm`](https://docs.rs/volga-oauth-core/latest/volga_oauth_core/enum.JwsAlgorithm.html) из `volga-oauth-core`: варианты, значение по-умолчанию `HS256` и поведение не изменились, но теперь тип общий с клиентскими крейтами — утверждение `private_key_jwt` и bearer-токен, который выпускает сервер, описываются одним словарём. Он также реэкспортируется из `volga::auth::oauth`, где его можно назвать без фичи `jwt-auth`.
 :::
 
 ### Использование JWT
@@ -442,7 +442,7 @@ fn main() {
 | Токен действителен, но не несёт роли или разрешения, которых требует маршрут | `403` | `insufficient_scope` |
 | Проверку не удалось выполнить — нечитаемый ключ проверки, недоступный issuer | `503` | нет: чинить клиенту нечего |
 
-Каждый из этих отказов — ошибка, поэтому он доходит до [`map_err` и `map_problem`](/volga-docs/ru/reliability-observability/errors.html#ошибки-которые-создает-volga), а challenge и `Cache-Control: no-store` остаются на ответе, которым бы они ни ответили. Обработчик по умолчанию отвечает причиной в виде текста: описанием из challenge или `Bearer token is missing`.
+Каждый из этих отказов — ошибка, поэтому он доходит до [`map_err` и `map_problem`](/volga-docs/ru/reliability-observability/errors.html#ошибки-которые-создает-волга), а challenge и `Cache-Control: no-store` остаются на ответе, которым бы они ни ответили. Обработчик по умолчанию отвечает причиной в виде текста: описанием из challenge или `Bearer token is missing`.
 
 ::: warning При переходе с 0.10.0
 Токен, не прошедший проверку, получал `403`, а некорректный — `400`. Теперь и то и другое — `401`, поэтому всё, что трактует `403` как «этот токен обновлять бесполезно» — тест, триггер обновления в клиенте, алерт, — нужно перевести на `401`.
