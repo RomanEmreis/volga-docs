@@ -364,7 +364,7 @@ app.map_post("/put", async |val: ValidJson<KeyValue>| {
   }
 }
 ```
-Failures not bound to a field are grouped under an empty key. See [Global Error Handling](/volga-docs/en/reliability-observability/errors.html)
+Failures not bound to a field are grouped under an empty key. See [Error Handling](/volga-docs/en/reliability-observability/errors.html)
 for the rest of the Problem Details support.
 
 ## Using a Third-Party Validator

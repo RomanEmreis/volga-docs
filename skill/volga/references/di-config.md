@@ -78,33 +78,48 @@ another handle on the same instance, for any `T`.
 
 ### Scoped and transient
 
-`add_scoped::<T>()` needs `T: Inject`, which is where a service declares its
-own dependencies:
+Register a scoped service with a factory. Its arguments are its
+dependencies, so the startup check sees them with nothing to keep in sync:
 
 <!-- snippet: skip -->
 ```rust
-use volga::di::{Container, Inject, error::Error};
+app.add_scoped_factory(|cache: Dc<Cache>| Ok(Repo { cache })); // with arguments: Result<T, di::Error>
+app.add_scoped_factory(|| Repo::new());                         // no arguments: T
+app.add_scoped_default::<Repo>();                               // T: Default
+```
+
+Factory rules:
+
+* no arguments returns `T`; with arguments returns
+  `Result<T, volga::di::error::Error>`. A plain `T` from a factory with
+  arguments fails with `GenericFactory<_> is not satisfied`, which does not
+  mention the return type: wrap the value in `Ok(..)`;
+* up to five arguments, each anything the container resolves, normally
+  `Dc<T>`;
+* a `Container` argument declares nothing, so such a factory is left out of
+  the startup check.
+
+When construction does not fit a closure, implement `Inject` and register
+with `add_scoped::<T>()`. It must declare what `inject` resolves in
+`dependencies()`, or the type drops out of the startup check:
+
+<!-- snippet: skip -->
+```rust
+use volga::di::{Container, Dependencies, Inject, error::Error};
 
 impl Inject for Repo {
     // note: `&Container`, and `Error` lives at `volga::di::error::Error`
     fn inject(container: &Container) -> Result<Self, Error> {
         Ok(Self { cache: container.resolve::<Cache>()? })
     }
+
+    fn dependencies(deps: &mut Dependencies) {
+        deps.add::<Cache>();
+    }
 }
 
 app.add_scoped::<Repo>();
 ```
-
-Without dependencies, skip the trait:
-
-<!-- snippet: skip -->
-```rust
-app.add_scoped_factory(|| Repo::new());     // any closure returning T
-app.add_scoped_default::<Repo>();           // T: Default
-```
-
-A factory may itself take `Dc<T>` or `Container` arguments when it needs to
-resolve something.
 
 Transient works identically; the only difference is that a new instance is
 built for **every** injection, not once per request. A transient resolved

@@ -1,20 +1,27 @@
 # Dependency Injection
 
-Volga supports robust dependency injection (DI) with three lifetimes: **Singleton**, **Scoped**, and **Transient**. These lifetimes allow you to manage the lifecycle of your dependencies effectively.
+A handler that needs a database pool, a cache or a client takes it as an argument, `Dc<T>`, and Volga hands it over from a container. Services are registered on the `App` with one of three lifetimes, the same ones ASP.NET Core uses: **singleton**, **scoped** and **transient**. If you come from Go, this replaces passing shared state through closures or a context.
 
-If you're not using the `full` feature set, ensure you enable the `di` feature in your `Cargo.toml`:
+If you're not using the `full` feature set, enable the `di` feature in your `Cargo.toml`:
 
 ```toml
 [dependencies]
 volga = { version = "0.15", features = ["di"] }
 ```
 
-## Dependency Lifetimes
+## Lifetimes at a Glance
 
-### Singleton
-A **Singleton** ensures a single instance of a dependency is created and shared for the entire lifetime of your web application. This instance is thread-safe and reused concurrently across threads.
+| Lifetime | Instance | Register with |
+|---|---|---|
+| Singleton | one for the whole application | `add_singleton(value)` |
+| Scoped | one per request, shared by the handler and its middleware | `add_scoped_factory(f)`, `add_scoped_default::<T>()`, `add_scoped::<T>()` |
+| Transient | a new one every time it is resolved | `add_transient_factory(f)`, `add_transient_default::<T>()`, `add_transient::<T>()` |
 
-#### Example: Singleton Dependency
+`T` must be [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html) and [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html), since one instance can serve several requests at once.
+
+## Singleton
+
+[`add_singleton`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_singleton) registers a value you have already built. Every request gets the same instance:
 
 ```rust compile
 use volga::{App, di::Dc, ok, not_found};
@@ -32,10 +39,8 @@ struct InMemoryCache {
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
-    // Register a singleton service globally
     app.add_singleton(InMemoryCache::default());
 
-    // Inject the shared cache instance into the route handlers
     app.map_get("/user/{id}", |id: String, cache: Dc<InMemoryCache>| async move {
         let user = cache.inner.lock().unwrap().get(&id).cloned();
         match user {
@@ -53,35 +58,27 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-In this example:
-- The [`add_singleton`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_singleton) method registers an `InMemoryCache` instance as a singleton.
-- The [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) extractor provides access to the dependency container, resolving the dependency as needed.
-- The [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) behaves similarly to other Volga extractors, such as [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html) or [`Query<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/query/struct.Query.html).
+[`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) is an [extractor](/volga-docs/en/getting-started/extractors.html) like `Json<T>` or `Query<T>`: it reads the service from the container before the handler runs.
 
-::: info
-`T` must be [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html) and [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html).
-:::
+## Scoped
 
-### Scoped
-A **Scoped** dependency creates a new instance for each HTTP request. The instance persists for the duration of the request, ensuring isolation between requests.
-
-#### Example: Scoped Dependency
+A scoped service is built once per request, the first time something in that request asks for it. Register it with a **factory**, a closure that builds it. A factory's arguments are the services it needs, so the container learns its dependencies from the signature:
 
 ```rust compile
-use volga::{App, di::{Container, Dc, Inject, error::Error}, ok, not_found};
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use volga::{App, di::Dc, ok};
 
-#[derive(Clone)]
-struct InMemoryCache {
-    inner: Arc<Mutex<HashMap<String, String>>>,
+struct Db {
+    url: String,
 }
 
-impl Inject for InMemoryCache {
-    fn inject(_container: &Container) -> Result<Self, Error> {
-        Ok(Self { inner: Default::default() })
+#[derive(Clone)]
+struct Repo {
+    db: Dc<Db>,
+}
+
+impl Repo {
+    fn describe(&self) -> String {
+        format!("repo over {}", self.db.url)
     }
 }
 
@@ -89,72 +86,89 @@ impl Inject for InMemoryCache {
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
-    // Register a scoped service
-    app.add_scoped::<InMemoryCache>();
+    app.add_singleton(Db { url: "postgres://localhost/app".into() });
 
-    // Inject a request-specific cache instance
-    app.map_get("/user/{id}", |id: String, cache: Dc<InMemoryCache>| async move {
-        let user = cache.inner.lock().unwrap().get(&id).cloned();
-        match user {
-            Some(user) => ok!(user),
-            None => not_found!("User not found"),
-        }
-    });
+    // A new `Repo` for every request, built from the singleton `Db`
+    app.add_scoped_factory(|db: Dc<Db>| Ok(Repo { db }));
 
-    app.map_post("/user/{id}/{name}", |id: String, name: String, cache: Dc<InMemoryCache>| async move {
-        cache.inner.lock().unwrap().insert(id, name);
-        ok!()
+    app.map_get("/repo", |repo: Dc<Repo>| async move {
+        ok!(repo.describe())
     });
 
     app.run().await
 }
 ```
 
-Key differences from Singleton:
-- The [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped) method registers a dependency that is instantiated lazily for each request.
-- Each request gets its own, unique instance of `InMemoryCache`.
+### Factory rules
 
-#### Registering with `Default` or a Factory
+* **A factory without arguments returns `T`:** `add_scoped_factory(|| Cache::new())`.
+* **A factory with arguments returns `Result<T, volga::di::error::Error>`**, so the example above wraps its value in `Ok(..)`. The arguments are resolved before the call, and building the service may still fail. Returning a plain `T` from such a factory does not compile, and the error does not mention the return type.
+* **Up to five arguments.** An argument is anything the container can resolve, normally `Dc<T>`.
+* **A `Container` argument declares nothing**, so a factory that takes it is left out of the [startup check](#the-graph-is-checked-at-startup). Take the services themselves as `Dc<T>` instead.
 
-To use the [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped) method, the type must implement the [`Inject`](https://docs.rs/volga/latest/volga/di/trait.Inject.html) trait. This is a convenient and powerful approach when your type depends on other services registered in the DI container.
+### A type with `Default`
 
-However, if the type has **no dependencies**, you can register it more directly using a factory:
+A type that implements [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html) needs no factory at all:
 
-```rust
-#[derive(Clone)]
-struct InMemoryCache {
-    inner: Arc<Mutex<HashMap<String, String>>>,
-}
-
-// Register a scoped service using a factory
-app.add_scoped_factory(|| InMemoryCache {
-    inner: Default::default(),
-});
-```
-::: tip
-You may use the [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) or [`Container`](https://docs.rs/volga/latest/volga/di/struct.Container.html) as a factory arguments for better control on dependency resolution.
-:::
-
-If the type implements [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html), you can simplify this further by using [`add_scoped_default::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped_default):
-
-```rust
+```rust compile-fragment
 #[derive(Default, Clone)]
-struct InMemoryCache {
-    inner: Arc<Mutex<HashMap<String, String>>>,
+struct RequestLog {
+    lines: std::sync::Arc<std::sync::Mutex<Vec<String>>>,
 }
 
-app.add_scoped_default::<InMemoryCache>();
+app.add_scoped_default::<RequestLog>();
 ```
 
-### Transient
+### A hand-written `Inject`
 
-A **Transient** dependency creates a **new instance every time it is resolved**, regardless of the request scope or context. You can register a transient service using one of:
+When construction does not fit a closure, the type implements [`Inject`](https://docs.rs/volga/latest/volga/di/trait.Inject.html) and is registered with [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped). `inject` resolves what it needs from the container by hand, so it also has to declare those services in `dependencies()`, or the type drops out of the startup check:
 
-* [`add_transient::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient)
-* [`add_transient_factory::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_factory)
+```rust compile
+use volga::{App, di::{Container, Dc, Dependencies, Inject, error::Error}, ok};
+
+#[derive(Default, Clone)]
+struct Clock;
+
+#[derive(Clone)]
+struct Session {
+    clock: Clock,
+}
+
+impl Inject for Session {
+    fn inject(container: &Container) -> Result<Self, Error> {
+        Ok(Self { clock: container.resolve::<Clock>()? })
+    }
+
+    // Keep this list equal to what `inject` resolves
+    fn dependencies(deps: &mut Dependencies) {
+        deps.add::<Clock>();
+    }
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.add_singleton(Clock);
+    app.add_scoped::<Session>();
+
+    app.map_get("/session", |_session: Dc<Session>| async { ok!() });
+
+    app.run().await
+}
+```
+
+Nothing compares `dependencies()` with what `inject` actually resolves, which is why a factory is the first choice.
+
+## Transient
+
+A transient service is built anew **every time it is resolved**, even twice in one request. It is registered the same three ways as a scoped one:
+
+* [`add_transient_factory(f)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_factory), with the same [factory rules](#factory-rules)
 * [`add_transient_default::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_default)
+* [`add_transient::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient) for a hand-written `Inject`
 
-The behavior is similar to **Scoped**, with the key difference that **a new instance is created for every injection**, not once per request or scope. A transient resolved through [`Container::resolve`](https://docs.rs/volga/latest/volga/di/struct.Container.html#method.resolve) is moved out of the container rather than cloned, which is worth knowing for a type whose `Clone` or `Drop` has side effects.
+A transient resolved through [`Container::resolve`](https://docs.rs/volga/latest/volga/di/struct.Container.html#method.resolve) is moved out of the container rather than cloned, which is worth knowing for a type whose `Clone` or `Drop` has side effects.
 
 ## Changing a Dependency
 
@@ -210,36 +224,7 @@ dependency injection: dependency cycle: myapp::Repo -> myapp::Db -> myapp::Repo;
 
 Nothing is bound, spawned or announced until that check passes — no background task, no HTTPS redirect listener, no greeter line — so a caller that handles the error and tries again finds the port free, and a service nobody registered is a startup failure rather than a `500` on one route.
 
-What gets checked is what a registration **declares**. A factory declares its arguments, so the container already knows what this resolves:
-
-```rust
-// says it resolves `Db`
-app.add_scoped_factory(|db: Dc<Db>| Repo { db });
-```
-
-A hand-written [`Inject`](https://docs.rs/volga/latest/volga/di/trait.Inject.html) resolves from the container by hand, so it declares what it resolves by hand too:
-
-```rust compile
-use volga::di::{Container, Dependencies, Inject, error::Error};
-
-#[derive(Default, Clone)]
-struct Clock;
-
-struct Session {
-    clock: Clock,
-}
-
-impl Inject for Session {
-    fn inject(container: &Container) -> Result<Self, Error> {
-        Ok(Self { clock: container.resolve::<Clock>()? })
-    }
-
-    // Without this, `Session` is left out of the check
-    fn dependencies(deps: &mut Dependencies) {
-        deps.add::<Clock>();
-    }
-}
-```
+What gets checked is what a registration **declares**. A [factory](#scoped) declares its arguments, so `add_scoped_factory(|db: Dc<Db>| Ok(Repo { db }))` says it resolves `Db`, with nothing to keep in sync. A [hand-written `Inject`](#a-hand-written-inject) declares what it resolves in `dependencies()`.
 
 [`dependencies()`](https://docs.rs/volga/latest/volga/di/trait.Inject.html#method.dependencies) is a provided method whose default declares nothing, which keeps a type out of the startup check without making it wrong. Declare exactly what `inject` resolves — a dependency declared here but never resolved is checked all the same.
 

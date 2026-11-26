@@ -1,20 +1,27 @@
-# Внедрение Зависимостей
+# Внедрение зависимостей
 
-Волга поддерживает мощный механизм внедрения зависимостей (Dependency Injection, DI) с тремя жизненными циклами: **Singleton**, **Scoped** и **Transient**.
+Обработчик, которому нужен пул соединений с базой, кэш или клиент, принимает его аргументом `Dc<T>`, а Волга достаёт его из контейнера. Сервисы регистрируются на `App` с одним из трёх жизненных циклов, тех же, что в ASP.NET Core: **singleton**, **scoped** и **transient**. Если вы пришли из Go, это заменяет передачу общего состояния через замыкания или контекст.
 
-Если вы не используете фичу `full`, то, включите фичу `di`, либо переключитесь на `full` в вашем `Cargo.toml`:
+Если вы не используете набор фич `full`, включите фичу `di` в `Cargo.toml`:
 
 ```toml
 [dependencies]
 volga = { version = "0.15", features = ["di"] }
 ```
 
-## Жизненные циклы зависимостей
+## Жизненные циклы кратко
 
-### Singleton
-**Singleton** обеспечивает создание и использование единственного экземпляра зависимости на протяжении всего жизненного цикла вашего веб-приложения. Этот экземпляр потокобезопасен и может использоваться одновременно в разных обработчиках.
+| Жизненный цикл | Экземпляр | Регистрация |
+|---|---|---|
+| Singleton | один на всё приложение | `add_singleton(value)` |
+| Scoped | один на запрос, общий для обработчика и его middleware | `add_scoped_factory(f)`, `add_scoped_default::<T>()`, `add_scoped::<T>()` |
+| Transient | новый при каждом резолве | `add_transient_factory(f)`, `add_transient_default::<T>()`, `add_transient::<T>()` |
 
-#### Пример: Singleton
+`T` должен быть [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html) и [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html), потому что один экземпляр может обслуживать несколько запросов одновременно.
+
+## Singleton
+
+[`add_singleton`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_singleton) регистрирует уже созданное значение. Все запросы получают один и тот же экземпляр:
 
 ```rust compile
 use volga::{App, di::Dc, ok, not_found};
@@ -32,15 +39,13 @@ struct InMemoryCache {
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
-    // Регистрация Singleton-сервиса
     app.add_singleton(InMemoryCache::default());
 
-    // Использование общего экземпляра в обработчиках маршрутов
     app.map_get("/user/{id}", |id: String, cache: Dc<InMemoryCache>| async move {
         let user = cache.inner.lock().unwrap().get(&id).cloned();
         match user {
             Some(user) => ok!(user),
-            None => not_found!("Пользователь не найден"),
+            None => not_found!("User not found"),
         }
     });
 
@@ -53,35 +58,27 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-В этом примере:
-- Метод [`add_singleton`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_singleton) регистрирует `InMemoryCache` как Singleton.
-- Экстрактор [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) разрешает зависимости по мере необходимости.
-- [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) работает аналогично другим экстракторам, таким как [`Json<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/json/struct.Json.html) или [`Query<T>`](https://docs.rs/volga/latest/volga/http/endpoints/args/query/struct.Query.html).
+[`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) это [экстрактор](/volga-docs/ru/getting-started/extractors.html), как `Json<T>` или `Query<T>`: он достаёт сервис из контейнера до вызова обработчика.
 
-::: info
-Тип `T` должен реализовывать типажи [`Send`](https://doc.rust-lang.org/std/marker/trait.Send.html) и [`Sync`](https://doc.rust-lang.org/std/marker/trait.Sync.html).
-:::
+## Scoped
 
-### Scoped
-**Scoped** зависимость создает новый экземпляр для каждого HTTP-запроса. Экземпляр существует только в течение обработки запроса, обеспечивая изоляцию между запросами.
-
-#### Пример: Scoped
+Scoped-сервис создаётся один раз на запрос, когда что-то в этом запросе впервые его попросит. Регистрируйте его **фабрикой**, замыканием, которое его создаёт. Аргументы фабрики это нужные ей сервисы, поэтому контейнер узнаёт её зависимости из сигнатуры:
 
 ```rust compile
-use volga::{App, di::{Container, Dc, Inject, error::Error}, ok, not_found};
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use volga::{App, di::Dc, ok};
 
-#[derive(Clone, Default)]
-struct InMemoryCache {
-    inner: Arc<Mutex<HashMap<String, String>>>,
+struct Db {
+    url: String,
 }
 
-impl Inject for InMemoryCache {
-    fn inject(_container: &Container) -> Result<Self, Error> {
-        Ok(Self { inner: Default::default() })
+#[derive(Clone)]
+struct Repo {
+    db: Dc<Db>,
+}
+
+impl Repo {
+    fn describe(&self) -> String {
+        format!("repo over {}", self.db.url)
     }
 }
 
@@ -89,72 +86,89 @@ impl Inject for InMemoryCache {
 async fn main() -> std::io::Result<()> {
     let mut app = App::new();
 
-    // Регистрация Scoped-сервиса
-    app.add_scoped::<InMemoryCache>();
+    app.add_singleton(Db { url: "postgres://localhost/app".into() });
 
-    // Использование отдельного экземпляра для каждого запроса
-    app.map_get("/user/{id}", |id: String, cache: Dc<InMemoryCache>| async move {
-        let user = cache.inner.lock().unwrap().get(&id).cloned();
-        match user {
-            Some(user) => ok!(user),
-            None => not_found!("Пользователь не найден"),
-        }
-    });
+    // Новый `Repo` на каждый запрос, построенный из singleton `Db`
+    app.add_scoped_factory(|db: Dc<Db>| Ok(Repo { db }));
 
-    app.map_post("/user/{id}/{name}", |id: String, name: String, cache: Dc<InMemoryCache>| async move {
-        cache.inner.lock().unwrap().insert(id, name);
-        ok!()
+    app.map_get("/repo", |repo: Dc<Repo>| async move {
+        ok!(repo.describe())
     });
 
     app.run().await
 }
 ```
 
-Основные отличия от Singleton:
-- Метод [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped) регистрирует зависимость, которая создается для каждого HTTP-запроса.
-- Каждый запрос имеет свой уникальный экземпляр `InMemoryCache`.
+### Правила фабрик
 
-#### Регистрация с помощью `Default` или фабрики
+* **Фабрика без аргументов возвращает `T`:** `add_scoped_factory(|| Cache::new())`.
+* **Фабрика с аргументами возвращает `Result<T, volga::di::error::Error>`**, поэтому пример выше оборачивает значение в `Ok(..)`. Аргументы резолвятся до вызова, а создание сервиса всё равно может завершиться ошибкой. Если такая фабрика вернёт просто `T`, код не скомпилируется, и ошибка не упомянет тип результата.
+* **Не больше пяти аргументов.** Аргументом может быть всё, что контейнер умеет резолвить, обычно `Dc<T>`.
+* **Аргумент `Container` ничего не декларирует**, поэтому фабрика, которая его принимает, выпадает из [проверки при старте](#граф-проверяется-при-старте). Принимайте сами сервисы как `Dc<T>`.
 
-Чтобы использовать метод [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped), тип должен реализовывать типаж [`Inject`](https://docs.rs/volga/latest/volga/di/trait.Inject.html). Это удобный и мощный подход, когда ваш тип зависит от других сервисов, зарегистрированных в контейнере зависимостей.
+### Тип с `Default`
 
-Однако, если у типа нет зависимостей, вы можете зарегистрировать его напрямую, используя фабрику:
+Типу, который реализует [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html), фабрика не нужна:
 
-```rust
-#[derive(Clone)]
-struct InMemoryCache {
-    inner: Arc<Mutex<HashMap<String, String>>>,
-}
-
-// Регистрация Scoped-сервиса с помощью фабрики
-app.add_scoped_factory(|| InMemoryCache {
-    inner: Default::default(),
-});
-```
-::: tip
-Вы так же можете использовать [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html) или [`Container`](https://docs.rs/volga/latest/volga/di/struct.Container.html) в качестве аргументов фабрики для гибкости и лучшего контроля над разрешением зависимостей.
-:::
-
-Если тип реализует [`Default`](https://doc.rust-lang.org/std/default/trait.Default.html), вы можете упростить это ещё больше, используя [`add_scoped_default::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped_default):
-
-```rust
+```rust compile-fragment
 #[derive(Default, Clone)]
-struct InMemoryCache {
-    inner: Arc<Mutex<HashMap<String, String>>>,
+struct RequestLog {
+    lines: std::sync::Arc<std::sync::Mutex<Vec<String>>>,
 }
 
-app.add_scoped_default::<InMemoryCache>();
+app.add_scoped_default::<RequestLog>();
 ```
 
-### Transient
+### Ручная реализация `Inject`
 
-**Transient** зависимость создаёт **новый экземпляр каждый раз при её разрешении**, независимо от области действия или контекста запроса. Вы можете зарегистрировать такую службу одним из следующих способов:
+Когда создание не укладывается в замыкание, тип реализует [`Inject`](https://docs.rs/volga/latest/volga/di/trait.Inject.html) и регистрируется через [`add_scoped::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_scoped). `inject` резолвит нужное из контейнера вручную, поэтому должен и объявить эти сервисы в `dependencies()`, иначе тип выпадет из проверки при старте:
 
-* [`add_transient::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient)
-* [`add_transient_factory::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_factory)
+```rust compile
+use volga::{App, di::{Container, Dc, Dependencies, Inject, error::Error}, ok};
+
+#[derive(Default, Clone)]
+struct Clock;
+
+#[derive(Clone)]
+struct Session {
+    clock: Clock,
+}
+
+impl Inject for Session {
+    fn inject(container: &Container) -> Result<Self, Error> {
+        Ok(Self { clock: container.resolve::<Clock>()? })
+    }
+
+    // Этот список должен совпадать с тем, что резолвит `inject`
+    fn dependencies(deps: &mut Dependencies) {
+        deps.add::<Clock>();
+    }
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.add_singleton(Clock);
+    app.add_scoped::<Session>();
+
+    app.map_get("/session", |_session: Dc<Session>| async { ok!() });
+
+    app.run().await
+}
+```
+
+Ничто не сравнивает `dependencies()` с тем, что `inject` резолвит на самом деле, поэтому фабрика остаётся первым выбором.
+
+## Transient
+
+Transient-сервис создаётся заново **при каждом резолве**, даже дважды в одном запросе. Он регистрируется теми же тремя способами, что и scoped:
+
+* [`add_transient_factory(f)`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_factory), по тем же [правилам фабрик](#правила-фабрик)
 * [`add_transient_default::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient_default)
+* [`add_transient::<T>()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.add_transient) для ручной реализации `Inject`
 
-Поведение аналогично **Scoped**, с ключевым отличием: **новый экземпляр создаётся для каждого внедрения**, а не один раз для каждого запроса или области действия. Transient, полученный через [`Container::resolve`](https://docs.rs/volga/latest/volga/di/struct.Container.html#method.resolve), перемещается из контейнера, а не клонируется, — это стоит держать в голове для типа, у которого `Clone` или `Drop` имеет побочные эффекты.
+Transient, полученный через [`Container::resolve`](https://docs.rs/volga/latest/volga/di/struct.Container.html#method.resolve), перемещается из контейнера, а не клонируется. Это стоит знать для типа, у которого `Clone` или `Drop` имеют побочные эффекты.
 
 ## Изменение зависимости
 
@@ -210,36 +224,7 @@ dependency injection: dependency cycle: myapp::Repo -> myapp::Db -> myapp::Repo;
 
 Пока проверка не пройдена, ничего не биндится, не спавнится и не объявляется — ни фоновая задача, ни слушатель HTTPS-редиректа, ни приветственная строка, — поэтому вызывающий код, который обработал ошибку и попробовал снова, найдёт порт свободным, а незарегистрированный сервис роняет старт, а не отдаёт `500` на одном маршруте.
 
-Проверяется то, что регистрация **декларирует**. Фабрика декларирует свои аргументы, поэтому контейнер уже знает, что она резолвит:
-
-```rust
-// говорит, что резолвит `Db`
-app.add_scoped_factory(|db: Dc<Db>| Repo { db });
-```
-
-Ручная реализация [`Inject`](https://docs.rs/volga/latest/volga/di/trait.Inject.html) резолвит из контейнера руками — значит, и декларирует это руками:
-
-```rust compile
-use volga::di::{Container, Dependencies, Inject, error::Error};
-
-#[derive(Default, Clone)]
-struct Clock;
-
-struct Session {
-    clock: Clock,
-}
-
-impl Inject for Session {
-    fn inject(container: &Container) -> Result<Self, Error> {
-        Ok(Self { clock: container.resolve::<Clock>()? })
-    }
-
-    // Без этого `Session` в проверку не попадёт
-    fn dependencies(deps: &mut Dependencies) {
-        deps.add::<Clock>();
-    }
-}
-```
+Проверяется то, что регистрация **декларирует**. [Фабрика](#scoped) декларирует свои аргументы, поэтому `add_scoped_factory(|db: Dc<Db>| Ok(Repo { db }))` сообщает, что резолвит `Db`, и синхронизировать ничего не нужно. [Ручная реализация `Inject`](#ручная-реализация-inject) декларирует то, что резолвит, в `dependencies()`.
 
 [`dependencies()`](https://docs.rs/volga/latest/volga/di/trait.Inject.html#method.dependencies) — метод с реализацией по умолчанию, и по умолчанию он не декларирует ничего: это оставляет тип вне стартовой проверки, не делая его при этом неправильным. Декларировать нужно ровно то, что резолвит `inject`: зависимость, объявленная здесь, но там не запрошенная, всё равно будет проверена.
 

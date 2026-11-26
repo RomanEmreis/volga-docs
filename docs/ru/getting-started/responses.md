@@ -185,7 +185,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Какие типы могут быть `Err`, как описать собственный тип ошибки и как оформить все ошибки в одном месте, рассказано на странице [Центральный обработчик ошибок](/volga-docs/ru/reliability-observability/errors.html).
+Какие типы могут быть `Err`, как описать собственный тип ошибки и как оформить все ошибки в одном месте, рассказано на странице [Обработка ошибок](/volga-docs/ru/reliability-observability/errors.html).
 
 ::: warning
 У голой строки нет статуса: `Err("not found")` отвечает `500`. Укажите статус: `Err((StatusCode::NOT_FOUND, "not found"))`.

@@ -1,15 +1,29 @@
-# Основы Middleware
+# Middleware
 
-Волга предоставляет инструменты для построения цепочек промежуточной обработки (middleware) — как для отдельных маршрутов, так и для групп маршрутов или всего приложения.
+Middleware это код, который выполняется для каждого запроса своей области до или после обработчика: проверка API-ключа, добавление заголовка, логирование, замер времени. Его можно зарегистрировать на всё приложение `App`, на [группу маршрутов](/volga-docs/ru/getting-started/route-groups.html) или на один маршрут, и у всех трёх одни и те же методы. Запрос сначала проходит middleware приложения, затем группы, затем маршрута, а ответ возвращается тем же путём.
 
 ## Включение поддержки middleware
 
-Если вы не используете полный набор фич `full`, необходимо явно включить фичу `middleware` в `Cargo.toml`:
+Если вы не используете набор фич `full`, включите фичу `middleware` в `Cargo.toml`:
 
 ```toml
 [dependencies]
 volga = { version = "0.15", features = ["middleware"] }
 ```
+
+## Выбор метода
+
+| Метод | Зачем | Когда выполняется |
+|---|---|---|
+| [`filter()`](#фильтры) | отклонить запрос до обработчика | до обработчика |
+| [`tap_req()`](#обработка-входящего-запроса) | изменить запрос: добавить заголовок, заменить тело | до обработчика |
+| [`map_ok()`](#обработка-успешного-ответа) | изменить успешный ответ | после обработчика |
+| [`map_err()`](#обработка-ошибок) | превратить ошибку в ответ | после ошибки |
+| [`with()`](#код-вокруг-обработчика) | выполнить код вокруг обработчика или ответить вместо него | вокруг обработчика |
+| [`wrap()`](#with-или-wrap) | то же, но со всем запросом, включая тело | вокруг обработчика |
+| [`attach()`](/volga-docs/ru/middleware-infrastructure/parameterized-middleware.html) | зарегистрировать переиспользуемый тип middleware со своими настройками | вокруг обработчика |
+
+Начинайте с самого узкого метода, которого хватает для задачи. Первые четыре принимают [экстракторы](/volga-docs/ru/getting-started/extractors.html), как обработчик, и по их сигнатуре видно, что они могут изменить. Если вы пришли из ASP.NET Core или Go, `with()` и `wrap()` это привычный middleware, который вызывает `next`, а остальные четыре метода это сокращения для самых частых его применений.
 
 ## Фильтры
 
@@ -275,6 +289,91 @@ async fn produce_err() -> IoError {
 Если вызвать [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) у [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), вы настроите глобальный обработчик ошибок. Подробнее о глобальной обработке ошибок читайте [здесь](/volga-docs/ru/reliability-observability/errors.html).
 :::
 
+## Код вокруг обработчика
+
+[`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) и [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap) получают остаток конвейера как `next`. Код до `next` выполняется по пути внутрь, код после него по пути обратно. Middleware выполняются в порядке регистрации, поэтому зарегистрированный первым оказывается внешним:
+
+```rust compile
+use volga::{App, ok};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    // Middleware 1
+    app.wrap(|context, next| async move {
+        println!("Перед Middleware 2");
+        let response = next(context).await;
+        println!("После Middleware 2");
+        response
+    });
+
+    // Middleware 2
+    app.with(|next| async move {
+        println!("Перед обработчиком запроса");
+        let response = next.await;
+        println!("После обработчика запроса");
+        response
+    });
+
+    app.map_get("/hello", || async {
+        ok!("Hello World!")
+    });
+
+    app.run().await
+}
+```
+
+Middleware, который возвращается, не вызвав `next`, отвечает вместо всего, что идёт после него, включая обработчик:
+
+```rust compile
+use volga::{App, ok, status};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.with(|_| async {
+        // `next` не вызывается, поэтому обработчик не выполнится
+        status!(400)
+    });
+
+    app.map_get("/hello", || async {
+        ok!()
+    });
+
+    app.run().await
+}
+```
+
+Чтобы отклонить запрос по условию, [фильтр](#фильтры) сделает то же самое короче.
+
+### `with()` или `wrap()`
+
+`with()` принимает экстракторы перед `next`, как обработчик: заголовки, параметры пути и строки запроса, `Dc<T>`. Его хватает для большинства задач, но тела запроса он не видит:
+
+```rust compile
+use std::time::Instant;
+use volga::{App, Path, middleware::Next};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_get("/users/{id}", |id: u32| async move { id.to_string() })
+        .with(|Path(id): Path<u32>, next: Next| async move {
+            let started = Instant::now();
+            let response = next.await;
+            println!("user {id} answered in {:?}", started.elapsed());
+            response
+        });
+
+    app.run().await
+}
+```
+
+`wrap()` получает весь запрос как [`HttpContext`](https://docs.rs/volga/latest/volga/middleware/struct.HttpContext.html), вместе с телом, а это нужно сжатию, декодированию и похожим middleware. Используйте `with()`, если тело не нужно.
+
 ## Синхронные middleware
 
 [`filter()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.filter), [`map_ok()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_ok), [`map_err()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.map_err) и [`tap_req()`](https://docs.rs/volga/latest/volga/app/router/struct.Route.html#method.tap_req) принимают также обычную `fn` или замыкание, которое возвращает вердикт, ответ или запрос напрямую, когда ждать нечего, — у [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html), маршрута и группы маршрутов, так же как и [обработчики](/volga-docs/ru/getting-started/handlers.html#синхронные-обработчики):
@@ -308,6 +407,44 @@ fn tag_response(mut resp: HttpResponse) -> HttpResult {
 
 [`wrap()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.wrap), [`with()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.with) и [`attach()`](/volga-docs/ru/middleware-infrastructure/parameterized-middleware.html) остаются асинхронными: они существуют ради того, чтобы дождаться `next`.
 
+## Запросы, не совпавшие ни с одним маршрутом
+
+Маршрутизация выполняется первой и решает, *что* ответит на запрос. Все три её исхода — совпавший маршрут, fallback-обработчик и `405` со своим заголовком `Allow` — проходят через одну и ту же глобальную цепочку.
+
+Из этого следуют три вещи:
+
+* **Глобальный middleware, обрывающий конвейер, решает и судьбу несовпавших запросов.** `filter`, `with` с ранним возвратом и `authorize` выполняются до того, как известен ответ маршрутизации, поэтому глобальный middleware авторизации отвечает на несуществующий путь `401`, а не `404`, — и тем самым меньше рассказывает о том, что есть в сервисе. Middleware маршрута и группы это не затрагивает: они принадлежат маршруту, который по определению совпал.
+* **Rate Limiting считает запросы, не совпавшие ни с одним маршрутом.** Бюджет лимитера расходуется трафиком, который до обработчика не доходит, поэтому рассчитывайте его по реальному трафику, а не по количеству маршрутов.
+* **Скоуп запроса создаётся и для таких запросов.** [`ClientIp`](https://docs.rs/volga/latest/volga/struct.ClientIp.html), `CancellationToken`, `Config<T>`, `HostEnv` и `Dc<T>` работают внутри fallback-обработчика, и ограничение размера тела приложения действует там тоже — запрос не забрал ни один маршрут или группа, поэтому их [ограничения](/volga-docs/ru/requests-responses/body.html#для-группы-и-для-маршрута) не действуют.
+
+### Как отличить одно от другого
+
+Middleware, который должен работать только для реального эндпоинта, читает [`matched_route()`](https://docs.rs/volga/latest/volga/middleware/struct.HttpContext.html#method.matched_route):
+
+```rust compile
+use volga::App;
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.wrap(|ctx, next| async move {
+        if !ctx.matched_route() {
+            // нечего учитывать для запроса, на который не ответит ни один маршрут
+            return next(ctx).await;
+        }
+
+        next(ctx).await
+    });
+
+    app.run().await
+}
+```
+
+Он возвращает `true`, когда маршрутизация нашла эндпоинт для этого запроса, и `false` для запросов, на которые отвечает fallback или `405`. Ответ одинаков на любом слое: собственный middleware маршрута или группы выполняется уже после того, как конвейер маршрута выбран, и по-прежнему видит `true`. Первым это использует middleware CORS — он по этому признаку решает, отвечать ли на preflight.
+
 ## Примеры
+
+* [Пример middleware](https://github.com/RomanEmreis/volga/blob/main/examples/middleware/src/main.rs)
 * [Пример фильтрации запроса](https://github.com/RomanEmreis/volga/blob/main/examples/request_validation/src/main.rs)
 * [Пример обработки ответа](https://github.com/RomanEmreis/volga/blob/main/examples/response_handler/src/main.rs)

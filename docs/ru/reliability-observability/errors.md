@@ -1,47 +1,6 @@
-# Центральный обработчик ошибок
+# Обработка ошибок
 
-Волга предоставляет централизованный механизм обработки ошибок, который перехватывает все ошибки, реализующие типаж [`Error`](https://doc.rust-lang.org/std/error/trait.Error.html), возникающие в обработчиках запросов и middleware. Для этого можно воспользоваться методом [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) типа [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) для регистрации функции, обрабатывающей ошибки.
-
-Функция принимает объект типа [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) и должна вернуть ответ, реализующий типаж [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html). Как и обработчик запроса, она может быть [асинхронной или синхронной](/volga-docs/ru/getting-started/handlers.html).
-
-### Пример:
-```rust compile
-use volga::{App, error::Error, status};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let mut app = App::new();
-    
-    app.map_get("/error", || async {
-        std::io::Error::other("some error")
-    });
-
-    // Регистрируем централизованный обработчик ошибок
-    app.map_err(|error: Error| async move {
-        status!(error.status().as_u16(), "{:?}", error)
-    });
-
-    app.run().await
-}
-```
-В этом примере мы намеренно создаем обработчик запросов, который выдает ошибку, и определяем обработчик ошибок, который отвечает статусом и сообщением этой ошибки. [`status()`](https://docs.rs/volga/latest/volga/error/struct.Error.html#method.status) — это статус, который несёт ошибка: `500` у этой, `404` у пути, на который не отвечает ни один маршрут, `401` у отклонённого токена.
-
-::: warning Отвечайте собственным статусом ошибки
-Обработчик ошибок отвечает на все ошибки, включая [запросы, которые Волга отклоняет сама](#ошибки-которые-создает-волга). Обработчик с фиксированным статусом, например `status!(500, ..)`, превращает каждый `401`, `404`, `405` и `429` в `500`.
-:::
-
-Фактически, именно так реализован обработчик ошибок по умолчанию — с той разницей, что ошибка, [несущая собственный ответ](#ответ-с-собственным-телом), отвечает этим ответом. Если мы удалим метод [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err), ответ останется неизменным. Однако переопределение пользовательского обработчика ошибок обеспечивает большую гибкость для логирования и трассировки.
-
-Обработчику, которому нужно лишь посмотреть на ошибку, достаточно вернуть её как есть: тогда на неё ответят ровно так, как ответил бы обработчик по умолчанию.
-
-```rust compile-fragment
-use volga::error::Error;
-
-app.map_err(|error: Error| {
-    eprintln!("{} {error}", error.status());
-    error
-});
-```
+Ошибка в Волге проходит один путь. Обработчик возвращает `Result<T, E>`, его `Err` превращается в [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html), а **обработчик ошибок** превращает эту ошибку в ответ. То же самое происходит с ошибкой из middleware и с запросом, который Волга отклоняет сама, например `404`, `401` или тело больше ограничения. Без настройки обработчик ошибок по умолчанию отвечает статусом и сообщением ошибки. Чтобы изменить вид всех ошибок, зарегистрируйте свой обработчик через `map_err` или используйте [`map_problem()`](#центральная-обработка-ошибок-с-problem-details) для [Problem Details](#problem-details).
 
 ## Возврат ошибок из обработчика
 
@@ -95,7 +54,7 @@ async fn main() -> std::io::Result<()> {
 У строки нет статуса, поэтому `Err("name is required")` или `Err(format!(..))` отвечает `500 Internal Server Error`. Дайте клиентской ошибке её статус: `Err((StatusCode::BAD_REQUEST, "name is required"))`.
 :::
 
-Раз ошибка проходит через обработчик ошибок, всё, что делает `map_err` — логирование, [Problem Details](#центральная-обработка-ошибок-с-problem-details), собственная JSON-обёртка, — применяется и к ней. То же касается `Err`, возвращённого из `map_fallback`, самого `map_err`, middleware [`with`](/volga-docs/ru/middleware-infrastructure/middlewares.html) и [`map_ok`](/volga-docs/ru/middleware-infrastructure/middleware.html#обработка-успешного-ответа) и — с одним отличием — из [фильтра](/volga-docs/ru/middleware-infrastructure/middleware.html#что-возвращает-фильтр).
+Раз ошибка проходит через обработчик ошибок, всё, что делает `map_err` — логирование, [Problem Details](#центральная-обработка-ошибок-с-problem-details), собственная JSON-обёртка, — применяется и к ней. То же касается `Err`, возвращённого из `map_fallback`, самого `map_err`, middleware [`with`](/volga-docs/ru/middleware-infrastructure/middleware.html#код-вокруг-обработчика) и [`map_ok`](/volga-docs/ru/middleware-infrastructure/middleware.html#обработка-успешного-ответа) и — с одним отличием — из [фильтра](/volga-docs/ru/middleware-infrastructure/middleware.html#что-возвращает-фильтр).
 
 ### Собственные типы ошибок
 
@@ -206,6 +165,50 @@ impl IntoError for NotFound {
 
 `describe_openapi` существует, только пока включена фича Волги `openapi`. Если ваш крейт включает её через собственную фичу, поставьте на метод тот же `#[cfg(feature = "..")]`. Остальное — на странице [OpenAPI](/volga-docs/ru/middleware-infrastructure/openapi.html).
 
+## Обработчик ошибок
+
+Метод [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) типа [`App`](https://docs.rs/volga/latest/volga/app/struct.App.html) регистрирует функцию, которая отвечает на все ошибки приложения: из обработчиков, из middleware и от самой Волги.
+
+Функция принимает объект типа [`Error`](https://docs.rs/volga/latest/volga/error/struct.Error.html) и должна вернуть ответ, реализующий типаж [`IntoResponse`](https://docs.rs/volga/latest/volga/http/response/into_response/trait.IntoResponse.html). Как и обработчик запроса, она может быть [асинхронной или синхронной](/volga-docs/ru/getting-started/handlers.html).
+
+```rust compile
+use volga::{App, error::Error, status};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+    
+    app.map_get("/error", || async {
+        std::io::Error::other("some error")
+    });
+
+    // Регистрируем централизованный обработчик ошибок
+    app.map_err(|error: Error| async move {
+        status!(error.status().as_u16(), "{:?}", error)
+    });
+
+    app.run().await
+}
+```
+В этом примере мы намеренно создаем обработчик запросов, который выдает ошибку, и определяем обработчик ошибок, который отвечает статусом и сообщением этой ошибки. [`status()`](https://docs.rs/volga/latest/volga/error/struct.Error.html#method.status) — это статус, который несёт ошибка: `500` у этой, `404` у пути, на который не отвечает ни один маршрут, `401` у отклонённого токена.
+
+::: warning Отвечайте собственным статусом ошибки
+Обработчик ошибок отвечает на все ошибки, включая [запросы, которые Волга отклоняет сама](#ошибки-которые-создает-волга). Обработчик с фиксированным статусом, например `status!(500, ..)`, превращает каждый `401`, `404`, `405` и `429` в `500`.
+:::
+
+Фактически, именно так реализован обработчик ошибок по умолчанию — с той разницей, что ошибка, [несущая собственный ответ](#ответ-с-собственным-телом), отвечает этим ответом. Если мы удалим метод [`map_err`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err), ответ останется неизменным. Однако переопределение пользовательского обработчика ошибок обеспечивает большую гибкость для логирования и трассировки.
+
+Обработчику, которому нужно лишь посмотреть на ошибку, достаточно вернуть её как есть: тогда на неё ответят ровно так, как ответил бы обработчик по умолчанию.
+
+```rust compile-fragment
+use volga::error::Error;
+
+app.map_err(|error: Error| {
+    eprintln!("{} {error}", error.status());
+    error
+});
+```
+
 ## Ошибки, которые создаёт Волга
 
 Запрос, который Волга отклоняет сама, тоже доходит до обработчика ошибок — как ошибка со своим статусом. Некоторые из этих ошибок несут заголовки, и они остаются на ответе, которым бы ни ответил обработчик:
@@ -305,64 +308,6 @@ async fn main() -> std::io::Result<()> {
 * **У области один обработчик ошибок.** Второй `map_err` или `map_problem` заменяет первый, как и у `App`.
 * **Ошибка идёт наружу.** Обработчик области, который отвечает самой ошибкой, передаёт её охватывающей группе, а затем `App::map_err`.
 * **То, что работает вне всех областей**, — глобальные middleware и fallback приложения — доходит только до `App::map_err`.
-
-## Fallback-обработчик
-
-[`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) регистрирует обработчик, который отвечает на запрос, не совпавший ни с одним маршрутом. Он принимает те же аргументы, что и [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) — экстракторы заголовочной части: заголовки, URI, куки, [`ClientIp`](https://docs.rs/volga/latest/volga/struct.ClientIp.html), [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html), [собственный экстрактор](/volga-docs/ru/advanced-patterns/custom-extractors.html). Но не тело: ничего не совпало, значит нет маршрута, который сказал бы, как это тело читать; по той же причине недоступны и параметры пути.
-
-```rust compile
-use volga::{App, ClientIp, http::Uri, error::Error, not_found, status};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let mut app = App::new();
-
-    app.map_fallback(|uri: Uri, ip: ClientIp| async move {
-        not_found!("no route for {uri} (from {ip})")
-    });
-
-    // Ошибка из fallback попадёт сюда, как и любая другая
-    app.map_err(|error: Error| async move {
-        status!(error.status().as_u16(), "{:?}", error)
-    });
-
-    app.run().await
-}
-```
-
-Fallback выполняется в полноценном скоупе запроса, поэтому принимает те же экстракторы, что и любой другой обработчик, — `ClientIp`, `CancellationToken`, `Config<T>`, `HostEnv`, `Dc<T>`, — и к нему применяется ограничение размера тела приложения. [Fallback группы](/volga-docs/ru/getting-started/route-groups.html#fallback-группы) получает вместо него ограничение группы. Возвращённую им ошибку обрабатывает `map_err` приложения, как и ошибку любого другого обработчика, поэтому сервис, формирующий свои ошибки, формирует их и здесь.
-
-### Свой fallback для каждой части API
-
-Одного обработчика на все неизвестные пути приложения часто мало: API хочет JSON, а SPA — свою оболочку. [Группа маршрутов](/volga-docs/ru/getting-started/route-groups.html#fallback-группы) несёт собственный fallback, и роутер выбирает самый глубокий префикс, у которого он есть:
-
-```rust compile
-use volga::{App, http::Uri, error::Problem, not_found};
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let mut app = App::new();
-
-    app.group("/api", |api| {
-        // Всё неизвестное под /api отвечает в формате самого API
-        api.map_fallback(|uri: Uri| async move {
-            let problem: Problem = Problem::new(404)
-                .with_detail("No endpoint at this path")
-                .with_instance(uri.path());
-            problem
-        });
-    });
-
-    // Всё остальное
-    app.map_fallback(|| async { not_found!("not found") });
-
-    app.run().await
-}
-```
-
-Middleware группы — `authorize`, ограничитель частоты, `tap_req` с request-id — выполняется вокруг её fallback так же, как вокруг её маршрутов, поэтому неизвестный путь за аутентификацией отклоняется, а не перечисляет существующие.
-
-Расширения `Problem` — это его типовой параметр, поэтому аннотация нужна лишь чтобы подхватить значение по умолчанию: у `Problem`, собранного через [`with_extensions()`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html#method.with_extensions), она не нужна.
 
 ## Problem Details
 
@@ -522,6 +467,64 @@ Problem::new(400)
     .with_instance("/problem")
     .add_param("reason", "The ID must be provided");
 ```
+
+## Fallback-обработчик
+
+[`map_fallback()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_fallback) регистрирует обработчик, который отвечает на запрос, не совпавший ни с одним маршрутом. Он принимает те же аргументы, что и [`map_err()`](https://docs.rs/volga/latest/volga/app/struct.App.html#method.map_err) — экстракторы заголовочной части: заголовки, URI, куки, [`ClientIp`](https://docs.rs/volga/latest/volga/struct.ClientIp.html), [`Dc<T>`](https://docs.rs/volga/latest/volga/di/dc/struct.Dc.html), [собственный экстрактор](/volga-docs/ru/advanced-patterns/custom-extractors.html). Но не тело: ничего не совпало, значит нет маршрута, который сказал бы, как это тело читать; по той же причине недоступны и параметры пути.
+
+```rust compile
+use volga::{App, ClientIp, http::Uri, error::Error, not_found, status};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.map_fallback(|uri: Uri, ip: ClientIp| async move {
+        not_found!("no route for {uri} (from {ip})")
+    });
+
+    // Ошибка из fallback попадёт сюда, как и любая другая
+    app.map_err(|error: Error| async move {
+        status!(error.status().as_u16(), "{:?}", error)
+    });
+
+    app.run().await
+}
+```
+
+Fallback выполняется в полноценном скоупе запроса, поэтому принимает те же экстракторы, что и любой другой обработчик, — `ClientIp`, `CancellationToken`, `Config<T>`, `HostEnv`, `Dc<T>`, — и к нему применяется ограничение размера тела приложения. [Fallback группы](/volga-docs/ru/getting-started/route-groups.html#fallback-группы) получает вместо него ограничение группы. Возвращённую им ошибку обрабатывает `map_err` приложения, как и ошибку любого другого обработчика, поэтому сервис, формирующий свои ошибки, формирует их и здесь.
+
+### Свой fallback для каждой части API
+
+Одного обработчика на все неизвестные пути приложения часто мало: API хочет JSON, а SPA — свою оболочку. [Группа маршрутов](/volga-docs/ru/getting-started/route-groups.html#fallback-группы) несёт собственный fallback, и роутер выбирает самый глубокий префикс, у которого он есть:
+
+```rust compile
+use volga::{App, http::Uri, error::Problem, not_found};
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let mut app = App::new();
+
+    app.group("/api", |api| {
+        // Всё неизвестное под /api отвечает в формате самого API
+        api.map_fallback(|uri: Uri| async move {
+            let problem: Problem = Problem::new(404)
+                .with_detail("No endpoint at this path")
+                .with_instance(uri.path());
+            problem
+        });
+    });
+
+    // Всё остальное
+    app.map_fallback(|| async { not_found!("not found") });
+
+    app.run().await
+}
+```
+
+Middleware группы — `authorize`, ограничитель частоты, `tap_req` с request-id — выполняется вокруг её fallback так же, как вокруг её маршрутов, поэтому неизвестный путь за аутентификацией отклоняется, а не перечисляет существующие.
+
+Расширения `Problem` — это его типовой параметр, поэтому аннотация нужна лишь чтобы подхватить значение по умолчанию: у `Problem`, собранного через [`with_extensions()`](https://docs.rs/volga/latest/volga/error/problem/struct.Problem.html#method.with_extensions), она не нужна.
 
 Готовые примеры можно найти по следующим ссылкам:
 - [Центральная обработка ошибок](https://github.com/RomanEmreis/volga/blob/main/examples/global_error_handler/src/main.rs).
