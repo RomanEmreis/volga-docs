@@ -54,6 +54,7 @@ The Migration page and the Agent Skill page are about versions, so these rules d
 * **Leave a block unmarked only when it shows a shape, not a program**, such as a trait impl with elided bodies.
 * **The code is the same in both locales**, character for character. Translate comments only if the English comment would confuse; usually leave them.
 * **Prefer a complete program over a fragment** on a page a reader may copy from.
+* **The home page examples are not checked.** They live as strings in `docs/{en,ru}/README.md` for the `CodeShowcase` component. Compile each one in a scratch project before changing it, and keep them identical in both locales.
 * **A `#[cfg(test)]` module or a `#[tokio::test]` function is not compiled** by `check-snippets.py`, which runs `cargo build`. Run such code with `cargo test` in a scratch project before you publish it.
 
 ## Both locales

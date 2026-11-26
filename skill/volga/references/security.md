@@ -54,9 +54,9 @@ use volga::auth::Claims;
 struct MyClaims { sub: String, role: String, exp: u64 }
 
 // 2. macro
-use volga::auth::claims;
+use volga::claims;
 claims! {
-    #[derive(Deserialize)]
+    #[derive(Clone, Deserialize)]
     struct MyClaims { sub: String, role: String, permissions: Vec<String> }
 }
 

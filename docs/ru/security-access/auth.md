@@ -332,11 +332,12 @@ Derive работает только со **структурами**: payload JW
 
 ### Макрос `claims!`
 
-```rust
-use volga::auth::claims;
+```rust compile
+use serde::Deserialize;
+use volga::claims;
 
 claims! {
-    #[derive(Deserialize)]
+    #[derive(Clone, Deserialize)]
     struct Claims {
         sub: String,
         role: String,
