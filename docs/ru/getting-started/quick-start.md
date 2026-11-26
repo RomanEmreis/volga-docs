@@ -2,6 +2,8 @@
 
 Создание базового "Hello, World" HTTP API с использованием Волги.
 
+Пришли с ASP.NET Core, Spring или Go? [Эта страница](/volga-docs/ru/getting-started/coming-from.html) сопоставляет то, что вы уже знаете, с Волгой.
+
 ## Предварительные требования
 
 ### Установка Rust

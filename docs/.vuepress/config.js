@@ -57,7 +57,7 @@ export default defineUserConfig({
           {
             text: 'Getting Started',
             prefix: '/en/getting-started/',
-            children: ['quick-start', 'features', 'handlers', 'responses', 'extractors', 'route-params', 'query-params', 'route-groups', '/en/advanced-patterns/di'],
+            children: ['quick-start', 'coming-from', 'features', 'handlers', 'responses', 'extractors', 'route-params', 'query-params', 'route-groups', '/en/advanced-patterns/di'],
           },
           {
             text: 'Requests & Responses',
@@ -128,7 +128,7 @@ export default defineUserConfig({
           {
             text: 'Старт',
             prefix: '/ru/getting-started/',
-            children: ['quick-start', 'features', 'handlers', 'responses', 'extractors', 'route-params', 'query-params', 'route-groups', '/ru/advanced-patterns/di'],
+            children: ['quick-start', 'coming-from', 'features', 'handlers', 'responses', 'extractors', 'route-params', 'query-params', 'route-groups', '/ru/advanced-patterns/di'],
           },
           {
             text: 'Запросы и ответы',
