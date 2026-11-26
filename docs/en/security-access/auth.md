@@ -333,11 +333,12 @@ The derive is for **structs** only — a JWT payload is a JSON object, so `#[der
 
 ### `claims!` macro
 
-```rust
-use volga::auth::claims;
+```rust compile
+use serde::Deserialize;
+use volga::claims;
 
 claims! {
-    #[derive(Deserialize)]
+    #[derive(Clone, Deserialize)]
     struct Claims {
         sub: String,
         role: String,
