@@ -193,7 +193,7 @@ const codeTabs = [
 ## Изучайте документацию дальше
 
 - [Быстрый старт](/volga-docs/ru/getting-started/quick-start.html)
-- [Туториал: сервис закладок](/volga-docs/ru/tutorial/overview.html)
+- [Туториал](/volga-docs/ru/tutorial/overview.html)
 - [Внедрение зависимостей](/volga-docs/ru/advanced-patterns/di.html)
 - [Ограничение запросов](/volga-docs/ru/middleware-infrastructure/rate-limiting.html)
 - [Работа с JSON](/volga-docs/ru/requests-responses/json-payload.html)
